@@ -38,6 +38,7 @@ Provides:       %name = %version-%kernelrelease
 
 Provides:       kernel-xen-dom0
 Provides:       kernel-qubes-dom0
+Provides:       kernel-drm-nouveau = 16
 
 Requires:       xen >= 3.4.3
 Requires(post): /sbin/new-kernel-pkg
