@@ -241,17 +241,11 @@ exit 1
 fi
 
 %post
-/sbin/new-kernel-pkg --mkinitrd --depmod --dracut\
-        --banner="Dom0 failsafe boot (no Xen) for %{kernelrelease}"\
-        --install %{kernelrelease}
-
-/sbin/new-kernel-pkg --package %{name}-%{kernelrelease} --dracut\
+/sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
+        --mkinitrd --depmod --dracut\
         --kernel-args="max_loop=255"\
         --multiboot=/boot/xen.gz --banner="Qubes"\
         --make-default --install %{kernelrelease}
-
-#/sbin/new-kernel-pkg --remove-args=rhgb --update %{kernelrelease}
-/sbin/new-kernel-pkg --remove-args=quiet --update %{kernelrelease}
 
 if [ -e /boot/grub/grub.conf ]; then
 # Make it possible to enter GRUB menu if something goes wrong...
