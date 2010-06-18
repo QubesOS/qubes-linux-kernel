@@ -4,7 +4,7 @@
 
 #%define _unpackaged_files_terminate_build 0
 %define variant xenlinux.qubes
-%define rel 2.%{variant}
+%define rel 3.%{variant}
 
 %define _buildshell /bin/bash
 %define build_flavor xenlinux
