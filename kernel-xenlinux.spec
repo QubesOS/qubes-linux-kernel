@@ -4,7 +4,7 @@
 
 #%define _unpackaged_files_terminate_build 0
 %define variant xenlinux.qubes
-%define rel 3.%{variant}
+%define rel %(cat rel).%{variant}
 
 %define _buildshell /bin/bash
 %define build_flavor xenlinux
@@ -24,7 +24,7 @@
 
 %define install_vdso 1
 
-Name:           kernel-xen
+Name:           kernel
 Summary:        The Xen Kernel
 Version:        %{version}
 Release:        %{rel}
@@ -81,11 +81,7 @@ if ! [ -e %_sourcedir/linux-%version.tar.bz2 ]; then
     exit 1
 fi
 
-SYMBOLS=
-if test -e %_sourcedir/extra-symbols; then
-	SYMBOLS=$(cat %_sourcedir/extra-symbols)
-	echo "extra symbol(s):" $SYMBOLS
-fi
+SYMBOLS="xen-dom0 xenlinux"
 
 # Unpack all sources and patches
 %setup -q -c -T -a 0 -a 102 -a 103 -a 104 -a 105 -a 106 -a 107 -a 108 -a 109
