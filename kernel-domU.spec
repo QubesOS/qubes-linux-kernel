@@ -36,8 +36,6 @@ BuildRequires:  coreutils module-init-tools sparse
 Provides:       multiversion(kernel)
 Provides:       %name = %version-%kernelrelease
 
-Requires:       xen >= 3.4.3
-
 Requires(pre):  coreutils gawk
 Requires(post): dracut
 
