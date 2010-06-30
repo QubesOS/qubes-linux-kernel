@@ -46,7 +46,7 @@ Conflicts:      lvm2 < 2.02.33
 Provides:       kernel = %version-%kernelrelease
 
 Source0:        linux-%version.tar.bz2
-Source14:       series.conf
+Source14:       series-domU.conf
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
@@ -82,7 +82,7 @@ mkdir -p %kernel_build_dir
 
 cd linux-%version
 
-%_sourcedir/apply-patches %_sourcedir/series.conf .. $SYMBOLS
+%_sourcedir/apply-patches %_sourcedir/series-domU.conf .. $SYMBOLS
 
 cd %kernel_build_dir
 
