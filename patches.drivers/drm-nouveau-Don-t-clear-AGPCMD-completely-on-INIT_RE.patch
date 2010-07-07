@@ -1,0 +1,35 @@
+From feacc14de65224ccda1d8fae5140cdf043a151b0 Mon Sep 17 00:00:00 2001
+From: Francisco Jerez <currojerez@riseup.net>
+Date: Thu, 17 Jun 2010 12:42:14 +0200
+Subject: [PATCH] drm/nouveau: Don't clear AGPCMD completely on INIT_RESET.
+
+We just need to clear the SBA and ENABLE bits to reset the AGP
+controller: If the AGP bridge was configured to use "fast writes",
+clearing the FW bit would break the subsequent MMIO writes and
+eventually end with a lockup.
+
+Note that all the BIOSes I've seen do the same as we did (it works for
+them because they don't use MMIO), OTOH the blob leaves FW untouched.
+
+Signed-off-by: Francisco Jerez <currojerez@riseup.net>
+---
+ drivers/gpu/drm/nouveau/nouveau_bios.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/nouveau/nouveau_bios.c b/drivers/gpu/drm/nouveau/nouveau_bios.c
+index abc382a..7c983d8 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_bios.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bios.c
+@@ -1910,7 +1910,8 @@ init_reset(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
+ 	/* no iexec->execute check by design */
+ 
+ 	pci_nv_19 = bios_rd32(bios, NV_PBUS_PCI_NV_19);
+-	bios_wr32(bios, NV_PBUS_PCI_NV_19, 0);
++	bios_wr32(bios, NV_PBUS_PCI_NV_19, pci_nv_19 & ~0xf00);
++
+ 	bios_wr32(bios, reg, value1);
+ 
+ 	udelay(10);
+-- 
+1.7.0.1
+

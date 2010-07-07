@@ -1,0 +1,266 @@
+From 2fb8b53110fdf163eae9e8a506bf769449e2ee4b Mon Sep 17 00:00:00 2001
+From: Joanna Rutkowska <joanna@invisiblethingslab.com>
+Date: Tue, 29 Jun 2010 08:34:37 +0200
+Subject: [PATCH 3/4] drm/i915: Add the support of eDP on DP-D for Ibex/CPT
+
+On some machines the eDP is connected on the PCH DP-D instead of DP-A.
+
+Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
+
+Conflicts:
+
+	drivers/gpu/drm/i915/intel_dp.c
+---
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ drivers/gpu/drm/i915/intel_dp.c      |   99 ++++++++++++++++++++++++++++++---
+ drivers/gpu/drm/i915/intel_drv.h     |    1 +
+ 3 files changed, 92 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index f1a37d9..32ae849 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3073,7 +3073,7 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
+ 				temp |= PIPE_8BPC;
+ 			else
+ 				temp |= PIPE_6BPC;
+-		} else if (is_edp) {
++		} else if (is_edp || intel_edp_is_pch(crtc)) {
+ 			switch (dev_priv->edp_bpp/3) {
+ 			case 8:
+ 				temp |= PIPE_8BPC;
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 77e40cf..c13c3bf 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -43,6 +43,7 @@
+ #define DP_LINK_CONFIGURATION_SIZE	9
+ 
+ #define IS_eDP(i) ((i)->type == INTEL_OUTPUT_EDP)
++#define IS_PCH_eDP(dp_priv) ((dp_priv)->is_edpd)
+ 
+ struct intel_dp_priv {
+ 	uint32_t output_reg;
+@@ -58,6 +59,7 @@ struct intel_dp_priv {
+ 	struct intel_encoder *intel_encoder;
+ 	struct i2c_adapter adapter;
+ 	struct i2c_algo_dp_aux_data algo;
++	bool is_edpd;
+ };
+ 
+ static void
+@@ -130,8 +132,9 @@ intel_dp_link_required(struct drm_device *dev,
+ 		       struct intel_encoder *intel_encoder, int pixel_clock)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct intel_dp_priv *dp_priv = intel_encoder->dev_priv;
+ 
+-	if (IS_eDP(intel_encoder))
++	if (IS_eDP(intel_encoder) || IS_PCH_eDP(dp_priv))
+ 		return (pixel_clock * dev_priv->edp_bpp) / 8;
+ 	else
+ 		return pixel_clock * 3;
+@@ -534,14 +537,14 @@ intel_reduce_ratio(uint32_t *num, uint32_t *den)
+ }
+ 
+ static void
+-intel_dp_compute_m_n(int bytes_per_pixel,
++intel_dp_compute_m_n(int bpp,
+ 		     int nlanes,
+ 		     int pixel_clock,
+ 		     int link_clock,
+ 		     struct intel_dp_m_n *m_n)
+ {
+ 	m_n->tu = 64;
+-	m_n->gmch_m = pixel_clock * bytes_per_pixel;
++	m_n->gmch_m = (pixel_clock * bpp) >> 3;
+ 	m_n->gmch_n = link_clock * nlanes;
+ 	intel_reduce_ratio(&m_n->gmch_m, &m_n->gmch_n);
+ 	m_n->link_m = pixel_clock;
+@@ -549,6 +552,31 @@ intel_dp_compute_m_n(int bytes_per_pixel,
+ 	intel_reduce_ratio(&m_n->link_m, &m_n->link_n);
+ }
+ 
++bool intel_edp_is_pch(struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_mode_config *mode_config = &dev->mode_config;
++	struct drm_encoder *encoder;
++	bool ret = false;
++
++	list_for_each_entry(encoder, &mode_config->encoder_list, head) {
++		struct intel_encoder *intel_encoder;
++		struct intel_dp_priv *dp_priv;
++
++		if (!encoder || encoder->crtc != crtc)
++			continue;
++
++		intel_encoder = enc_to_intel_encoder(encoder);
++		dp_priv = intel_encoder->dev_priv;
++
++		if (intel_encoder->type == INTEL_OUTPUT_DISPLAYPORT) {
++			ret = IS_PCH_eDP(dp_priv);
++			break;
++		}
++	}
++	return ret;
++}
++
+ void
+ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 		 struct drm_display_mode *adjusted_mode)
+@@ -558,7 +586,7 @@ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 	struct drm_connector *connector;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+-	int lane_count = 4;
++	int lane_count = 4, bpp = 24;
+ 	struct intel_dp_m_n m_n;
+ 
+ 	/*
+@@ -573,6 +601,8 @@ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 
+ 		if (intel_encoder->type == INTEL_OUTPUT_DISPLAYPORT) {
+ 			lane_count = dp_priv->lane_count;
++			if (IS_PCH_eDP(dp_priv))
++				bpp = dev_priv->edp_bpp;
+ 			break;
+ 		}
+ 	}
+@@ -582,7 +612,7 @@ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 	 * the number of bytes_per_pixel post-LUT, which we always
+ 	 * set up for 8-bits of R/G/B, or 3 bytes total.
+ 	 */
+-	intel_dp_compute_m_n(3, lane_count,
++	intel_dp_compute_m_n(bpp, lane_count,
+ 			     mode->clock, adjusted_mode->clock, &m_n);
+ 
+ 	if (HAS_PCH_SPLIT(dev)) {
+@@ -711,13 +741,13 @@ intel_dp_dpms(struct drm_encoder *encoder, int mode)
+ 	if (mode != DRM_MODE_DPMS_ON) {
+ 		if (dp_reg & DP_PORT_EN) {
+ 			intel_dp_link_down(intel_encoder, dp_priv->DP);
+-			if (IS_eDP(intel_encoder))
++			if (IS_eDP(intel_encoder) || IS_PCH_eDP(dp_priv))
+ 				ironlake_edp_backlight_off(dev);
+ 		}
+ 	} else {
+ 		if (!(dp_reg & DP_PORT_EN)) {
+ 			intel_dp_link_train(intel_encoder, dp_priv->DP, dp_priv->link_configuration);
+-			if (IS_eDP(intel_encoder))
++			if (IS_eDP(intel_encoder) || IS_PCH_eDP(dp_priv))
+ 				ironlake_edp_backlight_on(dev);
+ 		}
+ 	}
+@@ -1225,6 +1255,7 @@ static int intel_dp_get_modes(struct drm_connector *connector)
+ 	struct intel_encoder *intel_encoder = to_intel_encoder(connector);
+ 	struct drm_device *dev = intel_encoder->base.dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct intel_dp_priv *dp_priv = intel_encoder->dev_priv;
+ 	int ret;
+ 
+ 	/* We should parse the EDID data and find out if it has an audio sink
+@@ -1235,7 +1266,7 @@ static int intel_dp_get_modes(struct drm_connector *connector)
+ 		return ret;
+ 
+ 	/* if eDP has no EDID, try to use fixed panel mode from VBT */
+-	if (IS_eDP(intel_encoder)) {
++	if (IS_eDP(intel_encoder) || IS_PCH_eDP(dp_priv)) {
+ 		if (dev_priv->panel_fixed_mode != NULL) {
+ 			struct drm_display_mode *mode;
+ 			mode = drm_mode_duplicate(dev, dev_priv->panel_fixed_mode);
+@@ -1299,6 +1330,50 @@ intel_dp_hot_plug(struct intel_encoder *intel_encoder)
+ 		intel_dp_check_link_status(intel_encoder);
+ }
+ 
++/* Return which DP Port should be selected for Transcoder DP control */
++int
++intel_trans_dp_port_sel (struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_mode_config *mode_config = &dev->mode_config;
++	struct drm_encoder *encoder;
++	struct intel_encoder *intel_encoder = NULL;
++
++	list_for_each_entry(encoder, &mode_config->encoder_list, head) {
++		if (encoder->crtc != crtc)
++			continue;
++
++		intel_encoder = enc_to_intel_encoder(encoder);
++		if (intel_encoder->type == INTEL_OUTPUT_DISPLAYPORT) {
++			struct intel_dp_priv *dp_priv = intel_encoder->dev_priv;
++			return dp_priv->output_reg;
++		}
++	}
++	return -1;
++}
++
++static bool intel_dpd_is_edp(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct child_device_config *p_child;
++	int i, ret = false;
++
++	if (!dev_priv->child_dev_num)
++		return false;
++
++	for (i = 0; i < dev_priv->child_dev_num; i++) {
++		p_child = dev_priv->child_dev + i;
++		if (p_child->device_type != DEVICE_TYPE_eDP)
++			continue;
++
++		if (p_child->dvo_port == PORT_IDPD) {
++			ret = true;
++			break;
++		}
++	}
++	return ret;
++}
++
+ void
+ intel_dp_init(struct drm_device *dev, int output_reg)
+ {
+@@ -1320,6 +1395,7 @@ intel_dp_init(struct drm_device *dev, int output_reg)
+ 			   DRM_MODE_CONNECTOR_DisplayPort);
+ 	drm_connector_helper_add(connector, &intel_dp_connector_helper_funcs);
+ 
++	dp_priv->is_edpd = false;
+ 	if (output_reg == DP_A)
+ 		intel_encoder->type = INTEL_OUTPUT_EDP;
+ 	else
+@@ -1335,6 +1411,11 @@ intel_dp_init(struct drm_device *dev, int output_reg)
+ 	if (IS_eDP(intel_encoder))
+ 		intel_encoder->clone_mask = (1 << INTEL_EDP_CLONE_BIT);
+ 
++	if (HAS_PCH_SPLIT(dev) && (output_reg == PCH_DP_D)) {
++		if (intel_dpd_is_edp(dev))
++			dp_priv->is_edpd = true;
++	}
++
+ 	intel_encoder->crtc_mask = (1 << 0) | (1 << 1);
+ 	connector->interlace_allowed = true;
+ 	connector->doublescan_allowed = 0;
+@@ -1383,7 +1464,7 @@ intel_dp_init(struct drm_device *dev, int output_reg)
+ 	intel_encoder->ddc_bus = &dp_priv->adapter;
+ 	intel_encoder->hot_plug = intel_dp_hot_plug;
+ 
+-	if (output_reg == DP_A) {
++	if ((output_reg == DP_A) || IS_PCH_eDP(dp_priv)) {
+ 		/* initialize panel mode from VBT if available for eDP */
+ 		if (dev_priv->lfp_lvds_vbt_mode) {
+ 			dev_priv->panel_fixed_mode =
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index e302537..0858a17 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -175,6 +175,7 @@ extern void intel_dp_init(struct drm_device *dev, int dp_reg);
+ void
+ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 		 struct drm_display_mode *adjusted_mode);
++extern bool intel_edp_is_pch(struct drm_crtc *crtc);
+ extern void intel_edp_link_config (struct intel_encoder *, int *, int *);
+ 
+ 
+-- 
+1.7.0.1
+

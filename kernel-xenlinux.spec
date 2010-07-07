@@ -60,14 +60,14 @@ Source17:       apply-patches
 Source33:       check-for-config-changes
 Source60:       config.sh
 Source100:      config-%{build_flavor}
-Source102:      patches.arch.tar.bz2
-Source103:      patches.drivers.tar.bz2
-Source104:      patches.fixes.tar.bz2
-Source105:      patches.rpmify.tar.bz2
-Source106:      patches.suse.tar.bz2
-Source107:      patches.xen.tar.bz2
-Source108:      patches.addon.tar.bz2
-Source109:      patches.kernel.org.tar.bz2
+Source200:      patches.arch
+Source201:      patches.drivers
+Source202:      patches.fixes
+Source203:      patches.rpmify
+Source204:      patches.suse
+Source205:      patches.xen
+Source206:      patches.addon
+Source207:      patches.kernel.org
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
@@ -84,13 +84,13 @@ fi
 SYMBOLS="xen-dom0 xenlinux"
 
 # Unpack all sources and patches
-%setup -q -c -T -a 0 -a 102 -a 103 -a 104 -a 105 -a 106 -a 107 -a 108 -a 109
+%setup -q -c -T -a 0
 
 mkdir -p %kernel_build_dir
 
 cd linux-%version
 
-%_sourcedir/apply-patches %_sourcedir/series.conf .. $SYMBOLS
+%_sourcedir/apply-patches %_sourcedir/series.conf %_sourcedir $SYMBOLS
 
 cd %kernel_build_dir
 
