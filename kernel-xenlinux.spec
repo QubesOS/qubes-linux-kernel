@@ -68,6 +68,7 @@ Source204:      patches.suse
 Source205:      patches.xen
 Source206:      patches.addon
 Source207:      patches.kernel.org
+Source300:      patches.qubes
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
@@ -293,5 +294,60 @@ fi
 %files devel
 %defattr(-,root,root)
 /usr/src/kernels/%{kernelrelease}
+
+
+%package domU
+Summary:        The Xen Kernel
+Version:        %{version}
+Release:        %{rel}
+License:        GPL v2 only
+Group:          System/Kernel
+Url:            http://www.kernel.org/
+AutoReqProv:    on
+BuildRequires:  coreutils module-init-tools sparse
+Provides:       multiversion(kernel)
+Provides:       %name = %version-%kernelrelease
+
+Provides:       kernel-xen-domU
+Provides:       kernel-qubes-domU
+Provides:       kernel-drm-nouveau = 16
+
+Requires(post): /sbin/new-kernel-pkg
+Requires(preun):/sbin/new-kernel-pkg
+
+Requires(pre):  coreutils gawk
+Requires(post): dracut
+
+Conflicts:      sysfsutils < 2.0
+# root-lvm only works with newer udevs
+Conflicts:      udev < 118
+Conflicts:      lvm2 < 2.02.33
+Provides:       kernel = %version-%kernelrelease
+
+%description domU
+Qubes domU kernel.
+
+%post domU
+/sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
+        --mkinitrd --depmod --dracut\
+        --banner="Qubes"\
+        --make-default --install %{kernelrelease}
+
+%posttrans domU
+/sbin/new-kernel-pkg --package %{name}-%{kernelrelease} --rpmposttrans %{kernelrelease}
+
+%preun domU
+/sbin/new-kernel-pkg --rminitrd --rmmoddep --remove %{kernelrelease}
+
+%files domU
+%defattr(-, root, root)
+%ghost /boot/initramfs-%{kernelrelease}.img
+/boot/System.map-%{kernelrelease}
+/boot/config-%{kernelrelease}
+/boot/symvers-%kernelrelease.gz
+%attr(0644, root, root) /boot/vmlinuz-%{kernelrelease}
+/lib/firmware/%{kernelrelease}
+/lib/modules/%{kernelrelease}
+
 
 %changelog
