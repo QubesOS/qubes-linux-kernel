@@ -1,0 +1,12 @@
+--- linux-2.6.34.1/drivers/xen/balloon/balloon.c.orig	2010-09-03 12:41:58.369787360 +0200
++++ linux-2.6.34.1/drivers/xen/balloon/balloon.c	2010-09-03 12:43:27.771891174 +0200
+@@ -269,6 +269,9 @@
+ 		min_pages = MB2PAGES(296) + (max_pfn >> 5);
+ #undef MB2PAGES
+ 
++	/* We don't want any artificial limit */
++	min_pages = 0;
++	
+ 	/* Don't enforce growth */
+ 	return min(min_pages, curr_pages);
+ #ifndef CONFIG_XEN
