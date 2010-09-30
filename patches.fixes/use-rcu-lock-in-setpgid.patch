@@ -1,0 +1,62 @@
+From 950eaaca681c44aab87a46225c9e44f902c080aa Mon Sep 17 00:00:00 2001
+From: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date: Tue, 31 Aug 2010 17:00:18 -0700
+Subject: pid: make setpgid() system call use RCU read-side critical section
+Git-commit: 950eaaca681c44aab87a46225c9e44f902c080aa
+Patch-mainline: yes
+References: bnc#639728
+
+[   23.584719]
+[   23.584720] ===================================================
+[   23.585059] [ INFO: suspicious rcu_dereference_check() usage. ]
+[   23.585176] ---------------------------------------------------
+[   23.585176] kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+[   23.585176]
+[   23.585176] other info that might help us debug this:
+[   23.585176]
+[   23.585176]
+[   23.585176] rcu_scheduler_active = 1, debug_locks = 1
+[   23.585176] 1 lock held by rc.sysinit/728:
+[   23.585176]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff8104771f>] sys_setpgid+0x5f/0x193
+[   23.585176]
+[   23.585176] stack backtrace:
+[   23.585176] Pid: 728, comm: rc.sysinit Not tainted 2.6.36-rc2 #2
+[   23.585176] Call Trace:
+[   23.585176]  [<ffffffff8105b436>] lockdep_rcu_dereference+0x99/0xa2
+[   23.585176]  [<ffffffff8104c324>] find_task_by_pid_ns+0x50/0x6a
+[   23.585176]  [<ffffffff8104c35b>] find_task_by_vpid+0x1d/0x1f
+[   23.585176]  [<ffffffff81047727>] sys_setpgid+0x67/0x193
+[   23.585176]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
+[   24.959669] type=1400 audit(1282938522.956:4): avc:  denied  { module_request } for  pid=766 comm="hwclock" kmod="char-major-10-135" scontext=system_u:system_r:hwclock_t:s0 tcontext=system_u:system_r:kernel_t:s0 tclas
+
+It turns out that the setpgid() system call fails to enter an RCU
+read-side critical section before doing a PID-to-task_struct translation.
+This commit therefore does rcu_read_lock() before the translation, and
+also does rcu_read_unlock() after the last use of the returned pointer.
+
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ kernel/sys.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -962,6 +962,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid
+ 		pgid = pid;
+ 	if (pgid < 0)
+ 		return -EINVAL;
++	rcu_read_lock();
+ 
+ 	/* From this point forward we keep holding onto the tasklist lock
+ 	 * so that our parent does not change from under us. -DaveM
+@@ -1015,6 +1016,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid
+ out:
+ 	/* All paths lead to here, thus we are safe. -DaveM */
+ 	write_unlock_irq(&tasklist_lock);
++	rcu_read_unlock();
+ 	return err;
+ }
+ 
