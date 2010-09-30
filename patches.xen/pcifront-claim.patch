@@ -1,0 +1,55 @@
+http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=621d869f36b215d63bb99e7ecd7a11f029821b85
+xen-pcifront: Claim PCI resources before going live.
+author	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>	
+	Fri, 18 Jun 2010 19:31:47 +0000 (15:31 -0400)
+committer	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>	
+	Fri, 18 Jun 2010 19:40:37 +0000 (15:40 -0400)
+We were missing the important step of claiming (and setting the
+parent of IO and MEM regions to 'PCI IO' and 'PCI mem' respectivly)
+of the BARs. This meant that during hot inserts we would get:
+
+igb 0000:01:00.1: device not available (can't reserve [mem 0xfb840000-0xfb85ffff])
+
+even thought the memory region had been reserved before.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+--- linux-2.6.34.1/drivers/xen/pcifront/pci_op.c.orig2	2010-09-29 16:31:58.702675503 +0200
++++ linux-2.6.34.1/drivers/xen/pcifront/pci_op.c	2010-09-29 16:38:47.260675349 +0200
+@@ -426,7 +426,7 @@ static int pcifront_claim_resource(struc
+ 		r = &dev->resource[i];
+ 
+ 		if (!r->parent && r->start && r->flags) {
+-			dev_dbg(&pdev->xdev->dev, "claiming resource %s/%d\n",
++			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
+ 				pci_name(dev), i);
+ 			pci_claim_resource(dev, i);
+ 		}
+@@ -516,14 +516,15 @@ int __devinit pcifront_scan_root(struct 
+ 
+ 	list_add(&bus_entry->list, &pdev->root_buses);
+ 
++	/* pci_scan_bus_parented skips devices which do not have a have
++	* devfn==0. The pcifront_scan_bus enumerates all devfn. */
++	err = pcifront_scan_bus(pdev, domain, bus, b);
++
+ 	/* Claim resources before going "live" with our devices */
+ 	pci_walk_bus(b, pcifront_claim_resource, pdev);
+ 
+ 	pci_bus_add_devices(b);
+ 
+-	/* pci_scan_bus_parented skips devices which do not have a have
+-	* devfn==0. The pcifront_scan_bus enumerates all devfn. */
+-	err = pcifront_scan_bus(pdev, domain, bus, b);
+ 
+ 	return err;
+ 
+@@ -560,6 +561,9 @@ int __devinit pcifront_rescan_root(struc
+ 
+ 	err = pcifront_scan_bus(pdev, domain, bus, b);
+ 
++	/* Claim resources before going "live" with our devices */
++	pci_walk_bus(b, pcifront_claim_resource, pdev);
++
+ 	return err;
+ }
+ 
