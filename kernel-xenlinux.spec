@@ -27,6 +27,7 @@
 Name:           kernel
 Summary:        The Xen Kernel
 Version:        %{version}
+Epoch:          1000
 Release:        %{rel}
 License:        GPL v2 only
 Group:          System/Kernel
