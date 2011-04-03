@@ -185,6 +185,7 @@ pushd %build_src_dir
 cp --parents `find  -type f -name "Makefile*" -o -name "Kconfig*"` %buildroot/lib/modules/%kernelrelease/build
 cp -a scripts %buildroot/lib/modules/%kernelrelease/build
 cp -a --parents arch/x86/include/asm %buildroot/lib/modules/%kernelrelease/build/
+cp -a --parents arch/x86/include/mach-xen %buildroot/lib/modules/%kernelrelease/build/
 cp -a include %buildroot/lib/modules/%kernelrelease/build/include
 popd
 
