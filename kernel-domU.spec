@@ -217,6 +217,8 @@ find %buildroot/lib/modules/%kernelrelease -name "*.ko" -type f >modnames
 # Move the devel headers out of the root file system
 mkdir -p %buildroot/usr/src/kernels
 mv %buildroot/lib/modules/%kernelrelease/build/* %buildroot/%src_install_dir
+mv %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/%src_install_dir
+rmdir %buildroot/lib/modules/%kernelrelease/build
 ln -sf $src_install_dir %buildroot/lib/modules/%kernelrelease/build
 
 
