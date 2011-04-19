@@ -28,15 +28,15 @@ was the closest I could get to atomic (for bisect) while staying sane.
 
 Signed-off-by: Alexander Graf <agraf@suse.de>
 ---
- arch/x86/Kconfig                            |   47 +++++++++++++++++++++++++---
+ arch/x86/Kconfig                            |   41 +++++++++++++++++++++++---
  arch/x86/include/asm/apic.h                 |    2 -
  arch/x86/include/asm/desc.h                 |    4 +-
  arch/x86/include/asm/fixmap.h               |    2 -
  arch/x86/include/asm/io.h                   |    2 -
- arch/x86/include/asm/irqflags.h             |   21 +++++++++---
+ arch/x86/include/asm/irqflags.h             |   21 ++++++++++---
  arch/x86/include/asm/mmu_context.h          |    4 +-
  arch/x86/include/asm/msr.h                  |    4 +-
- arch/x86/include/asm/paravirt.h             |   44 +++++++++++++++++++++++++-
+ arch/x86/include/asm/paravirt.h             |   44 ++++++++++++++++++++++++++--
  arch/x86/include/asm/paravirt_types.h       |   12 +++++++
  arch/x86/include/asm/pgalloc.h              |    2 -
  arch/x86/include/asm/pgtable-3level_types.h |    2 -
@@ -44,7 +44,7 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  arch/x86/include/asm/processor.h            |    2 -
  arch/x86/include/asm/required-features.h    |    2 -
  arch/x86/include/asm/smp.h                  |    2 -
- arch/x86/include/asm/system.h               |   13 +++++--
+ arch/x86/include/asm/system.h               |   13 +++++---
  arch/x86/include/asm/tlbflush.h             |    4 +-
  arch/x86/kernel/head_64.S                   |    2 -
  arch/x86/kernel/paravirt.c                  |    2 +
@@ -52,29 +52,20 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  arch/x86/kernel/vsmp_64.c                   |    2 -
  arch/x86/kernel/x8664_ksyms_64.c            |    2 -
  arch/x86/xen/Kconfig                        |    2 -
- 24 files changed, 146 insertions(+), 37 deletions(-)
+ 24 files changed, 140 insertions(+), 37 deletions(-)
 
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -362,7 +362,7 @@ endif
- 
+@@ -367,7 +367,7 @@ endif
  config X86_VSMP
  	bool "ScaleMP vSMP"
+	select PARAVIRT_GUEST
 -	select PARAVIRT
 +	select PARAVIRT_ALL
  	depends on X86_64 && PCI
  	depends on X86_EXTENDED_PLATFORM
  	---help---
-@@ -510,7 +510,7 @@ source "arch/x86/xen/Kconfig"
- 
- config VMI
- 	bool "VMI Guest support (DEPRECATED)"
--	select PARAVIRT
-+	select PARAVIRT_ALL
- 	depends on X86_32
- 	---help---
- 	  VMI provides a paravirtualized interface to the VMware ESX server
-@@ -529,7 +529,6 @@ config VMI
+@@ -533,7 +533,6 @@ config VMI
  
  config KVM_CLOCK
  	bool "KVM paravirtualized clock"
@@ -82,7 +73,7 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  	select PARAVIRT_CLOCK
  	---help---
  	  Turning on this option will allow you to run a paravirtualized clock
-@@ -540,7 +539,7 @@ config KVM_CLOCK
+@@ -544,7 +543,7 @@ config KVM_CLOCK
  
  config KVM_GUEST
  	bool "KVM Guest support"
@@ -91,34 +82,29 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  	---help---
  	  This option enables various optimizations for running under the KVM
  	  hypervisor.
-@@ -568,8 +567,48 @@ config PARAVIRT_SPINLOCKS
+@@ -572,8 +571,42 @@ config PARAVIRT_SPINLOCKS
  
  	  If you are unsure how to answer this question, answer N.
  
 +config PARAVIRT_CPU
 +	bool
 +	select PARAVIRT
-+	default n
 +
 +config PARAVIRT_TIME
 +	bool
 +	select PARAVIRT
-+	default n
 +
 +config PARAVIRT_IRQ
 +	bool
 +	select PARAVIRT
-+	default n
 +
 +config PARAVIRT_APIC
 +	bool
 +	select PARAVIRT
-+	default n
 +
 +config PARAVIRT_MMU
 +	bool
 +	select PARAVIRT
-+	default n
 +
 +#
 +# This is a placeholder to activate the old "include all pv-ops functionality"
@@ -132,14 +118,13 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
 +	select PARAVIRT_IRQ
 +	select PARAVIRT_APIC
 +	select PARAVIRT_MMU
-+	default n
 +
  config PARAVIRT_CLOCK
  	bool
 +	select PARAVIRT_TIME
- 	default n
  
  endif
+ 
 --- a/arch/x86/include/asm/apic.h
 +++ b/arch/x86/include/asm/apic.h
 @@ -81,7 +81,7 @@ static inline bool apic_from_smp_config(
@@ -205,11 +190,11 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  #ifndef __ASSEMBLY__
  
 +#ifndef CONFIG_PARAVIRT_IRQ
- static inline unsigned long __raw_local_save_flags(void)
+ static inline unsigned long arch_local_save_flags(void)
  {
  	return native_save_fl();
 @@ -110,12 +112,17 @@ static inline unsigned long __raw_local_
- 
+	arch_local_irq_disable();
  	return flags;
  }
 -#else
@@ -259,7 +244,7 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
 -#endif /* CONFIG_PARAVIRT */
  
  #ifndef __ASSEMBLY__
- #define raw_local_save_flags(flags)				\
+ static inline int arch_irqs_disabled_flags(unsigned long flags)
 --- a/arch/x86/include/asm/mmu_context.h
 +++ b/arch/x86/include/asm/mmu_context.h
 @@ -6,14 +6,14 @@
@@ -345,12 +330,12 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  #endif
  
 +#ifdef CONFIG_PARAVIRT_IRQ
- static inline void raw_safe_halt(void)
+ static inline void arch_safe_halt(void)
  {
  	PVOP_VCALL0(pv_irq_ops.safe_halt);
 @@ -114,14 +121,18 @@ static inline void halt(void)
  {
- 	PVOP_VCALL0(pv_irq_ops.safe_halt);
+ 	PVOP_VCALL0(pv_irq_ops.halt);
  }
 +#endif  /* CONFIG_PARAVIRT_IRQ */
  
@@ -436,11 +421,11 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  	((struct paravirt_callee_save) { func })
  
 +#ifdef CONFIG_PARAVIRT_IRQ
- static inline unsigned long __raw_local_save_flags(void)
+ static inline notrace unsigned long arch_local_save_flags(void)
  {
  	return PVOP_CALLEE0(unsigned long, pv_irq_ops.save_fl);
 @@ -857,6 +880,7 @@ static inline unsigned long __raw_local_
- 	raw_local_irq_disable();
+ 	arch_local_irq_disable();
  	return f;
  }
 +#endif  /* CONFIG_PARAVIRT_IRQ */
@@ -576,9 +561,9 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
 --- a/arch/x86/include/asm/pgtable.h
 +++ b/arch/x86/include/asm/pgtable.h
 @@ -28,7 +28,7 @@ extern unsigned long empty_zero_page[PAG
- extern spinlock_t pgd_lock;
- extern struct list_head pgd_list;
  
+ extern struct mm_struct *pgd_page_get_mm(struct page *page);
+
 -#ifdef CONFIG_PARAVIRT
 +#ifdef CONFIG_PARAVIRT_MMU
  #include <asm/paravirt.h>
@@ -586,7 +571,7 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
  #define set_pte(ptep, pte)		native_set_pte(ptep, pte)
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -573,7 +573,7 @@ static inline void native_swapgs(void)
+@@ -569,7 +569,7 @@ static inline void native_swapgs(void)
  #endif
  }
  
@@ -722,10 +707,10 @@ Signed-off-by: Alexander Graf <agraf@suse.de>
   * ~AC is a shadow of IF.  If IF is 'on' AC should be 'off'
 --- a/arch/x86/kernel/x8664_ksyms_64.c
 +++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -55,6 +55,6 @@ EXPORT_SYMBOL(__memcpy);
+@@ -54,6 +54,6 @@ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__memcpy);
  
  EXPORT_SYMBOL(empty_zero_page);
- EXPORT_SYMBOL(init_level4_pgt);
 -#ifndef CONFIG_PARAVIRT
 +#ifndef CONFIG_PARAVIRT_CPU
  EXPORT_SYMBOL(native_load_gs_index);

@@ -10,9 +10,9 @@ Patch-mainline: probably never
 
 --- a/drivers/char/Kconfig
 +++ b/drivers/char/Kconfig
-@@ -1113,5 +1113,10 @@ config DEVPORT
- 
- source "drivers/s390/char/Kconfig"
+@@ -1129,5 +1129,10 @@ config RAMOOPS
+ 	  This enables panic and oops messages to be logged to a circular
+ 	  buffer in RAM where it can be read back at some later point.
  
 +config CRASHER
 +	tristate "Crasher Module"
@@ -23,14 +23,14 @@ Patch-mainline: probably never
  
 --- a/drivers/char/Makefile
 +++ b/drivers/char/Makefile
-@@ -105,6 +105,7 @@ obj-$(CONFIG_IPMI_HANDLER)	+= ipmi/
+@@ -108,6 +108,7 @@ obj-$(CONFIG_IPMI_HANDLER)	+= ipmi/
  
  obj-$(CONFIG_HANGCHECK_TIMER)	+= hangcheck-timer.o
  obj-$(CONFIG_TCG_TPM)		+= tpm/
 +obj-$(CONFIG_CRASHER)		+= crasher.o
  
  obj-$(CONFIG_PS3_FLASH)		+= ps3flash.o
- 
+ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
 --- /dev/null
 +++ b/drivers/char/crasher.c
 @@ -0,0 +1,228 @@

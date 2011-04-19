@@ -8,9 +8,9 @@ by PCI hotplug.
 Signed-off-by: Isaku Yamahata <yamahata@valinux.co.jp>
 Acked-by: jbeulich@novell.com
 
---- head-2010-04-29.orig/Documentation/kernel-parameters.txt	2010-04-29 09:30:30.000000000 +0200
-+++ head-2010-04-29/Documentation/kernel-parameters.txt	2010-04-29 09:30:50.000000000 +0200
-@@ -2032,6 +2032,13 @@ and is between 256 and 4096 characters. 
+--- head-2011-03-11.orig/Documentation/kernel-parameters.txt	2011-03-11 10:49:08.000000000 +0100
++++ head-2011-03-11/Documentation/kernel-parameters.txt	2011-03-11 10:49:17.000000000 +0100
+@@ -2010,6 +2010,13 @@ bytes respectively. Such letter suffixes
  				off: Turn ECRC off
  				on: Turn ECRC on.
  
@@ -24,8 +24,8 @@ Acked-by: jbeulich@novell.com
  	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
  			Management.
  		off	Disable ASPM.
---- head-2010-04-29.orig/drivers/pci/Kconfig	2010-03-24 13:55:21.000000000 +0100
-+++ head-2010-04-29/drivers/pci/Kconfig	2010-03-24 14:00:05.000000000 +0100
+--- head-2011-03-11.orig/drivers/pci/Kconfig	2011-01-31 14:31:27.000000000 +0100
++++ head-2011-03-11/drivers/pci/Kconfig	2011-01-31 14:32:40.000000000 +0100
 @@ -45,6 +45,13 @@ config PCI_IOMULTI
  	help
  	  Say Y here if you need io multiplexing.
@@ -40,19 +40,19 @@ Acked-by: jbeulich@novell.com
  config PCI_STUB
  	tristate "PCI Stub driver"
  	depends on PCI
---- head-2010-04-29.orig/drivers/pci/Makefile	2010-03-24 13:55:21.000000000 +0100
-+++ head-2010-04-29/drivers/pci/Makefile	2010-03-24 14:00:05.000000000 +0100
-@@ -9,6 +9,7 @@ obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_SYSFS) += slot.o
- obj-$(CONFIG_PCI_GUESTDEV) += guestdev.o
- obj-$(CONFIG_PCI_IOMULTI) += iomulti.o
+--- head-2011-03-11.orig/drivers/pci/Makefile	2011-01-31 14:31:28.000000000 +0100
++++ head-2011-03-11/drivers/pci/Makefile	2011-01-31 14:32:40.000000000 +0100
+@@ -11,6 +11,7 @@ obj-$(CONFIG_PCI_GUESTDEV) += guestdev.o
+ obj-$(CONFIG_PCI_IOMULTI) += pci-iomul.o
+ iomul-$(CONFIG_PCI_IOMULTI) := iomulti.o
+ obj-y += $(iomul-y) $(iomul-m)
 +obj-$(CONFIG_PCI_RESERVE) += reserve.o
  
  obj-$(CONFIG_PCI_QUIRKS) += quirks.o
  
---- head-2010-04-29.orig/drivers/pci/pci.h	2010-03-24 13:55:21.000000000 +0100
-+++ head-2010-04-29/drivers/pci/pci.h	2010-03-24 14:00:05.000000000 +0100
-@@ -344,4 +344,19 @@ extern int pci_is_iomuldev(struct pci_de
+--- head-2011-03-11.orig/drivers/pci/pci.h	2011-01-31 14:31:28.000000000 +0100
++++ head-2011-03-11/drivers/pci/pci.h	2011-01-31 14:32:40.000000000 +0100
+@@ -357,4 +357,19 @@ extern int pci_is_iomuldev(struct pci_de
  #define pci_is_iomuldev(dev)	0
  #endif
  
@@ -73,8 +73,8 @@ Acked-by: jbeulich@novell.com
 +
  #endif /* DRIVERS_PCI_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/pci/reserve.c	2010-03-24 14:00:05.000000000 +0100
-@@ -0,0 +1,138 @@
++++ head-2011-03-11/drivers/pci/reserve.c	2011-01-31 14:32:40.000000000 +0100
+@@ -0,0 +1,137 @@
 +/*
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -92,7 +92,6 @@ Acked-by: jbeulich@novell.com
 + *
 + * Copyright (c) 2009 Isaku Yamahata
 + *                    VA Linux Systems Japan K.K.
-+ *
 + */
 +
 +#include <linux/kernel.h>
@@ -213,8 +212,8 @@ Acked-by: jbeulich@novell.com
 +	return 1;
 +}
 +__setup("pci_reserve=", pci_reserve_setup);
---- head-2010-04-29.orig/drivers/pci/setup-bus.c	2010-04-29 09:29:51.000000000 +0200
-+++ head-2010-04-29/drivers/pci/setup-bus.c	2010-03-24 14:09:20.000000000 +0100
+--- head-2011-03-11.orig/drivers/pci/setup-bus.c	2011-03-11 10:41:54.000000000 +0100
++++ head-2011-03-11/drivers/pci/setup-bus.c	2011-01-31 14:32:40.000000000 +0100
 @@ -448,6 +448,9 @@ static void pbus_size_io(struct pci_bus 
  	size = ALIGN(size + size1, 4096);
  	if (size < old_size)

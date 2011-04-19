@@ -115,12 +115,12 @@ Average of 40:	9.796		9.857		0.623
 Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
 Acked-by: Nick Piggin <npiggin@suse.de>
 
- mm/slab.c |   91 +++++++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 78 insertions(+), 13 deletions(-)
+ mm/slab.c |   88 +++++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 76 insertions(+), 12 deletions(-)
 
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -305,7 +305,7 @@ struct kmem_list3 {
+@@ -281,7 +281,7 @@ struct kmem_list3 {
  	struct array_cache **alien;	/* on other nodes */
  	unsigned long next_reap;	/* updated without locking */
  	int free_touched;		/* updated without locking */
@@ -129,7 +129,7 @@ Acked-by: Nick Piggin <npiggin@suse.de>
  
  /*
   * Need this for bootstrapping a per node allocator.
-@@ -968,6 +968,11 @@ static int transfer_objects(struct array
+@@ -944,6 +944,11 @@ static int transfer_objects(struct array
  #define drain_alien_cache(cachep, alien) do { } while (0)
  #define reap_alien(cachep, l3) do { } while (0)
  
@@ -141,7 +141,7 @@ Acked-by: Nick Piggin <npiggin@suse.de>
  static inline struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
  {
  	return (struct array_cache **)BAD_ALIEN_MAGIC;
-@@ -999,6 +1004,64 @@ static inline void *____cache_alloc_node
+@@ -975,6 +980,64 @@ static inline void *____cache_alloc_node
  static void *____cache_alloc_node(struct kmem_cache *, gfp_t, int);
  static void *alternate_node_alloc(struct kmem_cache *, gfp_t);
  
@@ -185,7 +185,7 @@ Acked-by: Nick Piggin <npiggin@suse.de>
 +#define memoryless_node(L3L) ((L3L) & 1)
 +static inline int numa_slab_nid(struct kmem_cache *cachep, gfp_t flags)
 +{
-+	int node = numa_node_id();
++	int node = numa_mem_id();
 +
 +	if (likely(cachep)){
 +		unsigned long l3l = (unsigned long)cachep->nodelists[node];
@@ -206,119 +206,102 @@ Acked-by: Nick Piggin <npiggin@suse.de>
  static struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
  {
  	struct array_cache **ac_ptr;
-@@ -1098,7 +1161,7 @@ static inline int cache_free_alien(struc
+@@ -1074,7 +1137,7 @@ static inline int cache_free_alien(struc
  	struct array_cache *alien = NULL;
  	int node;
  
--	node = numa_node_id();
+-	node = numa_mem_id();
 +	node = numa_slab_nid(cachep, GFP_KERNEL);
  
  	/*
  	 * Make sure we are not freeing a object from another node to the array
-@@ -1443,7 +1506,7 @@ void __init kmem_cache_init(void)
+@@ -1503,7 +1566,7 @@ void __init kmem_cache_init(void)
  	 * 6) Resize the head arrays of the kmalloc caches to their final sizes.
  	 */
  
--	node = numa_node_id();
+-	node = numa_mem_id();
 +	node = numa_slab_nid(NULL, GFP_KERNEL);
  
  	/* 1) create the cache_cache */
  	INIT_LIST_HEAD(&cache_chain);
-@@ -2079,7 +2142,7 @@ static int __init_refok setup_cpu_cache(
+@@ -2147,7 +2210,7 @@ static int __init_refok setup_cpu_cache(
  			}
  		}
  	}
--	cachep->nodelists[numa_node_id()]->next_reap =
+-	cachep->nodelists[numa_mem_id()]->next_reap =
 +	cachep->nodelists[numa_slab_nid(cachep, GFP_KERNEL)]->next_reap =
  			jiffies + REAPTIMEOUT_LIST3 +
  			((unsigned long)cachep) % REAPTIMEOUT_LIST3;
  
-@@ -2411,7 +2474,7 @@ static void check_spinlock_acquired(stru
+@@ -2479,7 +2542,7 @@ static void check_spinlock_acquired(stru
  {
  #ifdef CONFIG_SMP
  	check_irq_off();
--	assert_spin_locked(&cachep->nodelists[numa_node_id()]->list_lock);
+-	assert_spin_locked(&cachep->nodelists[numa_mem_id()]->list_lock);
 +	assert_spin_locked(&cachep->nodelists[numa_slab_nid(cachep, GFP_KERNEL)]->list_lock);
  #endif
  }
  
-@@ -2438,7 +2501,7 @@ static void do_drain(void *arg)
+@@ -2506,7 +2569,7 @@ static void do_drain(void *arg)
  {
  	struct kmem_cache *cachep = arg;
  	struct array_cache *ac;
--	int node = numa_node_id();
+-	int node = numa_mem_id();
 +	int node = numa_slab_nid(cachep, GFP_KERNEL);
  
  	check_irq_off();
  	ac = cpu_cache_get(cachep);
-@@ -2975,7 +3038,7 @@ static void *cache_alloc_refill(struct k
+@@ -3043,7 +3106,7 @@ static void *cache_alloc_refill(struct k
  
  retry:
  	check_irq_off();
--	node = numa_node_id();
+-	node = numa_mem_id();
 +	node = numa_slab_nid(cachep, flags);
  	if (unlikely(must_refill))
  		goto force_grow;
  	ac = cpu_cache_get(cachep);
-@@ -3185,7 +3248,7 @@ static void *alternate_node_alloc(struct
+@@ -3253,7 +3316,7 @@ static void *alternate_node_alloc(struct
  
  	if (in_interrupt() || (flags & __GFP_THISNODE))
  		return NULL;
--	nid_alloc = nid_here = numa_node_id();
+-	nid_alloc = nid_here = numa_mem_id();
 +	nid_alloc = nid_here = numa_slab_nid(cachep, flags);
+ 	get_mems_allowed();
  	if (cpuset_do_slab_mem_spread() && (cachep->flags & SLAB_MEM_SPREAD))
- 		nid_alloc = cpuset_mem_spread_node();
- 	else if (current->mempolicy)
-@@ -3360,6 +3423,7 @@ __cache_alloc_node(struct kmem_cache *ca
+ 		nid_alloc = cpuset_slab_spread_node();
+@@ -3432,7 +3495,7 @@ __cache_alloc_node(struct kmem_cache *ca
  {
  	unsigned long save_flags;
  	void *ptr;
+-	int slab_node = numa_mem_id();
 +	int slab_node = numa_slab_nid(cachep, flags);
  
  	flags &= gfp_allowed_mask;
  
-@@ -3372,7 +3436,7 @@ __cache_alloc_node(struct kmem_cache *ca
- 	local_irq_save(save_flags);
- 
- 	if (nodeid == -1)
--		nodeid = numa_node_id();
-+		nodeid = slab_node;
- 
- 	if (unlikely(!cachep->nodelists[nodeid])) {
- 		/* Node not bootstrapped yet */
-@@ -3380,7 +3444,7 @@ __cache_alloc_node(struct kmem_cache *ca
- 		goto out;
- 	}
- 
--	if (nodeid == numa_node_id()) {
-+	if (nodeid == slab_node) {
- 		/*
- 		 * Use the locally cached objects if possible.
- 		 * However ____cache_alloc does not allow fallback
-@@ -3425,7 +3489,8 @@ __do_cache_alloc(struct kmem_cache *cach
+@@ -3498,7 +3561,8 @@ __do_cache_alloc(struct kmem_cache *cach
  	 * ____cache_alloc_node() knows how to locate memory on other nodes
  	 */
-  	if (!objp)
-- 		objp = ____cache_alloc_node(cache, flags, numa_node_id());
-+ 		objp = ____cache_alloc_node(cache, flags,
+ 	if (!objp)
+-		objp = ____cache_alloc_node(cache, flags, numa_mem_id());
++		objp = ____cache_alloc_node(cache, flags,
 +					 numa_slab_nid(cache, flags));
  
    out:
  	return objp;
-@@ -3522,7 +3587,7 @@ static void cache_flusharray(struct kmem
+@@ -3595,7 +3659,7 @@ static void cache_flusharray(struct kmem
  {
  	int batchcount;
  	struct kmem_list3 *l3;
--	int node = numa_node_id();
+-	int node = numa_mem_id();
 +	int node = numa_slab_nid(cachep, GFP_KERNEL);
  
  	batchcount = ac->batchcount;
  #if DEBUG
-@@ -4172,7 +4237,7 @@ static void cache_reap(struct work_struc
+@@ -4234,7 +4298,7 @@ static void cache_reap(struct work_struc
  {
  	struct kmem_cache *searchp;
  	struct kmem_list3 *l3;
--	int node = numa_node_id();
+-	int node = numa_mem_id();
 +	int node = numa_slab_nid(NULL, GFP_KERNEL);
  	struct delayed_work *work = to_delayed_work(w);
  

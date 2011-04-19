@@ -19,12 +19,12 @@ Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 ---
  fs/nfs/inode.c |    6 ++++
- fs/nfs/write.c |   71 +++++++++++++++++++++++++++++++++++++++++++++++----------
- 2 files changed, 65 insertions(+), 12 deletions(-)
+ fs/nfs/write.c |   75 ++++++++++++++++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 67 insertions(+), 14 deletions(-)
 
 --- a/fs/nfs/inode.c
 +++ b/fs/nfs/inode.c
-@@ -780,6 +780,12 @@ int nfs_revalidate_mapping(struct inode
+@@ -868,6 +868,12 @@ int nfs_revalidate_mapping(struct inode
  	struct nfs_inode *nfsi = NFS_I(inode);
  	int ret = 0;
  
@@ -35,11 +35,11 @@ Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 +		goto out;
 +
  	if ((nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
- 			|| nfs_attribute_timeout(inode) || NFS_STALE(inode)) {
- 		ret = __nfs_revalidate_inode(NFS_SERVER(inode), inode);
+ 			|| nfs_attribute_cache_expired(inode)
+ 			|| NFS_STALE(inode)) {
 --- a/fs/nfs/write.c
 +++ b/fs/nfs/write.c
-@@ -109,25 +109,64 @@ static void nfs_context_set_write_error(
+@@ -107,25 +107,64 @@ static void nfs_context_set_write_error(
  	set_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
  }
  
@@ -119,10 +119,11 @@ Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
  		if (req == NULL)
  			break;
  		if (nfs_set_page_tag_locked(req))
-@@ -382,8 +421,14 @@ static int nfs_inode_add_request(struct
+@@ -391,9 +430,15 @@ static int nfs_inode_add_request(struct
  		if (nfs_have_delegation(inode, FMODE_WRITE))
  			nfsi->change_attr++;
  	}
+-	set_bit(PG_MAPPED, &req->wb_flags);
 -	SetPagePrivate(req->wb_page);
 -	set_page_private(req->wb_page, (unsigned long)req);
 +	/*
@@ -130,26 +131,29 @@ Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 +	 * with invalidate/truncate.
 +	 */
 +	if (likely(!PageSwapCache(req->wb_page))) {
++	 	set_bit(PG_MAPPED, &req->wb_flags);
 +		SetPagePrivate(req->wb_page);
 +		set_page_private(req->wb_page, (unsigned long)req);
 +	}
  	nfsi->npages++;
  	kref_get(&req->wb_kref);
  	radix_tree_tag_set(&nfsi->nfs_page_tree, req->wb_index,
-@@ -405,8 +450,10 @@ static void nfs_inode_remove_request(str
+@@ -415,9 +460,11 @@ static void nfs_inode_remove_request(str
  	BUG_ON (!NFS_WBACK_BUSY(req));
  
  	spin_lock(&inode->i_lock);
 -	set_page_private(req->wb_page, 0);
 -	ClearPagePrivate(req->wb_page);
+-	clear_bit(PG_MAPPED, &req->wb_flags);
 +	if (likely(!PageSwapCache(req->wb_page))) {
 +		set_page_private(req->wb_page, 0);
 +		ClearPagePrivate(req->wb_page);
++		clear_bit(PG_MAPPED, &req->wb_flags);
 +	}
  	radix_tree_delete(&nfsi->nfs_page_tree, req->wb_index);
  	nfsi->npages--;
  	if (!nfsi->npages) {
-@@ -574,7 +621,7 @@ static struct nfs_page *nfs_try_to_updat
+@@ -585,7 +632,7 @@ static struct nfs_page *nfs_try_to_updat
  	spin_lock(&inode->i_lock);
  
  	for (;;) {

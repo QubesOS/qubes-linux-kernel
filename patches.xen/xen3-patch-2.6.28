@@ -7,9 +7,9 @@ Patch-mainline: 2.6.28
 Acked-by: Jeff Mahoney <jeffm@suse.com>
 Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches.py
 
---- head-2010-04-29.orig/arch/ia64/Kconfig	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/ia64/Kconfig	2010-03-24 15:14:47.000000000 +0100
-@@ -231,7 +231,7 @@ config IA64_HP_SIM
+--- head-2011-03-17.orig/arch/ia64/Kconfig	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/ia64/Kconfig	2011-02-01 14:39:24.000000000 +0100
+@@ -230,7 +230,7 @@ config IA64_HP_SIM
  config IA64_XEN_GUEST
  	bool "Xen guest"
  	select SWIOTLB
@@ -18,8 +18,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	help
  	  Build a kernel that runs on Xen guest domain. At this moment only
  	  16KB page size in supported.
---- head-2010-04-29.orig/arch/ia64/Makefile	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/ia64/Makefile	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/ia64/Makefile	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/ia64/Makefile	2011-02-01 14:39:24.000000000 +0100
 @@ -55,7 +55,7 @@ core-$(CONFIG_IA64_XEN_GUEST)	+= arch/ia
  core-$(CONFIG_IA64_SGI_SN2)	+= arch/ia64/sn/
  core-$(CONFIG_IA64_SGI_UV)	+= arch/ia64/uv/
@@ -27,10 +27,10 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -core-$(CONFIG_XEN)		+= arch/ia64/xen/
 +core-$(CONFIG_PARAVIRT_XEN)	+= arch/ia64/xen/
  
- drivers-$(CONFIG_KDB)		+= arch/$(ARCH)/kdb/
  drivers-$(CONFIG_PCI)		+= arch/ia64/pci/
---- head-2010-04-29.orig/arch/ia64/include/asm/xen/hypervisor.h	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/ia64/include/asm/xen/hypervisor.h	2010-03-24 15:14:47.000000000 +0100
+ drivers-$(CONFIG_IA64_HP_SIM)	+= arch/ia64/hp/sim/
+--- head-2011-03-17.orig/arch/ia64/include/asm/xen/hypervisor.h	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/ia64/include/asm/xen/hypervisor.h	2011-02-01 14:39:24.000000000 +0100
 @@ -40,7 +40,7 @@
  #include <xen/xen.h>
  #include <asm/xen/hypercall.h>
@@ -40,8 +40,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  extern struct shared_info *HYPERVISOR_shared_info;
  extern struct start_info *xen_start_info;
  
---- head-2010-04-29.orig/arch/ia64/include/asm/xen/interface.h	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/ia64/include/asm/xen/interface.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/ia64/include/asm/xen/interface.h	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/ia64/include/asm/xen/interface.h	2011-02-01 14:39:24.000000000 +0100
 @@ -56,29 +56,21 @@
  #ifndef _ASM_IA64_XEN_INTERFACE_H
  #define _ASM_IA64_XEN_INTERFACE_H
@@ -88,8 +88,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  #ifndef __ASSEMBLY__
  
---- head-2010-04-29.orig/arch/ia64/kernel/asm-offsets.c	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/ia64/kernel/asm-offsets.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/ia64/kernel/asm-offsets.c	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/ia64/kernel/asm-offsets.c	2011-02-01 14:39:24.000000000 +0100
 @@ -290,7 +290,7 @@ void foo(void)
  	DEFINE(IA64_ITC_LASTCYCLE_OFFSET,
  		offsetof (struct itc_jitter_data_t, itc_lastcycle));
@@ -99,8 +99,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	BLANK();
  
  	DEFINE(XEN_NATIVE_ASM, XEN_NATIVE);
---- head-2010-04-29.orig/arch/ia64/xen/Kconfig	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/ia64/xen/Kconfig	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/ia64/xen/Kconfig	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/ia64/xen/Kconfig	2011-02-02 15:36:46.000000000 +0100
 @@ -2,7 +2,7 @@
  # This Kconfig describes xen/ia64 options
  #
@@ -110,20 +110,20 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	bool "Xen hypervisor support"
  	default y
  	depends on PARAVIRT && MCKINLEY && IA64_PAGE_SIZE_16KB && EXPERIMENTAL
-@@ -17,9 +17,9 @@ config XEN
+@@ -16,10 +16,6 @@ config XEN
+ 	  Enable Xen hypervisor support.  Resulting kernel runs
  	  both as a guest OS on Xen and natively on hardware.
  
- config XEN_XENCOMM
+-config XEN_XENCOMM
 -	depends on XEN
-+	depends on PARAVIRT_XEN
- 	bool
- 
+-	bool
+-
  config NO_IDLE_HZ
 -	depends on XEN
 +	depends on PARAVIRT_XEN
  	bool
---- head-2010-04-29.orig/arch/ia64/xen/xcom_hcall.c	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/ia64/xen/xcom_hcall.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/ia64/xen/xcom_hcall.c	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/ia64/xen/xcom_hcall.c	2011-02-01 14:39:24.000000000 +0100
 @@ -343,7 +343,7 @@ xencommize_memory_reservation(struct xen
  int
  xencomm_hypercall_memory_op(unsigned int cmd, void *arg)
@@ -133,9 +133,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	struct xen_memory_reservation *xmr = NULL;
  	int rc;
  	struct xencomm_handle *desc;
---- head-2010-04-29.orig/arch/x86/Kconfig	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/Kconfig	2010-03-24 15:14:47.000000000 +0100
-@@ -1093,7 +1093,7 @@ config MICROCODE
+--- head-2011-03-17.orig/arch/x86/Kconfig	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/Kconfig	2011-02-01 14:39:24.000000000 +0100
+@@ -1028,7 +1028,7 @@ config MICROCODE
  
  config MICROCODE_INTEL
  	bool "Intel microcode patch loading support"
@@ -144,7 +144,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	default MICROCODE
  	select FW_LOADER
  	---help---
-@@ -1106,7 +1106,7 @@ config MICROCODE_INTEL
+@@ -1041,7 +1041,7 @@ config MICROCODE_INTEL
  
  config MICROCODE_AMD
  	bool "AMD microcode patch loading support"
@@ -153,7 +153,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	select FW_LOADER
  	---help---
  	  If you select this option, microcode patch loading support for AMD
-@@ -1404,6 +1404,7 @@ config HIGHPTE
+@@ -1342,6 +1342,7 @@ config HIGHPTE
  
  config X86_CHECK_BIOS_CORRUPTION
  	bool "Check for low memory corruption"
@@ -161,26 +161,26 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	---help---
  	  Periodically check for memory corruption in low memory, which
  	  is suspected to be caused by BIOS.  Even when enabled in the
-@@ -1434,6 +1435,7 @@ config X86_BOOTPARAM_MEMORY_CORRUPTION_C
+@@ -1372,6 +1373,7 @@ config X86_BOOTPARAM_MEMORY_CORRUPTION_C
  
- config X86_RESERVE_LOW_64K
- 	bool "Reserve low 64K of RAM on AMI/Phoenix BIOSen"
+ config X86_RESERVE_LOW
+ 	int "Amount of low memory, in kilobytes, to reserve for the BIOS"
 +	depends on !XEN
- 	default y
+ 	default 64
+ 	range 4 640
  	---help---
- 	  Reserve the first 64K of physical RAM on BIOSes that are known
-@@ -1550,8 +1552,8 @@ config MTRR_SANITIZER_SPARE_REG_NR_DEFAU
+@@ -1495,8 +1497,8 @@ config MTRR_SANITIZER_SPARE_REG_NR_DEFAU
+ 
  config X86_PAT
- 	bool
- 	default y
--	prompt "x86 PAT support" if EMBEDDED
+ 	def_bool y
+-	prompt "x86 PAT support" if EXPERT
 -	depends on MTRR
-+	prompt "x86 PAT support" if EMBEDDED || XEN_UNPRIVILEGED_GUEST
++	prompt "x86 PAT support" if EXPERT || XEN_UNPRIVILEGED_GUEST
 +	depends on MTRR || (XEN_UNPRIVILEGED_GUEST && XEN_PCIDEV_FRONTEND)
  	---help---
  	  Use PAT attributes to setup page level cache control.
  
-@@ -2129,7 +2131,7 @@ config DMAR_FLOPPY_WA
+@@ -2091,7 +2093,7 @@ config DMAR_FLOPPY_WA
  
  config INTR_REMAP
  	bool "Support for Interrupt Remapping (EXPERIMENTAL)"
@@ -189,9 +189,27 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	---help---
  	  Supports Interrupt remapping for IO-APIC and MSI devices.
  	  To use x2apic mode in the CPU's which support x2APIC enhancements or
---- head-2010-04-29.orig/arch/x86/Kconfig.cpu	2010-03-24 14:36:44.000000000 +0100
-+++ head-2010-04-29/arch/x86/Kconfig.cpu	2010-03-24 15:14:47.000000000 +0100
-@@ -493,7 +493,7 @@ config CPU_SUP_TRANSMETA_32
+--- head-2011-03-17.orig/arch/x86/Kconfig.cpu	2011-03-03 17:48:58.000000000 +0100
++++ head-2011-03-17/arch/x86/Kconfig.cpu	2011-03-03 16:02:15.000000000 +0100
+@@ -446,7 +446,7 @@ config CPU_SUP_INTEL
+ config CPU_SUP_CYRIX_32
+ 	default y
+ 	bool "Support Cyrix processors" if PROCESSOR_SELECT
+-	depends on !64BIT
++	depends on !64BIT && !XEN
+ 	---help---
+ 	  This enables detection, tunings and quirks for Cyrix processors
+ 
+@@ -486,7 +486,7 @@ config CPU_SUP_CENTAUR
+ config CPU_SUP_TRANSMETA_32
+ 	default y
+ 	bool "Support Transmeta processors" if PROCESSOR_SELECT
+-	depends on !64BIT
++	depends on !64BIT && !XEN
+ 	---help---
+ 	  This enables detection, tunings and quirks for Transmeta processors
+ 
+@@ -500,7 +500,7 @@ config CPU_SUP_TRANSMETA_32
  config CPU_SUP_UMC_32
  	default y
  	bool "Support UMC processors" if PROCESSOR_SELECT
@@ -200,25 +218,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	---help---
  	  This enables detection, tunings and quirks for UMC processors
  
-@@ -506,13 +506,13 @@ config CPU_SUP_UMC_32
- 
- config X86_DS
- 	def_bool X86_PTRACE_BTS
--	depends on X86_DEBUGCTLMSR
-+	depends on X86_DEBUGCTLMSR && !XEN
- 	select HAVE_HW_BRANCH_TRACER
- 
- config X86_PTRACE_BTS
- 	bool "Branch Trace Store"
- 	default y
--	depends on X86_DEBUGCTLMSR
-+	depends on X86_DEBUGCTLMSR && !XEN
- 	depends on BROKEN
- 	---help---
- 	  This adds a ptrace interface to the hardware's branch trace store.
---- head-2010-04-29.orig/arch/x86/Makefile	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/Makefile	2010-03-24 15:14:47.000000000 +0100
-@@ -112,7 +112,7 @@ endif
+--- head-2011-03-17.orig/arch/x86/Makefile	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/Makefile	2011-02-01 14:39:24.000000000 +0100
+@@ -117,7 +117,7 @@ endif
  KBUILD_CFLAGS += $(call cc-option,-mno-sse -mno-mmx -mno-sse2 -mno-3dnow,)
  
  # Xen subarch support
@@ -227,7 +229,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  mcore-$(CONFIG_XEN)		:= arch/x86/mach-xen/
  
  KBUILD_CFLAGS += $(mflags-y)
-@@ -157,7 +157,7 @@ PHONY += bzImage vmlinuz $(BOOT_TARGETS)
+@@ -159,7 +159,7 @@ PHONY += bzImage vmlinuz $(BOOT_TARGETS)
  
  ifdef CONFIG_XEN
  KBUILD_CPPFLAGS := -D__XEN_INTERFACE_VERSION__=$(CONFIG_XEN_INTERFACE_VERSION) \
@@ -236,8 +238,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  ifdef CONFIG_X86_64
  LDFLAGS_vmlinux := -e startup_64
---- head-2010-04-29.orig/arch/x86/ia32/ia32entry-xen.S	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/ia32/ia32entry-xen.S	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/ia32/ia32entry-xen.S	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/ia32/ia32entry-xen.S	2011-02-01 14:39:24.000000000 +0100
 @@ -39,11 +39,11 @@
  	.endm 
  
@@ -346,9 +348,21 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	.quad sys_getgroups16	/* 80 */
  	.quad sys_setgroups16
  	.quad sys32_old_select
---- head-2010-04-29.orig/arch/x86/include/asm/cpufeature.h	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/x86/include/asm/cpufeature.h	2010-03-24 15:14:47.000000000 +0100
-@@ -251,7 +251,11 @@ extern const char * const x86_power_flag
+--- head-2011-03-17.orig/arch/x86/include/asm/agp.h	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/x86/include/asm/agp.h	2011-02-01 14:39:24.000000000 +0100
+@@ -15,6 +15,9 @@
+ #define map_page_into_agp(page) set_pages_uc(page, 1)
+ #define unmap_page_from_agp(page) set_pages_wb(page, 1)
+ 
++#define map_pages_into_agp set_pages_array_uc
++#define unmap_pages_from_agp set_pages_array_wb
++
+ /*
+  * Could use CLFLUSH here if the cpu supports it. But then it would
+  * need to be called for each cacheline of the whole page so it may
+--- head-2011-03-17.orig/arch/x86/include/asm/cpufeature.h	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/x86/include/asm/cpufeature.h	2011-02-01 14:39:24.000000000 +0100
+@@ -276,7 +276,11 @@ extern const char * const x86_power_flag
  #define cpu_has_xmm4_1		boot_cpu_has(X86_FEATURE_XMM4_1)
  #define cpu_has_xmm4_2		boot_cpu_has(X86_FEATURE_XMM4_2)
  #define cpu_has_x2apic		boot_cpu_has(X86_FEATURE_X2APIC)
@@ -360,9 +374,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
  #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
  
---- head-2010-04-29.orig/arch/x86/include/asm/hw_irq.h	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/x86/include/asm/hw_irq.h	2010-03-24 15:14:47.000000000 +0100
-@@ -119,6 +119,7 @@ extern void smp_error_interrupt(struct p
+--- head-2011-03-17.orig/arch/x86/include/asm/hw_irq.h	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/x86/include/asm/hw_irq.h	2011-02-01 14:39:24.000000000 +0100
+@@ -128,6 +128,7 @@ extern void smp_error_interrupt(struct p
  extern asmlinkage void smp_irq_move_cleanup_interrupt(void);
  #endif
  #ifdef CONFIG_SMP
@@ -370,7 +384,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  extern void smp_reschedule_interrupt(struct pt_regs *);
  extern void smp_call_function_interrupt(struct pt_regs *);
  extern void smp_call_function_single_interrupt(struct pt_regs *);
-@@ -127,6 +128,12 @@ extern void smp_invalidate_interrupt(str
+@@ -136,6 +137,12 @@ extern void smp_invalidate_interrupt(str
  #else
  extern asmlinkage void smp_invalidate_interrupt(struct pt_regs *);
  #endif
@@ -383,12 +397,12 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #endif
  
  extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
---- head-2010-04-29.orig/arch/x86/include/asm/segment.h	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/x86/include/asm/segment.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/asm/segment.h	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/x86/include/asm/segment.h	2011-02-01 14:39:24.000000000 +0100
 @@ -186,7 +186,9 @@
- #define __KERNEL_DS	(GDT_ENTRY_KERNEL_DS * 8)
- #define __USER_DS     (GDT_ENTRY_DEFAULT_USER_DS* 8 + 3)
- #define __USER_CS     (GDT_ENTRY_DEFAULT_USER_CS* 8 + 3)
+ #define __KERNEL_DS	(GDT_ENTRY_KERNEL_DS*8)
+ #define __USER_DS	(GDT_ENTRY_DEFAULT_USER_DS*8+3)
+ #define __USER_CS	(GDT_ENTRY_DEFAULT_USER_CS*8+3)
 -#ifndef CONFIG_PARAVIRT
 +#if defined(CONFIG_X86_XEN)
 +#define get_kernel_rpl()  (xen_feature(XENFEAT_supervisor_mode_kernel)?0:1)
@@ -396,16 +410,40 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #define get_kernel_rpl()  0
  #endif
  
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/agp.h	2010-03-24 15:10:37.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/agp.h	2010-03-24 15:14:47.000000000 +0100
-@@ -40,4 +40,4 @@
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/agp.h	2011-01-31 18:01:51.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/agp.h	2011-02-01 14:39:24.000000000 +0100
+@@ -21,6 +21,23 @@
+ 	/* only a fallback: xen_destroy_contiguous_region uses PAGE_KERNEL */ \
+ 	set_pages_wb(page, 1))
+ 
++#define map_pages_into_agp(pages, nr) ({ \
++	__typeof__(nr) n__; \
++	int rc__ = 0; \
++	for (n__ = 0; n__ < (nr) && !rc__; ++n__) \
++		rc__ = xen_create_contiguous_region( \
++			(unsigned long)page_address((pages)[n__]), 0, 32); \
++	rc__ ?: set_pages_array_uc(pages, nr); \
++})
++#define unmap_pages_from_agp(pages, nr) ({ \
++	__typeof__(nr) n__; \
++	for (n__ = 0; n__ < nr; ++n__) \
++		xen_destroy_contiguous_region( \
++			(unsigned long)page_address((pages)[n__]), 0); \
++	/* only a fallback: xen_destroy_contiguous_region uses PAGE_KERNEL */ \
++	set_pages_array_wb(pages, nr); \
++})
++
+ /*
+  * Could use CLFLUSH here if the cpu supports it. But then it would
+  * need to be called for each cacheline of the whole page so it may
+@@ -40,4 +57,4 @@
  #define free_gatt_pages(table, order)	\
  	dma_free_coherent(NULL,PAGE_SIZE<<(order),(table),virt_to_bus(table))
  
 -#endif
 +#endif /* _ASM_X86_AGP_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/desc.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/desc.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/desc.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/desc.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _ASM_DESC_H_
 -#define _ASM_DESC_H_
@@ -481,8 +519,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_DESC_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/dma-mapping.h	2010-03-24 15:12:36.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/dma-mapping.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/dma-mapping.h	2011-01-31 18:07:35.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/dma-mapping.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,17 +1,12 @@
 -#ifndef _ASM_DMA_MAPPING_H_
 +#ifndef _ASM_X86_DMA_MAPPING_H_
@@ -507,8 +545,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* _ASM_DMA_MAPPING_H_ */
 +#endif /* _ASM_X86_DMA_MAPPING_H_ */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/fixmap.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/fixmap.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/fixmap.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/fixmap.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _ASM_FIXMAP_H
 -#define _ASM_FIXMAP_H
@@ -534,8 +572,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
 -#endif
 +#endif /* _ASM_X86_FIXMAP_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/fixmap_32.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/fixmap_32.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/fixmap_32.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/fixmap_32.h	2011-02-01 14:39:24.000000000 +0100
 @@ -10,8 +10,8 @@
   * Support of BIGMEM added by Gerhard Wichert, Siemens AG, July 1999
   */
@@ -588,8 +626,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #endif /* !__ASSEMBLY__ */
 -#endif
 +#endif /* _ASM_X86_FIXMAP_32_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/fixmap_64.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/fixmap_64.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/fixmap_64.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/fixmap_64.h	2011-02-01 14:39:24.000000000 +0100
 @@ -8,8 +8,8 @@
   * Copyright (C) 1998 Ingo Molnar
   */
@@ -654,8 +692,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_FIXMAP_64_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/highmem.h	2010-03-24 17:05:00.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/highmem.h	2010-03-24 17:05:09.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/highmem.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/highmem.h	2011-02-01 14:39:24.000000000 +0100
 @@ -15,8 +15,8 @@
   * Copyright (C) 1999 Ingo Molnar <mingo@redhat.com>
   */
@@ -689,8 +727,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* _ASM_HIGHMEM_H */
 +#endif /* _ASM_X86_HIGHMEM_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/io.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/io.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/io.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/io.h	2011-02-01 14:39:24.000000000 +0100
 @@ -5,20 +5,6 @@
  
  #include <linux/compiler.h>
@@ -750,8 +788,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  extern void __iomem *fix_ioremap(unsigned idx, unsigned long phys);
  
  
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/irq_vectors.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/irq_vectors.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/irq_vectors.h	2011-02-15 17:27:18.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/irq_vectors.h	2011-02-15 17:31:50.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _ASM_IRQ_VECTORS_H
 -#define _ASM_IRQ_VECTORS_H
@@ -768,8 +806,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* _ASM_IRQ_VECTORS_H */
 +#endif /* _ASM_X86_IRQ_VECTORS_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/irqflags.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/irqflags.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/irqflags.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/irqflags.h	2011-02-01 14:39:24.000000000 +0100
 @@ -157,23 +157,6 @@ static inline int raw_irqs_disabled_flag
  	raw_irqs_disabled_flags(flags);					\
  })
@@ -794,8 +832,23 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #else
  
  #ifdef CONFIG_X86_64
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/mmu_context.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/mmu_context.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/maddr.h	2011-01-31 18:01:51.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/maddr.h	2011-02-01 14:39:24.000000000 +0100
+@@ -59,10 +59,10 @@ static inline unsigned long mfn_to_pfn(u
+ 
+ 	/* The array access can fail (e.g., device space beyond end of RAM). */
+ 	asm (
+-		"1:	"_ASM_MOV_UL" %1,%0\n"
++		"1:	"_ASM_MOV" %1,%0\n"
+ 		"2:\n"
+ 		".section .fixup,\"ax\"\n"
+-		"3:	"_ASM_MOV_UL" %2,%0\n"
++		"3:	"_ASM_MOV" %2,%0\n"
+ 		"	jmp  2b\n"
+ 		".previous\n"
+ 		_ASM_EXTABLE(1b,3b)
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/mmu_context.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/mmu_context.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef __ASM_X86_MMU_CONTEXT_H
 -#define __ASM_X86_MMU_CONTEXT_H
@@ -810,8 +863,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* __ASM_X86_MMU_CONTEXT_H */
 +#endif /* _ASM_X86_MMU_CONTEXT_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/mmu_context_32.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/mmu_context_32.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/mmu_context_32.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/mmu_context_32.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef __I386_SCHED_H
 -#define __I386_SCHED_H
@@ -826,8 +879,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_MMU_CONTEXT_32_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/mmu_context_64.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/mmu_context_64.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/mmu_context_64.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/mmu_context_64.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef __X86_64_MMU_CONTEXT_H
 -#define __X86_64_MMU_CONTEXT_H
@@ -842,8 +895,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_MMU_CONTEXT_64_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/pci.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/pci.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/pci.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/pci.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef __x86_PCI_H
 -#define __x86_PCI_H
@@ -867,16 +920,16 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_PCI_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/pgalloc.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/pgalloc.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/pgalloc.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/pgalloc.h	2011-02-01 14:39:24.000000000 +0100
 @@ -149,4 +149,4 @@ extern void __pud_free_tlb(struct mmu_ga
  #endif	/* PAGETABLE_LEVELS > 3 */
  #endif	/* PAGETABLE_LEVELS > 2 */
  
 -#endif	/* _ASM_X86_PGALLOC_H */
 +#endif /* _ASM_X86_PGALLOC_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/pgtable.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/pgtable.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/pgtable.h	2011-02-07 15:40:30.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/pgtable.h	2011-02-07 15:41:11.000000000 +0100
 @@ -14,11 +14,11 @@
  #define _PAGE_BIT_PAT		7	/* on 4KB pages */
  #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
@@ -989,14 +1042,14 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #define set_pte(ptep, pte)		xen_set_pte(ptep, pte)
  #define set_pte_at(mm, addr, ptep, pte)	xen_set_pte_at(mm, addr, ptep, pte)
  
-@@ -641,4 +680,4 @@ int touch_pte_range(struct mm_struct *mm
+@@ -638,4 +677,4 @@ int create_lookup_pte_addr(struct mm_str
  
  #endif	/* __ASSEMBLY__ */
  
 -#endif	/* _ASM_X86_PGTABLE_H */
 +#endif /* _ASM_X86_PGTABLE_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/pgtable-3level.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/pgtable-3level.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/pgtable-3level.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/pgtable-3level.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _I386_PGTABLE_3LEVEL_H
 -#define _I386_PGTABLE_3LEVEL_H
@@ -1049,8 +1102,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* _I386_PGTABLE_3LEVEL_H */
 +#endif /* _ASM_X86_PGTABLE_3LEVEL_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/pgtable-3level-defs.h	2010-03-24 15:09:15.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/pgtable-3level-defs.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/pgtable-3level-defs.h	2011-01-31 17:32:29.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/pgtable-3level-defs.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _I386_PGTABLE_3LEVEL_DEFS_H
 -#define _I386_PGTABLE_3LEVEL_DEFS_H
@@ -1065,8 +1118,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* _I386_PGTABLE_3LEVEL_DEFS_H */
 +#endif /* _ASM_X86_PGTABLE_3LEVEL_DEFS_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/pgtable_32.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/pgtable_32.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/pgtable_32.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/pgtable_32.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _I386_PGTABLE_H
 -#define _I386_PGTABLE_H
@@ -1108,8 +1161,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* _I386_PGTABLE_H */
 +#endif /* _ASM_X86_PGTABLE_32_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/pgtable_64.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/pgtable_64.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/pgtable_64.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/pgtable_64.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _X86_64_PGTABLE_H
 -#define _X86_64_PGTABLE_H
@@ -1157,8 +1210,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* _X86_64_PGTABLE_H */
 +#endif /* _ASM_X86_PGTABLE_64_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/processor.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/processor.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/processor.h	2011-03-03 16:44:23.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/processor.h	2011-03-03 16:45:14.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef __ASM_X86_PROCESSOR_H
 -#define __ASM_X86_PROCESSOR_H
@@ -1175,20 +1228,31 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  #include <linux/personality.h>
  #include <linux/cpumask.h>
-@@ -76,11 +77,11 @@ struct cpuinfo_x86 {
+@@ -72,21 +73,21 @@ struct cpuinfo_x86 {
+ 	char			rfu;
+ 	char			fdiv_bug;
+ 	char			f00f_bug;
+-#endif
+ 	char			coma_bug;
+ 	char			pad0;
++#endif
+ #else
+ 	/* Number of 4K pages in DTLB/ITLB combined(in pages): */
  	int			 x86_tlbsize;
  	__u8			x86_virt_bits;
  	__u8			x86_phys_bits;
 +#endif
+ #ifndef CONFIG_XEN
  	/* CPUID returned core id bits: */
  	__u8			x86_coreid_bits;
+ #endif
  	/* Max extended CPUID function supported: */
  	__u32			extended_cpuid_level;
 -#endif
  	/* Maximum supported CPUID level, -1=no CPUID: */
  	int			cpuid_level;
  	__u32			x86_capability[NCAPINTS];
-@@ -140,6 +141,8 @@ DECLARE_PER_CPU(struct cpuinfo_x86, cpu_
+@@ -150,6 +151,8 @@ DECLARE_PER_CPU(struct cpuinfo_x86, cpu_
  #define current_cpu_data	boot_cpu_data
  #endif
  
@@ -1196,8 +1260,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +
  static inline int hlt_works(int cpu)
  {
- #ifdef CONFIG_X86_32
-@@ -153,6 +156,8 @@ static inline int hlt_works(int cpu)
+ #if defined(CONFIG_X86_32) && !defined(CONFIG_XEN)
+@@ -163,6 +166,8 @@ static inline int hlt_works(int cpu)
  
  extern void cpu_detect(struct cpuinfo_x86 *c);
  
@@ -1206,7 +1270,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  extern void early_cpu_init(void);
  extern void identify_boot_cpu(void);
  extern void identify_secondary_cpu(struct cpuinfo_x86 *);
-@@ -161,11 +166,8 @@ extern void init_scattered_cpuid_feature
+@@ -171,11 +176,8 @@ extern void init_scattered_cpuid_feature
  extern unsigned int init_intel_cacheinfo(struct cpuinfo_x86 *c);
  extern unsigned short num_cache_leaves;
  
@@ -1219,7 +1283,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  static inline void xen_cpuid(unsigned int *eax, unsigned int *ebx,
  			     unsigned int *ecx, unsigned int *edx)
-@@ -327,7 +329,12 @@ struct i387_fxsave_struct {
+@@ -337,7 +339,12 @@ struct i387_fxsave_struct {
  	/* 16*16 bytes for each XMM-reg = 256 bytes:			*/
  	u32			xmm_space[64];
  
@@ -1233,7 +1297,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  } __attribute__((aligned(16)));
  
-@@ -351,10 +358,23 @@ struct i387_soft_struct {
+@@ -361,10 +368,23 @@ struct i387_soft_struct {
  	u32			entry_eip;
  };
  
@@ -1257,7 +1321,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  };
  
  #if defined(CONFIG_X86_64) && !defined(CONFIG_X86_NO_TSS)
-@@ -412,9 +432,14 @@ struct thread_struct {
+@@ -422,9 +442,14 @@ struct thread_struct {
  	unsigned		io_bitmap_max;
  /* MSR_IA32_DEBUGCTLMSR value to switch in if TIF_DEBUGCTLMSR is set.  */
  	unsigned long	debugctlmsr;
@@ -1275,7 +1339,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  };
  
  static inline unsigned long xen_get_debugreg(int regno)
-@@ -502,41 +527,6 @@ static inline void clear_in_cr4(unsigned
+@@ -512,41 +537,6 @@ static inline void clear_in_cr4(unsigned
  	write_cr4(cr4);
  }
  
@@ -1317,14 +1381,14 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  typedef struct {
  	unsigned long		seg;
  } mm_segment_t;
-@@ -884,4 +874,4 @@ extern void start_thread(struct pt_regs 
+@@ -894,4 +884,4 @@ extern void start_thread(struct pt_regs 
  extern int get_tsc_mode(unsigned long adr);
  extern int set_tsc_mode(unsigned int val);
  
 -#endif
 +#endif /* _ASM_X86_PROCESSOR_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/smp.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/smp.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/smp.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/smp.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _ASM_X86_SMP_H_
 -#define _ASM_X86_SMP_H_
@@ -1333,17 +1397,20 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #ifndef __ASSEMBLY__
  #include <linux/cpumask.h>
  #include <linux/init.h>
-@@ -34,6 +34,9 @@ extern cpumask_t cpu_initialized;
+@@ -34,7 +34,12 @@ extern cpumask_t cpu_initialized;
  DECLARE_PER_CPU(cpumask_t, cpu_sibling_map);
  DECLARE_PER_CPU(cpumask_t, cpu_core_map);
  DECLARE_PER_CPU(u16, cpu_llc_id);
++#endif
 +#ifdef CONFIG_X86_32
 +DECLARE_PER_CPU(int, cpu_number);
 +#endif
  
- DECLARE_PER_CPU(u16, x86_cpu_to_apicid);
- DECLARE_PER_CPU(u16, x86_bios_cpu_apicid);
-@@ -51,12 +54,16 @@ extern struct {
++#ifndef CONFIG_XEN
+ DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
+ DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
+ #endif
+@@ -52,12 +57,16 @@ extern struct {
  struct smp_ops {
  	void (*smp_prepare_boot_cpu)(void);
  	void (*smp_prepare_cpus)(unsigned max_cpus);
@@ -1361,7 +1428,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	void (*send_call_func_ipi)(cpumask_t mask);
  	void (*send_call_func_single_ipi)(int cpu);
  };
-@@ -91,6 +98,21 @@ static inline int __cpu_up(unsigned int 
+@@ -92,6 +101,21 @@ static inline int __cpu_up(unsigned int 
  	return smp_ops.cpu_up(cpu);
  }
  
@@ -1383,7 +1450,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  static inline void smp_send_reschedule(int cpu)
  {
  	smp_ops.smp_send_reschedule(cpu);
-@@ -106,13 +128,20 @@ static inline void arch_send_call_functi
+@@ -107,13 +131,20 @@ static inline void arch_send_call_functi
  	smp_ops.send_call_func_ipi(mask);
  }
  
@@ -1404,7 +1471,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  void xen_smp_send_stop(void);
  void xen_smp_send_reschedule(int cpu);
  void xen_send_call_func_ipi(cpumask_t mask);
-@@ -123,10 +152,11 @@ void xen_send_call_func_single_ipi(int c
+@@ -124,10 +155,11 @@ void xen_send_call_func_single_ipi(int c
  #define arch_send_call_function_single_ipi	xen_send_call_func_single_ipi
  #define arch_send_call_function_ipi		xen_send_call_func_ipi
  
@@ -1417,8 +1484,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +extern void prefill_possible_map(void);
  
  void smp_store_cpu_info(int id);
- #define cpu_physical_id(cpu)	per_cpu(x86_cpu_to_apicid, cpu)
-@@ -136,15 +166,11 @@ static inline int num_booting_cpus(void)
+ #define cpu_physical_id(cpu)	(cpu)
+@@ -137,15 +169,11 @@ static inline int num_booting_cpus(void)
  {
  	return cpus_weight(cpu_callout_map);
  }
@@ -1435,7 +1502,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  extern unsigned disabled_cpus __cpuinitdata;
  
-@@ -154,7 +180,6 @@ extern unsigned disabled_cpus __cpuinitd
+@@ -155,7 +183,6 @@ extern unsigned disabled_cpus __cpuinitd
   * from the initial startup. We map APIC_BASE very early in page_setup(),
   * so this is correct in the x86 case.
   */
@@ -1443,7 +1510,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #define raw_smp_processor_id() (x86_read_percpu(cpu_number))
  #define safe_smp_processor_id() smp_processor_id()
  
-@@ -177,30 +202,33 @@ DECLARE_PER_CPU(int, cpu_number);
+@@ -178,30 +205,33 @@ DECLARE_PER_CPU(int, cpu_number);
  
  #ifdef CONFIG_X86_LOCAL_APIC
  
@@ -1484,7 +1551,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  # endif /* APIC_DEFINITION */
  
-@@ -212,9 +240,11 @@ static inline int hard_smp_processor_id(
+@@ -213,9 +243,11 @@ static inline int hard_smp_processor_id(
  
  #endif /* CONFIG_X86_LOCAL_APIC */
  
@@ -1499,8 +1566,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #endif /* __ASSEMBLY__ */
 -#endif
 +#endif /* _ASM_X86_SMP_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/spinlock.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/spinlock.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/spinlock.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/spinlock.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _X86_SPINLOCK_H_
 -#define _X86_SPINLOCK_H_
@@ -1515,8 +1582,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_SPINLOCK_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/spinlock_types.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/spinlock_types.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/spinlock_types.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/spinlock_types.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef __ASM_SPINLOCK_TYPES_H
 -#define __ASM_SPINLOCK_TYPES_H
@@ -1531,8 +1598,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_SPINLOCK_TYPES_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/system.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/system.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/system.h	2011-03-03 15:58:55.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/system.h	2011-03-03 16:01:23.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef _ASM_X86_SYSTEM_H_
 -#define _ASM_X86_SYSTEM_H_
@@ -1552,15 +1619,15 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +			"memory");					\
  } while (0)
  
- /*
-@@ -403,4 +406,4 @@ static inline void rdtsc_barrier(void)
+ #ifndef CONFIG_XEN
+@@ -405,4 +408,4 @@ static inline void rdtsc_barrier(void)
  	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
  }
  
 -#endif
 +#endif /* _ASM_X86_SYSTEM_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/system_64.h	2010-03-24 15:10:37.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/system_64.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/system_64.h	2011-01-31 18:01:51.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/system_64.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef __ASM_SYSTEM_H
 -#define __ASM_SYSTEM_H
@@ -1575,8 +1642,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_SYSTEM_64_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/tlbflush.h	2010-03-24 15:12:36.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/tlbflush.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/tlbflush.h	2011-01-31 18:07:35.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/tlbflush.h	2011-02-01 14:39:24.000000000 +0100
 @@ -63,6 +63,10 @@ static inline void flush_tlb_range(struc
  		__flush_tlb();
  }
@@ -1601,8 +1668,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #endif
  
  #endif	/* SMP */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/vga.h	2010-03-24 15:12:36.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/vga.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/vga.h	2011-01-31 18:07:35.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/vga.h	2011-02-01 14:39:24.000000000 +0100
 @@ -4,8 +4,8 @@
   *	(c) 1998 Martin Mares <mj@ucw.cz>
   */
@@ -1620,8 +1687,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif
 +#endif /* _ASM_X86_VGA_H */
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/xor.h	2010-03-24 15:10:29.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/xor.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/xor.h	2011-01-31 17:56:27.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/xor.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
  #ifdef CONFIG_X86_32
 -# include "../../xor_32.h"
@@ -1629,8 +1696,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #else
  # include "xor_64.h"
  #endif
---- head-2010-04-29.orig/arch/x86/include/mach-xen/asm/xor_64.h	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/include/mach-xen/asm/xor_64.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/include/mach-xen/asm/xor_64.h	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/include/mach-xen/asm/xor_64.h	2011-02-01 14:39:24.000000000 +0100
 @@ -1,5 +1,5 @@
 -#ifndef ASM_X86__XOR_64_H
 -#define ASM_X86__XOR_64_H
@@ -1645,9 +1712,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* ASM_X86__XOR_64_H */
 +#endif /* _ASM_X86_XOR_64_H */
---- head-2010-04-29.orig/arch/x86/kernel/Makefile	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/Makefile	2010-03-24 15:14:47.000000000 +0100
-@@ -138,7 +138,7 @@ ifeq ($(CONFIG_X86_64),y)
+--- head-2011-03-17.orig/arch/x86/kernel/Makefile	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/Makefile	2011-02-01 14:39:24.000000000 +0100
+@@ -129,7 +129,7 @@ ifeq ($(CONFIG_X86_64),y)
  	time_64-$(CONFIG_XEN)		+= time_32.o
  endif
  
@@ -1658,8 +1725,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	hpet.o i8253.o i8259.o irqinit_$(BITS).o pci-swiotlb_64.o reboot.o \
 +	smpboot.o tlb_$(BITS).o tsc.o tsc_sync.o uv_%.o vsmp_64.o
  disabled-obj-$(CONFIG_XEN_UNPRIVILEGED_GUEST) += probe_roms_32.o
---- head-2010-04-29.orig/arch/x86/kernel/acpi/sleep-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/acpi/sleep-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/acpi/sleep-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/acpi/sleep-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -10,6 +10,7 @@
  #include <linux/dmi.h>
  #include <linux/cpumask.h>
@@ -1688,8 +1755,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #endif
  	initial_code = (unsigned long)wakeup_long64;
  	saved_magic = 0x123456789abcdef0;
---- head-2010-04-29.orig/arch/x86/kernel/apic/apic-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/apic/apic-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/apic/apic-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/apic/apic-xen.c	2011-02-24 15:49:32.000000000 +0100
 @@ -1,60 +1,13 @@
  /*
 - *	Local APIC handling, local APIC timers
@@ -1754,7 +1821,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  /*
   * Debug level, exported for io_apic.c
-@@ -64,37 +17,44 @@ unsigned int apic_verbosity;
+@@ -64,21 +17,29 @@ unsigned int apic_verbosity;
  /* Have we found an MP table */
  int smp_found_config;
  
@@ -1796,13 +1863,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  int setup_profiling_timer(unsigned int multiplier)
  {
- 	return -EINVAL;
- }
- 
--/*
-- * This initializes the IO-APIC and APIC hardware if this is
-- * a UP kernel.
-- */
+@@ -93,9 +54,12 @@ int setup_profiling_timer(unsigned int m
  int __init APIC_init_uniprocessor(void)
  {
  #ifdef CONFIG_X86_IO_APIC
@@ -1818,9 +1879,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #endif
  
  	return 0;
---- head-2010-04-29.orig/arch/x86/kernel/cpu/addon_cpuid_features.c	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/x86/kernel/cpu/addon_cpuid_features.c	2010-03-24 15:14:47.000000000 +0100
-@@ -74,7 +74,7 @@ void __cpuinit init_scattered_cpuid_feat
+--- head-2011-03-17.orig/arch/x86/kernel/cpu/topology.c	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/cpu/topology.c	2011-02-01 14:39:24.000000000 +0100
+@@ -28,7 +28,7 @@
   */
  void __cpuinit detect_extended_topology(struct cpuinfo_x86 *c)
  {
@@ -1829,8 +1890,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	unsigned int eax, ebx, ecx, edx, sub_index;
  	unsigned int ht_mask_width, core_plus_mask_width;
  	unsigned int core_select_mask, core_level_siblings;
---- head-2010-04-29.orig/arch/x86/kernel/cpu/common-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/cpu/common-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/cpu/common-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/cpu/common-xen.c	2011-03-17 14:40:32.000000000 +0100
 @@ -1,33 +1,73 @@
  #include <linux/init.h>
 +#include <linux/kernel.h>
@@ -1910,7 +1971,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	[GDT_ENTRY_KERNEL_CS] = { { { 0x0000ffff, 0x00cf9a00 } } },
  	[GDT_ENTRY_KERNEL_DS] = { { { 0x0000ffff, 0x00cf9200 } } },
  	[GDT_ENTRY_DEFAULT_USER_CS] = { { { 0x0000ffff, 0x00cffa00 } } },
-@@ -63,17 +103,168 @@ DEFINE_PER_CPU(struct gdt_page, gdt_page
+@@ -63,17 +103,171 @@ DEFINE_PER_CPU(struct gdt_page, gdt_page
  #endif
  	[GDT_ENTRY_PERCPU] = { { { 0x00000000, 0x00000000 } } },
  } };
@@ -1921,9 +1982,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -
 +#ifdef CONFIG_X86_32
  static int cachesize_override __cpuinitdata = -1;
- static int disable_x86_serial_nr __cpuinitdata = 1;
- 
--struct cpu_dev *cpu_devs[X86_VENDOR_NUM] = {};
++
 +static int __init cachesize_setup(char *str)
 +{
 +	get_option(&str, &cachesize_override);
@@ -1945,7 +2004,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	return 1;
 +}
 +__setup("nosep", x86_sep_setup);
++#endif
 +
++#if defined(CONFIG_X86_32) && !defined(CONFIG_XEN)
 +/* Standard macro to see if a specific flag is changeable */
 +static inline int flag_is_changeable_p(u32 flag)
 +{
@@ -1980,6 +2041,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	return flag_is_changeable_p(X86_EFLAGS_ID);
 +}
 +
+ static int disable_x86_serial_nr __cpuinitdata = 1;
+ 
+-struct cpu_dev *cpu_devs[X86_VENDOR_NUM] = {};
 +static void __cpuinit squash_the_stupid_serial_number(struct cpuinfo_x86 *c)
 +{
 +	if (cpu_has(c, X86_FEATURE_PN) && disable_x86_serial_nr) {
@@ -2082,7 +2146,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	/* Not much we can do here... */
  	/* Check if at least it has cpuid */
  	if (c->cpuid_level == -1) {
-@@ -83,28 +274,22 @@ static void __cpuinit default_init(struc
+@@ -83,28 +277,22 @@ static void __cpuinit default_init(struc
  		else if (c->x86 == 3)
  			strcpy(c->x86_model_id, "386");
  	}
@@ -2116,7 +2180,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	v = (unsigned int *) c->x86_model_id;
  	cpuid(0x80000002, &v[0], &v[1], &v[2], &v[3]);
-@@ -123,30 +308,34 @@ int __cpuinit get_model_name(struct cpui
+@@ -123,30 +311,34 @@ int __cpuinit get_model_name(struct cpui
  	     while (q <= &c->x86_model_id[48])
  		  *q++ = '\0';	/* Zero-pad the rest */
  	}
@@ -2160,7 +2224,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	/* do processor-specific cache resizing */
  	if (this_cpu->c_size_cache)
  		l2size = this_cpu->c_size_cache(c, l2size);
-@@ -157,116 +346,106 @@ void __cpuinit display_cacheinfo(struct 
+@@ -157,116 +349,106 @@ void __cpuinit display_cacheinfo(struct 
  
  	if (l2size == 0)
  		return;		/* Again, no L2 cache is possible */
@@ -2347,7 +2411,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  {
  	/* Get vendor name */
  	cpuid(0x00000000, (unsigned int *)&c->cpuid_level,
-@@ -275,50 +454,87 @@ void __init cpu_detect(struct cpuinfo_x8
+@@ -275,48 +457,85 @@ void __init cpu_detect(struct cpuinfo_x8
  	      (unsigned int *)&c->x86_vendor_id[4]);
  
  	c->x86 = 4;
@@ -2426,14 +2490,14 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +
 +	if (c->extended_cpuid_level >= 0x80000007)
 +		c->x86_power = cpuid_edx(0x80000007);
- 
- }
- 
++
++}
++
 +static void __cpuinit identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
 +{
 +#ifdef CONFIG_X86_32
 +	int i;
-+
+ 
 +	/*
 +	 * First of all, decide if this is a 486 or higher
 +	 * It's a 486 if we can modify the AC flag
@@ -2453,12 +2517,10 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +			}
 +		}
 +#endif
-+}
-+
+ }
+ 
  /*
-  * Do minimum CPU detection early.
-  * Fields really needed: vendor, cpuid_level, family, model, mask,
-@@ -328,25 +544,65 @@ static void __cpuinit early_get_cap(stru
+@@ -328,25 +547,65 @@ static void __cpuinit early_get_cap(stru
   * WARNING: this function is only called on the BP.  Don't add code here
   * that is supposed to run on all CPUs.
   */
@@ -2496,7 +2558,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +		this_cpu->c_early_init(c);
 +
 +	validate_pat_support(c);
-+
+ 
+-	early_get_cap(c);
 +#ifdef CONFIG_SMP
 +	c->cpu_index = boot_cpu_id;
 +#endif
@@ -2506,8 +2569,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +{
 +	struct cpu_dev **cdev;
 +	int count = 0;
- 
--	early_get_cap(c);
++
 +	printk("KERNEL supported cpus:\n");
 +	for (cdev = __x86_cpu_dev_start; cdev < __x86_cpu_dev_end; cdev++) {
 +		struct cpu_dev *cpudev = *cdev;
@@ -2533,7 +2595,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  /*
-@@ -364,88 +620,41 @@ static void __cpuinit detect_nopl(struct
+@@ -364,88 +623,43 @@ static void __cpuinit detect_nopl(struct
  
  static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
  {
@@ -2564,8 +2626,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -			if (c->x86 >= 0x6)
 -				c->x86_model += ((tfms >> 16) & 0xF) << 4;
 -			c->x86_mask = tfms & 15;
--			c->initial_apicid = (ebx >> 24) & 0xFF;
 -#ifndef CONFIG_XEN
+-			c->initial_apicid = (ebx >> 24) & 0xFF;
 -#ifdef CONFIG_X86_HT
 -			c->apicid = phys_pkg_id(c->initial_apicid, 0);
 -			c->phys_proc_id = c->initial_apicid;
@@ -2626,9 +2688,10 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -	return 1;
 -}
 -__setup("serialnumber", x86_serial_nr_setup);
++#ifndef CONFIG_XEN
 +	if (c->cpuid_level >= 0x00000001) {
 +		c->initial_apicid = (cpuid_ebx(1) >> 24) & 0xFF;
-+#if defined(CONFIG_X86_32) && !defined(CONFIG_XEN)
++#ifdef CONFIG_X86_32
 +# ifdef CONFIG_X86_HT
 +		c->apicid = phys_pkg_id(c->initial_apicid, 0);
 +# else
@@ -2640,6 +2703,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +		c->phys_proc_id = c->initial_apicid;
 +#endif
 +	}
++#endif
  
 +	get_model_name(c); /* Default name */
  
@@ -2649,7 +2713,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  /*
   * This does the hard work of actually picking apart the CPU stuff...
-@@ -457,32 +666,31 @@ static void __cpuinit identify_cpu(struc
+@@ -457,34 +671,33 @@ static void __cpuinit identify_cpu(struc
  	c->loops_per_jiffy = loops_per_jiffy;
  	c->x86_cache_size = -1;
  	c->x86_vendor = X86_VENDOR_UNKNOWN;
@@ -2657,8 +2721,10 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	c->x86_model = c->x86_mask = 0;	/* So far unknown... */
  	c->x86_vendor_id[0] = '\0'; /* Unset */
  	c->x86_model_id[0] = '\0';  /* Unset */
+ #ifndef CONFIG_XEN
  	c->x86_max_cores = 1;
 +	c->x86_coreid_bits = 0;
+ #endif
 +#ifdef CONFIG_X86_64
 +	c->x86_clflush_size = 64;
 +#else
@@ -2693,7 +2759,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	/*
  	 * Vendor-specific initialization.  In this section we
  	 * canonicalize the feature flags, meaning if there are
-@@ -516,6 +724,10 @@ static void __cpuinit identify_cpu(struc
+@@ -518,6 +731,10 @@ static void __cpuinit identify_cpu(struc
  				c->x86, c->x86_model);
  	}
  
@@ -2704,7 +2770,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	/*
  	 * On SMP, boot_cpu_data holds the common feature set between
  	 * all CPUs; so make sure that we indicate which features are
-@@ -524,7 +736,7 @@ static void __cpuinit identify_cpu(struc
+@@ -526,7 +743,7 @@ static void __cpuinit identify_cpu(struc
  	 */
  	if (c != &boot_cpu_data) {
  		/* AND the already accumulated flags with these */
@@ -2713,7 +2779,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			boot_cpu_data.x86_capability[i] &= c->x86_capability[i];
  	}
  
-@@ -532,72 +744,91 @@ static void __cpuinit identify_cpu(struc
+@@ -534,72 +751,91 @@ static void __cpuinit identify_cpu(struc
  	for (i = 0; i < NCAPINTS; i++)
  		c->x86_capability[i] &= ~cleared_cpu_caps[i];
  
@@ -2842,7 +2908,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  static __init int setup_noclflush(char *arg)
  {
-@@ -615,18 +846,26 @@ void __cpuinit print_cpu_info(struct cpu
+@@ -617,18 +853,26 @@ void __cpuinit print_cpu_info(struct cpu
  	else if (c->cpuid_level >= 0)
  		vendor = c->x86_vendor_id;
  
@@ -2876,7 +2942,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  static __init int setup_disablecpuid(char *arg)
-@@ -642,19 +881,124 @@ __setup("clearcpuid=", setup_disablecpui
+@@ -644,19 +888,124 @@ __setup("clearcpuid=", setup_disablecpui
  
  cpumask_t cpu_initialized __cpuinitdata = CPU_MASK_NONE;
  
@@ -3009,7 +3075,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  /* Make sure %fs is initialized properly in idle threads */
  struct pt_regs * __cpuinit idle_regs(struct pt_regs *regs)
  {
-@@ -662,36 +1006,154 @@ struct pt_regs * __cpuinit idle_regs(str
+@@ -664,36 +1013,154 @@ struct pt_regs * __cpuinit idle_regs(str
  	regs->fs = __KERNEL_PERCPU;
  	return regs;
  }
@@ -3186,7 +3252,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  void __cpuinit cpu_init(void)
  {
  	int cpu = smp_processor_id();
-@@ -745,19 +1207,21 @@ void __cpuinit cpu_init(void)
+@@ -747,19 +1214,21 @@ void __cpuinit cpu_init(void)
  	/*
  	 * Force FPU initialization:
  	 */
@@ -3218,9 +3284,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +
 +
  #endif
---- head-2010-04-29.orig/arch/x86/kernel/cpu/common_64-xen.c	2010-03-24 15:12:46.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/cpu/common_64-xen.c	2011-02-01 14:38:38.000000000 +0100
 +++ /dev/null	1970-01-01 00:00:00.000000000 +0000
-@@ -1,773 +0,0 @@
+@@ -1,777 +0,0 @@
 -#include <linux/init.h>
 -#include <linux/kernel.h>
 -#include <linux/sched.h>
@@ -3362,7 +3428,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -
 -void __cpuinit detect_ht(struct cpuinfo_x86 *c)
 -{
--#ifdef CONFIG_SMP
+-#if defined(CONFIG_SMP) && !defined(CONFIG_XEN)
 -	u32 eax, ebx, ecx, edx;
 -	int index_msb, core_bits;
 -
@@ -3516,8 +3582,10 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -	c->x86_model_id[0] = '\0';  /* Unset */
 -	c->x86_clflush_size = 64;
 -	c->x86_cache_alignment = c->x86_clflush_size;
+-#ifndef CONFIG_XEN
 -	c->x86_max_cores = 1;
 -	c->x86_coreid_bits = 0;
+-#endif
 -	c->extended_cpuid_level = 0;
 -	memset(&c->x86_capability, 0, sizeof c->x86_capability);
 -
@@ -3551,9 +3619,11 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -		c->x86 = 4;
 -	}
 -
+-#ifndef CONFIG_XEN
 -	c->initial_apicid = (cpuid_ebx(1) >> 24) & 0xff;
 -#ifdef CONFIG_SMP
 -	c->phys_proc_id = c->initial_apicid;
+-#endif
 -#endif
 -	/* AMD-defined flags: level 0x80000001 */
 -	xlvl = cpuid_eax(0x80000000);
@@ -3994,9 +4064,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -	if (is_uv_system())
 -		uv_cpu_init();
 -}
---- head-2010-04-29.orig/arch/x86/kernel/dumpstack_64.c	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/arch/x86/kernel/dumpstack_64.c	2010-03-24 15:14:47.000000000 +0100
-@@ -22,6 +22,7 @@
+--- head-2011-03-17.orig/arch/x86/kernel/dumpstack_64.c	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/dumpstack_64.c	2011-02-01 14:39:24.000000000 +0100
+@@ -21,6 +21,7 @@
  #define N_EXCEPTION_STACKS_END \
  		(N_EXCEPTION_STACKS + DEBUG_STKSZ/EXCEPTION_STKSZ - 2)
  
@@ -4004,7 +4074,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  static char x86_stack_ids[][8] = {
  		[ DEBUG_STACK-1			]	= "#DB",
  		[ NMI_STACK-1			]	= "NMI",
-@@ -33,10 +34,12 @@ static char x86_stack_ids[][8] = {
+@@ -32,10 +33,12 @@ static char x86_stack_ids[][8] = {
  		  N_EXCEPTION_STACKS_END	]	= "#DB[?]"
  #endif
  };
@@ -4017,7 +4087,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	unsigned k;
  
  	/*
-@@ -96,6 +99,7 @@ static unsigned long *in_exception_stack
+@@ -95,6 +98,7 @@ static unsigned long *in_exception_stack
  		}
  #endif
  	}
@@ -4025,8 +4095,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	return NULL;
  }
  
---- head-2010-04-29.orig/arch/x86/kernel/e820-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/e820-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/e820-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/e820-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -167,6 +167,9 @@ static void __init _e820_print_map(const
  		case E820_NVS:
  			printk(KERN_CONT "(ACPI NVS)\n");
@@ -4107,8 +4177,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #undef e820
  
  #ifndef CONFIG_XEN
---- head-2010-04-29.orig/arch/x86/kernel/early_printk-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/early_printk-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/early_printk-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/early_printk-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -3,10 +3,18 @@
  #include <linux/init.h>
  #include <linux/string.h>
@@ -4939,8 +5009,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
 +
  early_param("earlyprintk", setup_early_printk);
---- head-2010-04-29.orig/arch/x86/kernel/entry_32-xen.S	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/entry_32-xen.S	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/entry_32-xen.S	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/entry_32-xen.S	2011-02-01 14:39:24.000000000 +0100
 @@ -700,7 +700,7 @@ ENTRY(interrupt)
  ENTRY(irq_entries_start)
  	RING0_INT_FRAME
@@ -5050,8 +5120,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  #include <asm/alternative-asm.h>
  
---- head-2010-04-29.orig/arch/x86/kernel/entry_64-xen.S	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/entry_64-xen.S	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/entry_64-xen.S	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/entry_64-xen.S	2011-02-01 14:39:24.000000000 +0100
 @@ -66,35 +66,9 @@
  
  	.code64
@@ -5141,19 +5211,19 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  #ifdef CONFIG_X86_MCE
  	/* runs on exception stack */
---- head-2010-04-29.orig/arch/x86/kernel/fixup.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/fixup.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/fixup.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/fixup.c	2011-02-01 14:39:24.000000000 +0100
 @@ -37,7 +37,7 @@
  
- #define DP(_f, _args...) printk(KERN_ALERT "  " _f "\n" , ## _args )
+ #define DP(_f, _args...) pr_alert("  " _f "\n" , ## _args )
  
 -void do_fixup_4gb_segment(struct pt_regs *regs, long error_code)
 +dotraplinkage void do_fixup_4gb_segment(struct pt_regs *regs, long error_code)
  {
  	static unsigned long printed = 0;
  	char info[100];
---- head-2010-04-29.orig/arch/x86/kernel/head-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/head-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/head-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/head-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -36,6 +36,7 @@ void __init reserve_ebda_region(void)
  
  	/* start of EBDA area */
@@ -5162,8 +5232,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	/* Fixup: bios puts an EBDA in the top 64K segment */
  	/* of conventional memory, but does not adjust lowmem. */
---- head-2010-04-29.orig/arch/x86/kernel/head64-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/head64-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/head64-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/head64-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -151,12 +151,11 @@ void __init x86_64_start_kernel(char * r
  	load_idt((const struct desc_ptr *)&idt_descr);
  #endif
@@ -5180,8 +5250,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/arch/x86/kernel/apic/io_apic-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -0,0 +1,3949 @@
++++ head-2011-03-17/arch/x86/kernel/apic/io_apic-xen.c	2011-02-01 14:39:24.000000000 +0100
+@@ -0,0 +1,3937 @@
 +/*
 + *	Intel IO-APIC support for multi-Pentium hosts.
 + *
@@ -5215,8 +5285,6 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +#include <linux/acpi.h>
 +#include <linux/module.h>
 +#include <linux/sysdev.h>
-+#include <linux/msi.h>
-+#include <linux/htirq.h>
 +#include <linux/freezer.h>
 +#include <linux/kthread.h>
 +#include <linux/jiffies.h>	/* time_after() */
@@ -5224,8 +5292,6 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +#include <acpi/acpi_bus.h>
 +#endif
 +#include <linux/bootmem.h>
-+#include <linux/dmar.h>
-+#include <linux/hpet.h>
 +
 +#include <asm/idle.h>
 +#include <asm/io.h>
@@ -5237,13 +5303,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +#include <asm/timer.h>
 +#include <asm/i8259.h>
 +#include <asm/nmi.h>
-+#include <asm/msidef.h>
-+#include <asm/hypertransport.h>
 +#include <asm/setup.h>
-+#include <asm/irq_remapping.h>
-+#include <asm/hpet.h>
-+#include <asm/uv/uv_hub.h>
-+#include <asm/uv/uv_irq.h>
 +
 +#include <mach_ipi.h>
 +#include <mach_apic.h>
@@ -5808,7 +5868,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	apic_write(APIC_ICR, cfg);
 +}
 +#endif /* !CONFIG_SMP && CONFIG_X86_32*/
-+#endif /* CONFIG_XEN */
++#endif /* !CONFIG_XEN */
 +
 +#ifdef CONFIG_X86_32
 +/*
@@ -6910,7 +6970,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +
 +/* Where if anywhere is the i8259 connect in external int mode */
 +static struct { int pin, apic; } ioapic_i8259 = { -1, -1 };
-+#endif /* CONFIG_XEN */
++#endif /* !CONFIG_XEN */
 +
 +void __init enable_IO_APIC(void)
 +{
@@ -6983,9 +7043,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +#endif
 +}
 +
-+#ifdef CONFIG_XEN
-+#define disable_IO_APIC() ((void)0)
-+#else
++#ifndef CONFIG_XEN
 +/*
 + * Not an __init, needed by the reboot code
 + */
@@ -7604,7 +7662,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	.retrigger	= ioapic_retrigger_irq,
 +};
 +#endif
-+#endif /* CONFIG_XEN */
++#endif /* !CONFIG_XEN */
 +
 +static inline void init_IO_APIC_traps(void)
 +{
@@ -8007,7 +8065,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +{
 +	if (sis_apic_bug == -1)
 +		sis_apic_bug = 0;
-+#ifdef CONFIG_XEN
++#ifdef CONFIG_X86_XEN
 +	if (is_initial_xendomain()) {
 +		struct xen_platform_op op = { .cmd = XENPF_platform_quirk };
 +		op.u.platform_quirk.quirk_id = sis_apic_bug ?
@@ -8166,7 +8224,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	__clear_irq_vector(irq);
 +	spin_unlock_irqrestore(&vector_lock, flags);
 +}
-+#endif /* CONFIG_XEN */
++#endif /* !CONFIG_XEN */
 +
 +/*
 + * MSI message composition
@@ -8831,9 +8889,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +#ifdef CONFIG_ACPI
 +
 +#ifdef CONFIG_X86_32
++#ifndef CONFIG_XEN
 +int __init io_apic_get_unique_id(int ioapic, int apic_id)
 +{
-+#ifndef CONFIG_XEN
 +	union IO_APIC_reg_00 reg_00;
 +	static physid_mask_t apic_id_map = PHYSID_MASK_NONE;
 +	physid_mask_t tmp;
@@ -8902,10 +8960,10 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +
 +	apic_printk(APIC_VERBOSE, KERN_INFO
 +			"IOAPIC[%d]: Assigned apic_id %d\n", ioapic, apic_id);
-+#endif /* !CONFIG_XEN */
 +
 +	return apic_id;
 +}
++#endif /* !CONFIG_XEN */
 +
 +int __init io_apic_get_version(int ioapic)
 +{
@@ -9131,7 +9189,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 + * IO APICS that are mapped in on a BAR in PCI space. */
 +late_initcall(ioapic_insert_resources);
 +#endif /* !CONFIG_XEN */
---- head-2010-04-29.orig/arch/x86/kernel/io_apic_32-xen.c	2010-03-24 15:12:46.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/io_apic_32-xen.c	2011-02-01 14:38:38.000000000 +0100
 +++ /dev/null	1970-01-01 00:00:00.000000000 +0000
 @@ -1,2985 +0,0 @@
 -/*
@@ -11894,9 +11952,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -
 -#ifdef CONFIG_ACPI
 -
+-#ifndef CONFIG_XEN
 -int __init io_apic_get_unique_id(int ioapic, int apic_id)
 -{
--#ifndef CONFIG_XEN
 -	union IO_APIC_reg_00 reg_00;
 -	static physid_mask_t apic_id_map = PHYSID_MASK_NONE;
 -	physid_mask_t tmp;
@@ -11965,10 +12023,10 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -
 -	apic_printk(APIC_VERBOSE, KERN_INFO
 -			"IOAPIC[%d]: Assigned apic_id %d\n", ioapic, apic_id);
--#endif /* !CONFIG_XEN */
 -
 -	return apic_id;
 -}
+-#endif /* !CONFIG_XEN */
 -
 -
 -int __init io_apic_get_version(int ioapic)
@@ -12119,7 +12177,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -	}
 -}
 -#endif
---- head-2010-04-29.orig/arch/x86/kernel/io_apic_64-xen.c	2010-03-24 15:12:46.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/io_apic_64-xen.c	2011-02-01 14:38:38.000000000 +0100
 +++ /dev/null	1970-01-01 00:00:00.000000000 +0000
 @@ -1,2448 +0,0 @@
 -/*
@@ -14570,8 +14628,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 - * IO APICS that are mapped in on a BAR in PCI space. */
 -late_initcall(ioapic_insert_resources);
 -#endif /* !CONFIG_XEN */
---- head-2010-04-29.orig/arch/x86/kernel/ioport-xen.c	2010-03-24 15:10:37.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/ioport-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/ioport-xen.c	2011-01-31 18:01:51.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/ioport-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -14,6 +14,7 @@
  #include <linux/slab.h>
  #include <linux/thread_info.h>
@@ -14580,32 +14638,19 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #include <xen/interface/physdev.h>
  
  /* Set EXTENT bits starting at BASE in BITMAP to value TURN_ON. */
---- head-2010-04-29.orig/arch/x86/kernel/apic/ipi-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/apic/ipi-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -21,6 +21,8 @@
- #ifdef CONFIG_X86_32
- #ifndef CONFIG_XEN
- #include <mach_apic.h>
-+#include <mach_ipi.h>
-+
- /*
-  * the following functions deal with sending IPIs between CPUs.
-  *
-@@ -197,10 +199,8 @@ void send_IPI_mask_sequence(cpumask_t ma
- #endif
+--- head-2011-03-17.orig/arch/x86/kernel/apic/ipi-xen.c	2011-02-21 13:56:33.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/apic/ipi-xen.c	2011-02-21 13:56:51.000000000 +0100
+@@ -57,7 +57,4 @@ void send_IPI_mask_sequence(cpumask_t ma
+ 	send_IPI_mask_bitmask(mask, vector);
  }
  
 -/* must come after the send_IPI functions above for inlining */
 -#include <mach_ipi.h>
 -
- #ifndef CONFIG_XEN
-+/* must come after the send_IPI functions above for inlining */
- static int convert_apicid_to_cpu(int apic_id)
- {
- 	int i;
+ #endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/arch/x86/kernel/irq-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -0,0 +1,193 @@
++++ head-2011-03-17/arch/x86/kernel/irq-xen.c	2011-02-01 14:39:24.000000000 +0100
+@@ -0,0 +1,200 @@
 +/*
 + * Common interrupt code for 32 and 64 bit
 + */
@@ -14679,6 +14724,11 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	for_each_online_cpu(j)
 +		seq_printf(p, "%10u ", irq_stats(j)->irq_tlb_count);
 +	seq_printf(p, "  TLB shootdowns\n");
++#else
++	seq_printf(p, "LCK: ");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_lock_count);
++	seq_printf(p, "  Spinlock wakeups\n");
 +#endif
 +#endif
 +#ifdef CONFIG_X86_MCE
@@ -14776,6 +14826,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	sum += irq_stats(cpu)->irq_call_count;
 +#ifndef CONFIG_XEN
 +	sum += irq_stats(cpu)->irq_tlb_count;
++#else
++	sum += irq_stats(cpu)->irq_lock_count;
 +#endif
 +#endif
 +#ifdef CONFIG_X86_MCE
@@ -14799,8 +14851,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +#endif
 +	return sum;
 +}
---- head-2010-04-29.orig/arch/x86/kernel/ldt-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/ldt-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/ldt-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/ldt-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -18,6 +18,7 @@
  #include <asm/ldt.h>
  #include <asm/desc.h>
@@ -14809,7 +14861,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  #ifdef CONFIG_SMP
  static void flush_ldt(void *current_mm)
---- head-2010-04-29.orig/arch/x86/kernel/microcode-xen.c	2010-03-24 15:12:46.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/microcode-xen.c	2011-02-01 14:38:38.000000000 +0100
 +++ /dev/null	1970-01-01 00:00:00.000000000 +0000
 @@ -1,214 +0,0 @@
 -/*
@@ -15027,7 +15079,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -module_init(microcode_init)
 -module_exit(microcode_exit)
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/arch/x86/kernel/microcode_core-xen.c	2010-03-24 15:14:47.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/microcode_core-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -0,0 +1,225 @@
 +/*
 + *	Intel CPU Microcode Update Driver for Linux
@@ -15254,9 +15306,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +
 +module_init(microcode_init);
 +module_exit(microcode_exit);
---- head-2010-04-29.orig/arch/x86/kernel/mpparse-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/mpparse-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -406,7 +406,9 @@ static int __init smp_read_mpc(struct mp
+--- head-2011-03-17.orig/arch/x86/kernel/mpparse-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/mpparse-xen.c	2011-02-01 14:39:24.000000000 +0100
+@@ -410,7 +410,9 @@ static int __init smp_read_mpc(struct mp
         generic_bigsmp_probe();
  #endif
  
@@ -15266,7 +15318,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	if (!num_processors)
  		printk(KERN_ERR "MPTABLE: no processors registered!\n");
  	return num_processors;
-@@ -611,6 +613,9 @@ static void __init __get_smp_config(unsi
+@@ -622,6 +624,9 @@ void __init get_smp_config(void)
  		printk(KERN_INFO "Using ACPI for processor (LAPIC) "
  		       "configuration information\n");
  
@@ -15276,8 +15328,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	printk(KERN_INFO "Intel MultiProcessor Specification v1.%d\n",
  	       mpf->mpf_specification);
  #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86_32) && !defined(CONFIG_XEN)
---- head-2010-04-29.orig/arch/x86/kernel/pci-dma-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/pci-dma-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/pci-dma-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/pci-dma-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -41,11 +41,12 @@ EXPORT_SYMBOL(bad_dma_address);
  /* Dummy device used for NULL arguments (normally ISA). Better would
     be probably a smaller DMA mask, but this is bug-to-bug compatible
@@ -15556,8 +15608,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  static int __init pci_iommu_init(void)
  {
  	calgary_iommu_init();
---- head-2010-04-29.orig/arch/x86/kernel/pci-nommu-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/pci-nommu-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/pci-nommu-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/pci-nommu-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -5,6 +5,7 @@
  
  #include <xen/gnttab.h>
@@ -15595,9 +15647,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	.map_single = gnttab_map_single,
  	.unmap_single = gnttab_unmap_single,
  	.map_sg = gnttab_map_sg,
---- head-2010-04-29.orig/arch/x86/kernel/process-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/process-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -180,7 +180,8 @@ static void mwait_idle(void)
+--- head-2011-03-17.orig/arch/x86/kernel/process-xen.c	2011-03-03 15:59:49.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/process-xen.c	2011-03-03 16:00:33.000000000 +0100
+@@ -151,7 +151,8 @@ static void mwait_idle(void)
  static void poll_idle(void)
  {
  	local_irq_enable();
@@ -15607,8 +15659,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  #ifndef CONFIG_XEN
---- head-2010-04-29.orig/arch/x86/kernel/process_32-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/process_32-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/process_32-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/process_32-xen.c	2011-02-02 08:34:28.000000000 +0100
 @@ -37,6 +37,7 @@
  #include <linux/tick.h>
  #include <linux/percpu.h>
@@ -15617,7 +15669,16 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  #include <asm/uaccess.h>
  #include <asm/pgtable.h>
-@@ -60,6 +61,8 @@
+@@ -51,8 +52,6 @@
+ #endif
+ 
+ #include <xen/interface/physdev.h>
+-#include <xen/interface/vcpu.h>
+-#include <xen/cpu_hotplug.h>
+ 
+ #include <linux/err.h>
+ 
+@@ -60,6 +59,8 @@
  #include <asm/cpu.h>
  #include <asm/kdebug.h>
  #include <asm/idle.h>
@@ -15626,7 +15687,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
  asmlinkage void cstar_ret_from_fork(void) __asm__("cstar_ret_from_fork");
-@@ -78,42 +81,12 @@ unsigned long thread_saved_pc(struct tas
+@@ -78,42 +79,12 @@ unsigned long thread_saved_pc(struct tas
  	return ((unsigned long *)tsk->thread.sp)[3];
  }
  
@@ -15671,7 +15732,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  /*
   * The idle thread. There's no useful work to be
-@@ -155,12 +128,13 @@ void cpu_idle(void)
+@@ -155,12 +126,13 @@ void cpu_idle(void)
  	}
  }
  
@@ -15686,7 +15747,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	if (user_mode_vm(regs)) {
  		sp = regs->sp;
-@@ -173,11 +147,15 @@ void __show_registers(struct pt_regs *re
+@@ -173,11 +145,15 @@ void __show_registers(struct pt_regs *re
  	}
  
  	printk("\n");
@@ -15704,7 +15765,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	printk("EIP: %04x:[<%08lx>] EFLAGS: %08lx CPU: %d\n",
  			(u16)regs->cs, regs->ip, regs->flags,
-@@ -216,7 +194,7 @@ void __show_registers(struct pt_regs *re
+@@ -216,7 +192,7 @@ void __show_registers(struct pt_regs *re
  
  void show_regs(struct pt_regs *regs)
  {
@@ -15713,7 +15774,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	show_trace(NULL, regs, &regs->sp, regs->bp);
  }
  
-@@ -269,6 +247,14 @@ void exit_thread(void)
+@@ -269,6 +245,14 @@ void exit_thread(void)
  		t->io_bitmap_ptr = NULL;
  		clear_thread_flag(TIF_IO_BITMAP);
  	}
@@ -15728,7 +15789,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  void flush_thread(void)
-@@ -434,6 +420,35 @@ int set_tsc_mode(unsigned int val)
+@@ -434,6 +418,35 @@ int set_tsc_mode(unsigned int val)
  	return 0;
  }
  
@@ -15764,7 +15825,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  static noinline void
  __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p)
  {
-@@ -443,14 +458,7 @@ __switch_to_xtra(struct task_struct *pre
+@@ -443,14 +456,7 @@ __switch_to_xtra(struct task_struct *pre
  	prev = &prev_p->thread;
  	next = &next_p->thread;
  
@@ -15780,7 +15841,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	if (next->debugctlmsr != debugctl)
  		update_debugctlmsr(next->debugctlmsr);
-@@ -474,13 +482,13 @@ __switch_to_xtra(struct task_struct *pre
+@@ -474,13 +480,13 @@ __switch_to_xtra(struct task_struct *pre
  			hard_enable_TSC();
  	}
  
@@ -15796,9 +15857,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  /*
---- head-2010-04-29.orig/arch/x86/kernel/process_64-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/process_64-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -40,11 +40,11 @@
+--- head-2011-03-17.orig/arch/x86/kernel/process_64-xen.c	2011-02-02 08:34:01.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/process_64-xen.c	2011-02-02 08:34:22.000000000 +0100
+@@ -40,25 +40,23 @@
  #include <linux/kdebug.h>
  #include <linux/tick.h>
  #include <linux/prctl.h>
@@ -15812,15 +15873,22 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #include <asm/processor.h>
  #include <asm/i387.h>
  #include <asm/mmu_context.h>
-@@ -58,6 +58,7 @@
+ #include <asm/pda.h>
+ #include <asm/prctl.h>
+ #include <xen/interface/physdev.h>
+-#include <xen/interface/vcpu.h>
+ #include <asm/desc.h>
+ #include <asm/proto.h>
  #include <asm/hardirq.h>
  #include <asm/ia32.h>
  #include <asm/idle.h>
+-
+-#include <xen/cpu_hotplug.h>
 +#include <asm/syscalls.h>
  
- #include <xen/cpu_hotplug.h>
+ asmlinkage extern void ret_from_fork(void);
  
-@@ -71,6 +72,13 @@ void idle_notifier_register(struct notif
+@@ -70,6 +68,13 @@ void idle_notifier_register(struct notif
  {
  	atomic_notifier_chain_register(&idle_notifier, n);
  }
@@ -15834,7 +15902,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  void enter_idle(void)
  {
-@@ -94,25 +102,12 @@ void exit_idle(void)
+@@ -93,25 +98,12 @@ void exit_idle(void)
  	__exit_idle();
  }
  
@@ -15862,7 +15930,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  /*
   * The idle thread. There's no useful work to be
-@@ -157,63 +152,74 @@ void cpu_idle(void)
+@@ -156,63 +148,74 @@ void cpu_idle(void)
  }
  
  /* Prints also some state that isn't saved in the pt_regs */
@@ -15963,7 +16031,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	show_trace(NULL, regs, (void *)(regs + 1), regs->bp);
  }
  
-@@ -250,6 +256,14 @@ void exit_thread(void)
+@@ -249,6 +252,14 @@ void exit_thread(void)
  #endif
  		t->io_bitmap_max = 0;
  	}
@@ -15978,7 +16046,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  void xen_load_gs_index(unsigned gs)
-@@ -330,10 +344,10 @@ void prepare_to_copy(struct task_struct 
+@@ -329,10 +340,10 @@ void prepare_to_copy(struct task_struct 
  
  int copy_thread(int nr, unsigned long clone_flags, unsigned long sp,
  		unsigned long unused,
@@ -15991,7 +16059,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	struct task_struct *me = current;
  
  	childregs = ((struct pt_regs *)
-@@ -377,10 +391,10 @@ int copy_thread(int nr, unsigned long cl
+@@ -376,10 +387,10 @@ int copy_thread(int nr, unsigned long cl
  		if (test_thread_flag(TIF_IA32))
  			err = do_set_thread_area(p, -1,
  				(struct user_desc __user *)childregs->si, 0);
@@ -16006,7 +16074,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			goto out;
  	}
          p->thread.iopl = current->thread.iopl;
-@@ -487,13 +501,27 @@ static inline void __switch_to_xtra(stru
+@@ -486,13 +497,27 @@ static inline void __switch_to_xtra(stru
  	next = &next_p->thread;
  
  	debugctl = prev->debugctlmsr;
@@ -16040,7 +16108,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	if (next->debugctlmsr != debugctl)
  		update_debugctlmsr(next->debugctlmsr);
-@@ -517,13 +545,13 @@ static inline void __switch_to_xtra(stru
+@@ -516,13 +541,13 @@ static inline void __switch_to_xtra(stru
  			hard_enable_TSC();
  	}
  
@@ -16056,7 +16124,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  /*
-@@ -555,7 +583,7 @@ __switch_to(struct task_struct *prev_p, 
+@@ -554,7 +579,7 @@ __switch_to(struct task_struct *prev_p, 
  	multicall_entry_t _mcl[8], *mcl = _mcl;
  
  	/* we're going to use this soon, after a few expensive things */
@@ -16065,7 +16133,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		prefetch(next->xstate);
  
  	/*
-@@ -636,12 +664,12 @@ __switch_to(struct task_struct *prev_p, 
+@@ -635,12 +660,12 @@ __switch_to(struct task_struct *prev_p, 
  	if (unlikely(HYPERVISOR_multicall_check(_mcl, mcl - _mcl, NULL)))
  		BUG();
  
@@ -16080,7 +16148,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	if (unlikely(next->ds))
  		loadsegment(ds, next->ds);
-@@ -655,7 +683,7 @@ __switch_to(struct task_struct *prev_p, 
+@@ -654,7 +679,7 @@ __switch_to(struct task_struct *prev_p, 
  	 */
  	arch_leave_lazy_cpu_mode();
  
@@ -16089,7 +16157,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	 * Switch FS and GS.
  	 *
  	 * Segment register != 0 always requires a reload.  Also
-@@ -674,10 +702,10 @@ __switch_to(struct task_struct *prev_p, 
+@@ -673,10 +698,10 @@ __switch_to(struct task_struct *prev_p, 
  	if (next->gs)
  		WARN_ON(HYPERVISOR_set_segment_base(SEGBASE_GS_USER, next->gs));
  
@@ -16102,7 +16170,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	write_pda(kernelstack,
  		  (unsigned long)task_stack_page(next_p) +
  		  THREAD_SIZE - PDA_STACKOFFSET);
-@@ -718,7 +746,7 @@ long sys_execve(char __user *name, char 
+@@ -717,7 +742,7 @@ long sys_execve(char __user *name, char 
  		char __user * __user *envp, struct pt_regs *regs)
  {
  	long error;
@@ -16111,7 +16179,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	filename = getname(name);
  	error = PTR_ERR(filename);
-@@ -776,56 +804,56 @@ asmlinkage long sys_vfork(struct pt_regs
+@@ -775,56 +800,56 @@ asmlinkage long sys_vfork(struct pt_regs
  unsigned long get_wchan(struct task_struct *p)
  {
  	unsigned long stack;
@@ -16189,7 +16257,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		}
  		put_cpu();
  		break;
-@@ -880,8 +908,7 @@ long do_arch_prctl(struct task_struct *t
+@@ -879,8 +904,7 @@ long do_arch_prctl(struct task_struct *t
  				rdmsrl(MSR_KERNEL_GS_BASE, base);
  			else
  				base = task->thread.gs;
@@ -16199,74 +16267,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			base = task->thread.gs;
  		ret = put_user(base, (unsigned long __user *)addr);
  		break;
---- head-2010-04-29.orig/arch/x86/kernel/quirks-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/quirks-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -352,9 +352,27 @@ static void ati_force_hpet_resume(void)
- 	printk(KERN_DEBUG "Force enabled HPET at resume\n");
- }
- 
-+static u32 ati_ixp4x0_rev(struct pci_dev *dev)
-+{
-+	u32 d;
-+	u8  b;
-+
-+	pci_read_config_byte(dev, 0xac, &b);
-+	b &= ~(1<<5);
-+	pci_write_config_byte(dev, 0xac, b);
-+	pci_read_config_dword(dev, 0x70, &d);
-+	d |= 1<<8;
-+	pci_write_config_dword(dev, 0x70, d);
-+	pci_read_config_dword(dev, 0x8, &d);
-+	d &= 0xff;
-+	dev_printk(KERN_DEBUG, &dev->dev, "SB4X0 revision 0x%x\n", d);
-+	return d;
-+}
-+
- static void ati_force_enable_hpet(struct pci_dev *dev)
- {
--	u32 uninitialized_var(val);
-+	u32 d, val;
-+	u8  b;
- 
- 	if (hpet_address || force_hpet_address)
- 		return;
-@@ -364,14 +382,33 @@ static void ati_force_enable_hpet(struct
- 		return;
- 	}
- 
-+	d = ati_ixp4x0_rev(dev);
-+	if (d  < 0x82)
-+		return;
-+
-+	/* base address */
- 	pci_write_config_dword(dev, 0x14, 0xfed00000);
- 	pci_read_config_dword(dev, 0x14, &val);
-+
-+	/* enable interrupt */
-+	outb(0x72, 0xcd6); b = inb(0xcd7);
-+	b |= 0x1;
-+	outb(0x72, 0xcd6); outb(b, 0xcd7);
-+	outb(0x72, 0xcd6); b = inb(0xcd7);
-+	if (!(b & 0x1))
-+		return;
-+	pci_read_config_dword(dev, 0x64, &d);
-+	d |= (1<<10);
-+	pci_write_config_dword(dev, 0x64, d);
-+	pci_read_config_dword(dev, 0x64, &d);
-+	if (!(d & (1<<10)))
-+		return;
-+
- 	force_hpet_address = val;
- 	force_hpet_resume_type = ATI_FORCE_HPET_RESUME;
- 	dev_printk(KERN_DEBUG, &dev->dev, "Force enabled HPET at 0x%lx\n",
- 		   force_hpet_address);
- 	cached_dev = dev;
--	return;
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP400_SMBUS,
- 			 ati_force_enable_hpet);
---- head-2010-04-29.orig/arch/x86/kernel/setup-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/setup-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/setup-xen.c	2011-03-04 15:09:03.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/setup-xen.c	2011-03-03 16:22:12.000000000 +0100
 @@ -261,6 +261,9 @@ unsigned long saved_video_mode;
  #define RAMDISK_LOAD_FLAG		0x4000
  
@@ -16519,7 +16521,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
   * Determine if we were loaded by an EFI loader.  If so, then we have also been
   * passed the efi memmap, systab, etc., so we should use these data structures
   * for initialization.  Note, the efi init code path is determined by the
-@@ -691,6 +884,9 @@ void __init setup_arch(char **cmdline_p)
+@@ -693,6 +886,9 @@ void __init setup_arch(char **cmdline_p)
  	printk(KERN_INFO "Command line: %s\n", boot_command_line);
  #endif
  
@@ -16529,7 +16531,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	early_cpu_init();
  	early_ioremap_init();
  
-@@ -785,6 +981,19 @@ void __init setup_arch(char **cmdline_p)
+@@ -787,6 +983,19 @@ void __init setup_arch(char **cmdline_p)
  	bss_resource.start = virt_to_phys(&__bss_start);
  	bss_resource.end = virt_to_phys(&__bss_stop)-1;
  
@@ -16549,7 +16551,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	strlcpy(command_line, boot_command_line, COMMAND_LINE_SIZE);
  	*cmdline_p = command_line;
  
-@@ -794,13 +1003,8 @@ void __init setup_arch(char **cmdline_p)
+@@ -796,13 +1005,8 @@ void __init setup_arch(char **cmdline_p)
  	check_efer();
  #endif
  
@@ -16565,7 +16567,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	/* after early param, so could get panic from serial */
  	reserve_early_setup_data();
-@@ -819,10 +1023,15 @@ void __init setup_arch(char **cmdline_p)
+@@ -821,10 +1025,15 @@ void __init setup_arch(char **cmdline_p)
  
  	finish_e820_parsing();
  
@@ -16582,7 +16584,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  #ifndef CONFIG_XEN
  	/* after parse_early_param, so could debug it */
-@@ -868,6 +1077,10 @@ void __init setup_arch(char **cmdline_p)
+@@ -870,6 +1079,10 @@ void __init setup_arch(char **cmdline_p)
  	num_physpages = max_pfn;
  	max_mapnr = max_pfn;
  
@@ -16593,7 +16595,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	/* How many end-of-memory variables you have, grandma! */
  	/* need this before calling reserve_initrd */
-@@ -879,6 +1092,10 @@ void __init setup_arch(char **cmdline_p)
+@@ -881,6 +1094,10 @@ void __init setup_arch(char **cmdline_p)
  	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
  #endif
  
@@ -16604,7 +16606,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	/* max_pfn_mapped is updated here */
  	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
  	max_pfn_mapped = max_low_pfn_mapped;
-@@ -907,9 +1124,6 @@ void __init setup_arch(char **cmdline_p)
+@@ -909,9 +1126,6 @@ void __init setup_arch(char **cmdline_p)
  	vsmp_init();
  #endif
  
@@ -16614,7 +16616,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	io_delay_init();
  
  #ifdef CONFIG_ACPI
-@@ -924,6 +1138,8 @@ void __init setup_arch(char **cmdline_p)
+@@ -926,6 +1140,8 @@ void __init setup_arch(char **cmdline_p)
  	 */
  	acpi_boot_table_init();
  
@@ -16623,7 +16625,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #ifdef CONFIG_ACPI_NUMA
  	/*
  	 * Parse SRAT to discover nodes.
-@@ -1069,6 +1285,7 @@ void __init setup_arch(char **cmdline_p)
+@@ -1071,6 +1287,7 @@ void __init setup_arch(char **cmdline_p)
  #endif
  
  	prefill_possible_map();
@@ -16631,7 +16633,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #ifdef CONFIG_X86_64
  	init_cpu_to_node();
  #endif
-@@ -1077,6 +1294,9 @@ void __init setup_arch(char **cmdline_p)
+@@ -1079,6 +1296,9 @@ void __init setup_arch(char **cmdline_p)
  	init_apic_mappings();
  	ioapic_init_mappings();
  
@@ -16641,8 +16643,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	kvm_guest_init();
  
  	e820_reserve_resources();
---- head-2010-04-29.orig/arch/x86/kernel/time-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/kernel/time-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/time-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/time-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -41,6 +41,7 @@
  
  #include <asm/delay.h>
@@ -16668,7 +16670,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  # else
  #  ifdef __i386__
  		unsigned long *sp = (unsigned long *)&regs->sp;
-@@ -574,6 +570,7 @@ irqreturn_t timer_interrupt(int irq, voi
+@@ -577,6 +573,7 @@ irqreturn_t timer_interrupt(int irq, voi
  	run_local_timers();
  	if (rcu_pending(cpu))
  		rcu_check_callbacks(cpu, user_mode_vm(get_irq_regs()));
@@ -16676,7 +16678,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	scheduler_tick();
  	run_posix_cpu_timers(current);
  	profile_tick(CPU_PROFILING);
-@@ -803,7 +800,8 @@ static void stop_hz_timer(void)
+@@ -806,7 +803,8 @@ static void stop_hz_timer(void)
  	smp_mb();
  
  	/* Leave ourselves in tick mode if rcu or softirq or timer pending. */
@@ -16687,7 +16689,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	     time_before_eq(j, jiffies))) {
  		cpu_clear(cpu, nohz_cpu_mask);
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/arch/x86/kernel/traps-xen.c	2010-03-24 15:14:47.000000000 +0100
++++ head-2011-03-17/arch/x86/kernel/traps-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -0,0 +1,1022 @@
 +/*
 + *  Copyright (C) 1991, 1992  Linus Torvalds
@@ -17711,7 +17713,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +		trap_ctxt[t->vector].address = t->address;
 +	}
 +}
---- head-2010-04-29.orig/arch/x86/kernel/traps_32-xen.c	2010-03-24 15:12:46.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/traps_32-xen.c	2011-02-01 14:38:38.000000000 +0100
 +++ /dev/null	1970-01-01 00:00:00.000000000 +0000
 @@ -1,1222 +0,0 @@
 -/*
@@ -18936,7 +18938,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -	return 1;
 -}
 -__setup("code_bytes=", code_bytes_setup);
---- head-2010-04-29.orig/arch/x86/kernel/traps_64-xen.c	2010-03-24 15:12:46.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/kernel/traps_64-xen.c	2011-02-01 14:38:38.000000000 +0100
 +++ /dev/null	1970-01-01 00:00:00.000000000 +0000
 @@ -1,1238 +0,0 @@
 -/*
@@ -20177,8 +20179,21 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 -	return 1;
 -}
 -__setup("code_bytes=", code_bytes_setup);
---- head-2010-04-29.orig/arch/x86/mm/fault-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/fault-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/dump_pagetables-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/dump_pagetables-xen.c	2011-02-01 14:39:24.000000000 +0100
+@@ -160,8 +160,8 @@ static void note_page(struct seq_file *m
+ 	 * we have now. "break" is either changing perms, levels or
+ 	 * address space marker.
+ 	 */
+-	prot = pgprot_val(new_prot) & ~(PTE_PFN_MASK);
+-	cur = pgprot_val(st->current_prot) & ~(PTE_PFN_MASK);
++	prot = pgprot_val(new_prot) & PTE_FLAGS_MASK;
++	cur = pgprot_val(st->current_prot) & PTE_FLAGS_MASK;
+ 
+ 	if (!st->level) {
+ 		/* First entry */
+--- head-2011-03-17.orig/arch/x86/mm/fault-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/fault-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -35,6 +35,7 @@
  #include <asm/tlbflush.h>
  #include <asm/proto.h>
@@ -20289,7 +20304,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	}
  
  	printk("VM: killing process %s\n", tsk->comm);
-@@ -946,14 +929,15 @@ LIST_HEAD(pgd_list);
+@@ -949,14 +932,15 @@ LIST_HEAD(pgd_list);
  
  void vmalloc_sync_all(void)
  {
@@ -20309,7 +20324,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		unsigned long flags;
  		struct page *page;
  
-@@ -966,10 +950,8 @@ void vmalloc_sync_all(void)
+@@ -974,10 +958,8 @@ void vmalloc_sync_all(void)
  		spin_unlock_irqrestore(&pgd_lock, flags);
  	}
  #else /* CONFIG_X86_64 */
@@ -20322,8 +20337,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		const pgd_t *pgd_ref = pgd_offset_k(address);
  		unsigned long flags;
  		struct page *page;
---- head-2010-04-29.orig/arch/x86/mm/highmem_32-xen.c	2010-03-24 15:12:36.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/highmem_32-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/highmem_32-xen.c	2011-01-31 18:07:35.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/highmem_32-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -137,6 +137,7 @@ void *kmap_atomic_pfn(unsigned long pfn,
  
  	return (void*) vaddr;
@@ -20332,8 +20347,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  struct page *kmap_atomic_to_page(void *ptr)
  {
---- head-2010-04-29.orig/arch/x86/mm/init_32-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/init_32-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/init_32-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/init_32-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -34,6 +34,7 @@
  #include <linux/scatterlist.h>
  
@@ -20553,8 +20568,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	save_pg_dir();
  	zap_low_mappings();
  
---- head-2010-04-29.orig/arch/x86/mm/init_64-xen.c	2010-04-29 09:51:38.000000000 +0200
-+++ head-2010-04-29/arch/x86/mm/init_64-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/init_64-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/init_64-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -34,6 +34,7 @@
  #include <linux/nmi.h>
  
@@ -21061,7 +21076,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  void free_init_pages(char *what, unsigned long begin, unsigned long end)
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/arch/x86/mm/iomap_32-xen.c	2010-03-24 15:14:47.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/iomap_32-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -0,0 +1,61 @@
 +/*
 + * Copyright © 2008 Ingo Molnar
@@ -21124,8 +21139,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +	pagefault_enable();
 +}
 +EXPORT_SYMBOL_GPL(iounmap_atomic);
---- head-2010-04-29.orig/arch/x86/mm/ioremap-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/ioremap-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/ioremap-xen.c	2011-02-07 15:40:39.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/ioremap-xen.c	2011-02-07 15:41:07.000000000 +0100
 @@ -25,20 +25,51 @@
  
  #ifdef CONFIG_X86_64
@@ -21223,7 +21238,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		v->val = __pte_val(pte_mkspecial(pfn_pte_ma(mfn, prot)));
  
  		mfn++;
-@@ -240,6 +293,25 @@ int page_is_ram(unsigned long pagenr)
+@@ -221,6 +274,25 @@ int page_is_ram(unsigned long pagenr)
  	return 0;
  }
  
@@ -21249,7 +21264,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  /*
   * Fix up the linear direct mapping of the kernel to avoid cache attribute
   * conflicts.
-@@ -327,6 +399,12 @@ static void __iomem *__ioremap_caller(re
+@@ -308,6 +380,12 @@ static void __iomem *__ioremap_caller(re
  		return (__force void __iomem *)isa_bus_to_virt((unsigned long)phys_addr);
  
  	/*
@@ -21262,7 +21277,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	 * Don't allow anybody to remap normal RAM that we're using..
  	 */
  	for (mfn = PFN_DOWN(phys_addr); mfn < PFN_UP(last_addr); mfn++) {
-@@ -381,16 +459,16 @@ static void __iomem *__ioremap_caller(re
+@@ -362,16 +440,16 @@ static void __iomem *__ioremap_caller(re
  	switch (prot_val) {
  	case _PAGE_CACHE_UC:
  	default:
@@ -21283,7 +21298,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		break;
  	}
  
-@@ -490,7 +568,7 @@ static void __iomem *ioremap_default(res
+@@ -471,7 +549,7 @@ static void __iomem *ioremap_default(res
  					unsigned long size)
  {
  	unsigned long flags;
@@ -21292,7 +21307,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	int err;
  
  	/*
-@@ -502,11 +580,11 @@ static void __iomem *ioremap_default(res
+@@ -483,11 +561,11 @@ static void __iomem *ioremap_default(res
  	if (err < 0)
  		return NULL;
  
@@ -21307,7 +21322,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  #endif
  
-@@ -602,7 +680,7 @@ void unxlate_dev_mem_ptr(unsigned long p
+@@ -583,7 +661,7 @@ void unxlate_dev_mem_ptr(unsigned long p
  }
  #endif
  
@@ -21316,7 +21331,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  static int __init early_ioremap_debug_setup(char *str)
  {
-@@ -721,12 +799,12 @@ static void __init __early_set_fixmap(en
+@@ -702,12 +780,12 @@ static void __init __early_set_fixmap(en
  }
  
  static inline void __init early_set_fixmap(enum fixed_addresses idx,
@@ -21332,7 +21347,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  static inline void __init early_clear_fixmap(enum fixed_addresses idx)
-@@ -737,16 +815,22 @@ static inline void __init early_clear_fi
+@@ -718,16 +796,22 @@ static inline void __init early_clear_fi
  		__early_set_fixmap(idx, 0, __pgprot(0));
  }
  
@@ -21360,7 +21375,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	printk(KERN_WARNING
  		"please boot with early_ioremap_debug and report the dmesg.\n");
  
-@@ -754,18 +838,33 @@ static int __init check_early_ioremap_le
+@@ -735,18 +819,33 @@ static int __init check_early_ioremap_le
  }
  late_initcall(check_early_ioremap_leak);
  
@@ -21398,7 +21413,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		dump_stack();
  	}
  
-@@ -776,17 +875,13 @@ void __init *early_ioremap(unsigned long
+@@ -757,17 +856,13 @@ void __init *early_ioremap(unsigned long
  		return NULL;
  	}
  
@@ -21418,7 +21433,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	/*
  	 * Mappings have to fit in the FIX_BTMAP area.
-@@ -800,10 +895,10 @@ void __init *early_ioremap(unsigned long
+@@ -781,10 +876,10 @@ void __init *early_ioremap(unsigned long
  	/*
  	 * Ok, go for it..
  	 */
@@ -21431,7 +21446,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		phys_addr += PAGE_SIZE;
  		--idx;
  		--nrpages;
-@@ -811,24 +906,55 @@ void __init *early_ioremap(unsigned long
+@@ -792,24 +887,55 @@ void __init *early_ioremap(unsigned long
  	if (early_ioremap_debug)
  		printk(KERN_CONT "%08lx + %08lx\n", offset, fix_to_virt(idx0));
  
@@ -21493,7 +21508,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		dump_stack();
  	}
  
-@@ -840,12 +966,13 @@ void __init early_iounmap(void *addr, un
+@@ -821,12 +947,13 @@ void __init early_iounmap(void *addr, un
  	offset = virt_addr & ~PAGE_MASK;
  	nrpages = PAGE_ALIGN(offset + size - 1) >> PAGE_SHIFT;
  
@@ -21508,8 +21523,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  void __this_fixmap_does_not_exist(void)
---- head-2010-04-29.orig/arch/x86/mm/pageattr-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/pageattr-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/pageattr-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/pageattr-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -25,15 +25,27 @@
   * The current flushing context - we pass it instead of 5 arguments:
   */
@@ -22278,8 +22293,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #ifdef CONFIG_HIBERNATION
  
  bool kernel_page_present(struct page *page)
---- head-2010-04-29.orig/arch/x86/mm/pat-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/pat-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/pat-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/pat-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -7,24 +7,24 @@
   * Loosely based on earlier PAT patchset from Eric Biederman and Andi Kleen.
   */
@@ -22579,8 +22594,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
 -#endif /* CONFIG_DEBUG_FS */
 +#endif /* CONFIG_DEBUG_FS && CONFIG_X86_PAT */
---- head-2010-04-29.orig/arch/x86/mm/pgtable-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/pgtable-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/pgtable-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/pgtable-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -129,7 +129,7 @@ void __pud_free_tlb(struct mmu_gather *t
  static void _pin_lock(struct mm_struct *mm, int lock) {
  	if (lock)
@@ -22611,8 +22626,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  {
  	unsigned long flags; /* can be called from interrupt context */
  
---- head-2010-04-29.orig/arch/x86/mm/pgtable_32-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/mm/pgtable_32-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/mm/pgtable_32-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/mm/pgtable_32-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -122,7 +122,6 @@ void __init reserve_top_address(unsigned
  	printk(KERN_INFO "Reserving virtual address space above 0x%08x\n",
  	       (int)-reserve);
@@ -22631,8 +22646,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	return 0;
  }
  early_param("vmalloc", parse_vmalloc);
---- head-2010-04-29.orig/arch/x86/pci/irq-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/pci/irq-xen.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/arch/x86/pci/irq-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/pci/irq-xen.c	2011-02-01 14:39:24.000000000 +0100
 @@ -499,7 +499,7 @@ static int pirq_amd756_get(struct pci_de
  	if (pirq <= 4)
  		irq = read_config_nybble(router, 0x56, pirq - 1);
@@ -22765,9 +22780,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			}
  		}
  #endif
---- head-2010-04-29.orig/arch/x86/xen/Kconfig	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/arch/x86/xen/Kconfig	2010-03-24 15:14:47.000000000 +0100
-@@ -31,7 +31,7 @@ config XEN_SAVE_RESTORE
+--- head-2011-03-17.orig/arch/x86/xen/Kconfig	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/arch/x86/xen/Kconfig	2011-02-01 14:39:24.000000000 +0100
+@@ -43,7 +43,7 @@ config XEN_SAVE_RESTORE
  
  config XEN_DEBUG_FS
  	bool "Enable Xen debug and tuning parameters in debugfs"
@@ -22776,8 +22791,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	default n
  	help
  	  Enable statistics output and various tuning options in debugfs.
---- head-2010-04-29.orig/drivers/acpi/acpica/hwsleep.c	2010-03-24 15:02:17.000000000 +0100
-+++ head-2010-04-29/drivers/acpi/acpica/hwsleep.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/drivers/acpi/acpica/hwsleep.c	2011-01-31 17:01:49.000000000 +0100
++++ head-2011-03-17/drivers/acpi/acpica/hwsleep.c	2011-02-01 14:39:24.000000000 +0100
 @@ -396,8 +396,7 @@ acpi_status asmlinkage acpi_enter_sleep_
  	err = acpi_notify_hypervisor_state(sleep_state,
  			PM1Acontrol, PM1Bcontrol);
@@ -22788,8 +22803,45 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		return_ACPI_STATUS(AE_ERROR);
  	}
  #endif
---- head-2010-04-29.orig/drivers/acpi/processor_extcntl.c	2010-03-24 15:09:08.000000000 +0100
-+++ head-2010-04-29/drivers/acpi/processor_extcntl.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/drivers/acpi/processor_core.c	2011-01-31 17:56:27.000000000 +0100
++++ head-2011-03-17/drivers/acpi/processor_core.c	2011-02-01 14:39:24.000000000 +0100
+@@ -165,13 +165,20 @@ exit:
+ 
+ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
+ {
+-	int i;
++	int i = 0;
+ 	int apic_id = -1;
+ 
++	if (type < 0) {
++		if (!processor_cntl_external())
++			return -1;
++		type = ~type;
++		i = 1;
++	}
++
+ 	apic_id = map_mat_entry(handle, type, acpi_id);
+ 	if (apic_id == -1)
+ 		apic_id = map_madt_entry(type, acpi_id);
+-	if (apic_id == -1)
++	if (apic_id == -1 || i)
+ 		return apic_id;
+ 
+ #ifndef CONFIG_PROCESSOR_EXTERNAL_CONTROL
+--- head-2011-03-17.orig/drivers/acpi/processor_driver.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/drivers/acpi/processor_driver.c	2011-02-01 14:39:24.000000000 +0100
+@@ -326,7 +326,8 @@ static int acpi_processor_get_info(struc
+ 	if (pr->id == -1) {
+ 		if (ACPI_FAILURE
+ 		    (acpi_processor_hotadd_init(pr->handle, &pr->id)) &&
+-		    !processor_cntl_external()) {
++		    get_cpu_id(pr->handle, ~device_declaration,
++			       pr->acpi_id) < 0) {
+ 			return -ENODEV;
+ 		}
+ 	}
+--- head-2011-03-17.orig/drivers/acpi/processor_extcntl.c	2011-01-31 17:56:27.000000000 +0100
++++ head-2011-03-17/drivers/acpi/processor_extcntl.c	2011-02-01 14:39:24.000000000 +0100
 @@ -30,7 +30,6 @@
  
  #include <acpi/processor.h>
@@ -22798,9 +22850,29 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #define ACPI_PROCESSOR_CLASS            "processor"
  #define _COMPONENT              ACPI_PROCESSOR_COMPONENT
  ACPI_MODULE_NAME("processor_extcntl")
---- head-2010-04-29.orig/drivers/firmware/dmi_scan.c	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/drivers/firmware/dmi_scan.c	2010-04-15 10:05:59.000000000 +0200
-@@ -420,6 +420,11 @@ static bool dmi_matches(const struct dmi
+--- head-2011-03-17.orig/drivers/char/agp/generic.c	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/drivers/char/agp/generic.c	2011-02-01 14:39:24.000000000 +0100
+@@ -1217,7 +1217,7 @@ int agp_generic_alloc_pages(struct agp_b
+ 	}
+ 
+ #ifdef CONFIG_X86
+-	set_pages_array_uc(mem->pages, num_pages);
++	map_pages_into_agp(mem->pages, num_pages);
+ #endif
+ 	ret = 0;
+ out:
+@@ -1250,7 +1250,7 @@ void agp_generic_destroy_pages(struct ag
+ 		return;
+ 
+ #ifdef CONFIG_X86
+-	set_pages_array_wb(mem->pages, mem->page_count);
++	unmap_pages_from_agp(mem->pages, mem->page_count);
+ #endif
+ 
+ 	for (i = 0; i < mem->page_count; i++) {
+--- head-2011-03-17.orig/drivers/firmware/dmi_scan.c	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/drivers/firmware/dmi_scan.c	2011-02-17 10:11:37.000000000 +0100
+@@ -482,6 +482,11 @@ static bool dmi_matches(const struct dmi
  {
  	int i;
  
@@ -22812,9 +22884,20 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	WARN(!dmi_initialized, KERN_ERR "dmi check: not initialized yet.\n");
  
  	for (i = 0; i < ARRAY_SIZE(dmi->matches); i++) {
---- head-2010-04-29.orig/drivers/pci/msi-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/drivers/pci/msi-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -305,8 +305,16 @@ static int msi_map_vector(struct pci_dev
+--- head-2011-03-17.orig/drivers/idle/Kconfig	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/drivers/idle/Kconfig	2011-02-01 14:39:24.000000000 +0100
+@@ -10,7 +10,7 @@ config INTEL_IDLE
+ 	  processors intel_idle does not support.
+ 
+ menu "Memory power savings"
+-depends on X86_64
++depends on X86_64 && !XEN
+ 
+ config I7300_IDLE_IOAT_CHANNEL
+ 	bool
+--- head-2011-03-17.orig/drivers/pci/msi-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/drivers/pci/msi-xen.c	2011-02-01 14:39:24.000000000 +0100
+@@ -266,8 +266,16 @@ static int msi_map_vector(struct pci_dev
  	 * dev->irq in dom0 will be 'Xen pirq' if this device belongs to
  	 * to another domain, and will be 'Linux irq' if it belongs to dom0.
  	 */
@@ -22833,7 +22916,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  }
  
  static void pci_intx_for_msi(struct pci_dev *dev, int enable)
-@@ -761,3 +769,24 @@ void pci_msi_init_pci_dev(struct pci_dev
+@@ -722,3 +730,24 @@ void pci_msi_init_pci_dev(struct pci_dev
  	INIT_LIST_HEAD(&dev->msi_list);
  #endif
  }
@@ -22858,9 +22941,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +		return;
 +	msi_acpi_init();
 +}
---- head-2010-04-29.orig/drivers/pci/probe.c	2010-04-29 09:29:49.000000000 +0200
-+++ head-2010-04-29/drivers/pci/probe.c	2010-04-29 09:52:00.000000000 +0200
-@@ -1212,6 +1212,11 @@ static void pci_init_capabilities(struct
+--- head-2011-03-17.orig/drivers/pci/probe.c	2011-03-17 14:35:46.000000000 +0100
++++ head-2011-03-17/drivers/pci/probe.c	2011-02-01 14:39:24.000000000 +0100
+@@ -1214,6 +1214,11 @@ static void pci_init_capabilities(struct
  	/* Vital Product Data */
  	pci_vpd_pci22_init(dev);
  
@@ -22872,24 +22955,44 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	/* Alternative Routing-ID Forwarding */
  	pci_enable_ari(dev);
  
---- head-2010-04-29.orig/drivers/xen/Makefile	2010-04-19 14:51:09.000000000 +0200
-+++ head-2010-04-29/drivers/xen/Makefile	2010-04-19 14:52:08.000000000 +0200
+--- head-2011-03-17.orig/drivers/xen/Kconfig	2011-01-31 18:07:35.000000000 +0100
++++ head-2011-03-17/drivers/xen/Kconfig	2011-02-02 15:36:33.000000000 +0100
+@@ -344,9 +344,6 @@ config XEN_SMPBOOT
+ 	def_bool y
+ 	depends on SMP && !PPC_XEN
+ 
+-config XEN_XENCOMM
+-	bool
+-
+ config XEN_DEVMEM
+ 	def_bool y
+ 
+@@ -452,4 +449,7 @@ config SWIOTLB_XEN
+ 	depends on PCI
+ 	select SWIOTLB
+ 
++config XEN_XENCOMM
++	bool
++
+ endmenu
+--- head-2011-03-17.orig/drivers/xen/Makefile	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/drivers/xen/Makefile	2011-02-01 14:39:24.000000000 +0100
 @@ -1,4 +1,5 @@
  obj-$(CONFIG_PARAVIRT_XEN)	+= grant-table.o features.o events.o manage.o
 +xen-hotplug-$(CONFIG_PARAVIRT_XEN) := cpu_hotplug.o
  xen-balloon-$(CONFIG_PARAVIRT_XEN) := balloon.o
  
  xen-balloon-$(CONFIG_XEN)	:= balloon/
-@@ -9,6 +10,7 @@ obj-y				+= xenbus/
- obj-$(CONFIG_XEN)		+= char/
+@@ -11,6 +12,7 @@ obj-$(CONFIG_XEN)		+= char/
+ xen-backend-$(CONFIG_XEN_BACKEND)	:= util.o
  
- obj-$(CONFIG_XEN)		+= features.o util.o
-+obj-$(CONFIG_HOTPLUG_CPU)	+= $(xen-hotplug-y)
- obj-$(CONFIG_XEN_XENCOMM)	+= xencomm.o
- obj-$(CONFIG_XEN_BALLOON)	+= $(xen-balloon-y)
+ obj-$(CONFIG_XEN)			+= features.o $(xen-backend-y) $(xen-backend-m)
++obj-$(CONFIG_HOTPLUG_CPU)		+= $(xen-hotplug-y)
+ obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
+ obj-$(CONFIG_XEN_BALLOON)		+= $(xen-balloon-y)
  obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= blkback/
---- head-2010-04-29.orig/drivers/xen/blkback/vbd.c	2010-03-22 12:00:53.000000000 +0100
-+++ head-2010-04-29/drivers/xen/blkback/vbd.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/blkback/vbd.c	2011-01-31 17:56:27.000000000 +0100
++++ head-2011-03-17/drivers/xen/blkback/vbd.c	2011-02-01 14:39:24.000000000 +0100
 @@ -95,7 +95,8 @@ int vbd_create(blkif_t *blkif, blkif_vde
  void vbd_free(struct vbd *vbd)
  {
@@ -22900,17 +23003,17 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	vbd->bdev = NULL;
  }
  
---- head-2010-04-29.orig/drivers/xen/blkfront/blkfront.c	2010-03-24 15:12:36.000000000 +0100
-+++ head-2010-04-29/drivers/xen/blkfront/blkfront.c	2010-03-24 15:14:47.000000000 +0100
-@@ -343,6 +343,7 @@ static void connect(struct blkfront_info
- 		printk(KERN_INFO "Setting capacity to %Lu\n",
- 		       sectors);
+--- head-2011-03-17.orig/drivers/xen/blkfront/blkfront.c	2011-01-31 18:07:35.000000000 +0100
++++ head-2011-03-17/drivers/xen/blkfront/blkfront.c	2011-02-01 14:39:24.000000000 +0100
+@@ -342,6 +342,7 @@ static void connect(struct blkfront_info
+ 			return;
+ 		pr_info("Setting capacity to %Lu\n", sectors);
  		set_capacity(info->gd, sectors);
 +		revalidate_disk(info->gd);
  
  		/* fall through */
  	case BLKIF_STATE_SUSPENDED:
-@@ -501,9 +502,15 @@ static void blkif_restart_queue_callback
+@@ -500,9 +501,15 @@ static void blkif_restart_queue_callback
  	schedule_work(&info->work);
  }
  
@@ -22927,7 +23030,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	if (!info->xbdev)
  		return -ENODEV;
-@@ -512,9 +519,16 @@ int blkif_open(struct inode *inode, stru
+@@ -511,9 +518,16 @@ int blkif_open(struct inode *inode, stru
  }
  
  
@@ -22945,7 +23048,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	info->users--;
  	if (info->users == 0) {
  		/* Check whether we have been instructed to close.  We will
-@@ -533,9 +547,16 @@ int blkif_release(struct inode *inode, s
+@@ -532,10 +546,17 @@ int blkif_release(struct inode *inode, s
  }
  
  
@@ -22953,12 +23056,14 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  int blkif_ioctl(struct inode *inode, struct file *filep,
  		unsigned command, unsigned long argument)
  {
+-	struct blkfront_info *info = inode->i_bdev->bd_disk->private_data;
 +	struct block_device *bd = inode->i_bdev;
 +#else
 +int blkif_ioctl(struct block_device *bd, fmode_t mode,
 +		unsigned command, unsigned long argument)
 +{
 +#endif
++	struct blkfront_info *info = bd->bd_disk->private_data;
  	int i;
  
  	DPRINTK_IOCTL("command: 0x%x, argument: 0x%lx, dev: 0x%04x\n",
@@ -22970,18 +23075,24 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		struct hd_geometry geo;
  		int ret;
  
-@@ -571,8 +591,7 @@ int blkif_ioctl(struct inode *inode, str
- 		return 0;
- 
- 	case CDROM_GET_CAPABILITY: {
--		struct blkfront_info *info =
--			inode->i_bdev->bd_disk->private_data;
-+		struct blkfront_info *info = bd->bd_disk->private_data;
- 		struct gendisk *gd = info->gd;
- 		if (gd->flags & GENHD_FL_CD)
- 			return 0;
---- head-2010-04-29.orig/drivers/xen/blkfront/block.h	2010-03-24 15:12:36.000000000 +0100
-+++ head-2010-04-29/drivers/xen/blkfront/block.h	2010-03-24 15:14:47.000000000 +0100
+@@ -586,10 +606,14 @@ int blkif_ioctl(struct inode *inode, str
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,23)
+ 				return scsi_cmd_ioctl(filep, info->gd, command,
+ 						      (void __user *)argument);
+-#else
++#elif LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
+ 				return scsi_cmd_ioctl(filep, info->rq,
+ 						      info->gd, command,
+ 						      (void __user *)argument);
++#else
++				return scsi_cmd_ioctl(info->rq, info->gd,
++						      mode, command,
++						      (void __user *)argument);
+ #endif
+ 			}
+ 		}
+--- head-2011-03-17.orig/drivers/xen/blkfront/block.h	2011-01-31 18:07:35.000000000 +0100
++++ head-2011-03-17/drivers/xen/blkfront/block.h	2011-02-01 14:39:24.000000000 +0100
 @@ -123,10 +123,17 @@ struct blkfront_info
  
  extern spinlock_t blkif_io_lock;
@@ -23000,22 +23111,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  extern int blkif_getgeo(struct block_device *, struct hd_geometry *);
  extern int blkif_check(dev_t dev);
  extern int blkif_revalidate(dev_t dev);
---- head-2010-04-29.orig/drivers/xen/blkfront/vbd.c	2010-03-24 15:12:36.000000000 +0100
-+++ head-2010-04-29/drivers/xen/blkfront/vbd.c	2010-03-24 15:14:47.000000000 +0100
-@@ -110,7 +110,11 @@ static struct block_device_operations xl
- 	.owner = THIS_MODULE,
- 	.open = blkif_open,
- 	.release = blkif_release,
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28)
- 	.ioctl  = blkif_ioctl,
-+#else
-+	.locked_ioctl  = blkif_ioctl,
-+#endif
- #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
- 	.getgeo = blkif_getgeo
- #endif
---- head-2010-04-29.orig/drivers/xen/blktap2/device.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/drivers/xen/blktap2/device.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/blktap2/device.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/drivers/xen/blktap2/device.c	2011-02-07 14:14:26.000000000 +0100
 @@ -36,10 +36,10 @@ dev_to_blktap(struct blktap_device *dev)
  }
  
@@ -23063,9 +23160,27 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		struct hd_geometry geo;
  		int ret;
  
---- head-2010-04-29.orig/drivers/xen/core/evtchn.c	2010-04-23 15:17:15.000000000 +0200
-+++ head-2010-04-29/drivers/xen/core/evtchn.c	2010-04-23 15:18:24.000000000 +0200
-@@ -145,7 +145,7 @@ static void bind_evtchn_to_cpu(unsigned 
+@@ -762,7 +761,7 @@ blktap_device_close_bdev(struct blktap *
+ 	dev = &tap->device;
+ 
+ 	if (dev->bdev)
+-		blkdev_put(dev->bdev);
++		blkdev_put(dev->bdev, FMODE_WRITE);
+ 
+ 	dev->bdev = NULL;
+ 	clear_bit(BLKTAP_PASSTHROUGH, &tap->dev_inuse);
+@@ -786,7 +785,7 @@ blktap_device_open_bdev(struct blktap *t
+ 	if (!bdev->bd_disk) {
+ 		BTERR("device %x:%x doesn't exist\n",
+ 		      MAJOR(pdev), MINOR(pdev));
+-		blkdev_put(dev->bdev);
++		blkdev_put(bdev, FMODE_WRITE);
+ 		return -ENOENT;
+ 	}
+ 
+--- head-2011-03-17.orig/drivers/xen/core/evtchn.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/drivers/xen/core/evtchn.c	2011-02-01 14:39:24.000000000 +0100
+@@ -149,7 +149,7 @@ static void bind_evtchn_to_cpu(unsigned 
  	BUG_ON(!test_bit(chn, s->evtchn_mask));
  
  	if (irq != -1)
@@ -23074,7 +23189,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	clear_bit(chn, (unsigned long *)cpu_evtchn_mask[cpu_evtchn[chn]]);
  	set_bit(chn, (unsigned long *)cpu_evtchn_mask[cpu]);
-@@ -158,7 +158,7 @@ static void init_evtchn_cpu_bindings(voi
+@@ -162,7 +162,7 @@ static void init_evtchn_cpu_bindings(voi
  
  	/* By default all event channels notify CPU#0. */
  	for (i = 0; i < NR_IRQS; i++)
@@ -23082,17 +23197,17 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
 +		irq_to_desc(i)->affinity = cpumask_of_cpu(0);
  
  	memset(cpu_evtchn, 0, sizeof(cpu_evtchn));
- 	memset(cpu_evtchn_mask[0], ~0, sizeof(cpu_evtchn_mask[0]));
-@@ -728,7 +728,7 @@ static void ack_dynirq(unsigned int irq)
+ 	for_each_possible_cpu(i)
+@@ -747,7 +747,7 @@ static void ack_dynirq(unsigned int irq)
  
  static void end_dynirq(unsigned int irq)
  {
--	if (!(irq_desc[irq].status & IRQ_DISABLED))
-+	if (!(irq_to_desc(irq)->status & IRQ_DISABLED))
+-	if (!(irq_desc[irq].status & IRQ_DISABLED)) {
++	if (!(irq_to_desc(irq)->status & IRQ_DISABLED)) {
+ 		move_masked_irq(irq);
  		unmask_dynirq(irq);
- }
- 
-@@ -821,7 +821,7 @@ static void enable_pirq(unsigned int irq
+ 	}
+@@ -841,7 +841,7 @@ static void enable_pirq(unsigned int irq
  	bind_pirq.pirq = evtchn_get_xen_pirq(irq);
  	/* NB. We are happy to share unless we are probing. */
  	bind_pirq.flags = test_and_clear_bit(irq - PIRQ_BASE, probing_pirq)
@@ -23101,16 +23216,23 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			  ? 0 : BIND_PIRQ__WILL_SHARE;
  	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq) != 0) {
  		if (bind_pirq.flags)
-@@ -881,7 +881,7 @@ static void unmask_pirq(unsigned int irq
+@@ -900,11 +900,13 @@ static void unmask_pirq(unsigned int irq
  
  static void end_pirq(unsigned int irq)
  {
 -	if ((irq_desc[irq].status & (IRQ_DISABLED|IRQ_PENDING)) ==
-+	if ((irq_to_desc(irq)->status & (IRQ_DISABLED|IRQ_PENDING)) ==
++	const struct irq_desc *desc = irq_to_desc(irq);
++
++	if ((desc->status & (IRQ_DISABLED|IRQ_PENDING)) ==
  	    (IRQ_DISABLED|IRQ_PENDING))
  		shutdown_pirq(irq);
- 	else
-@@ -1067,7 +1067,7 @@ static void restore_cpu_ipis(unsigned in
+ 	else {
+-		if (!(irq_desc[irq].status & IRQ_DISABLED))
++		if (!(desc->status & IRQ_DISABLED))
+ 			move_masked_irq(irq);
+ 		unmask_pirq(irq);
+ 	}
+@@ -1051,7 +1053,7 @@ static void restore_cpu_ipis(unsigned in
  		bind_evtchn_to_cpu(evtchn, cpu);
  
  		/* Ready for use. */
@@ -23119,17 +23241,17 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			unmask_evtchn(evtchn);
  	}
  }
-@@ -1203,7 +1203,7 @@ void __init xen_init_IRQ(void)
+@@ -1187,7 +1189,7 @@ void __init xen_init_IRQ(void)
  	for (i = DYNIRQ_BASE; i < (DYNIRQ_BASE + NR_DYNIRQS); i++) {
  		irq_bindcount[i] = 0;
  
 -		irq_desc[i].status |= IRQ_NOPROBE;
 +		irq_to_desc(i)->status |= IRQ_NOPROBE;
  		set_irq_chip_and_handler_name(i, &dynirq_chip,
- 					      handle_level_irq, "level");
+ 					      handle_fasteoi_irq, "fasteoi");
  	}
---- head-2010-04-29.orig/drivers/xen/core/smpboot.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/drivers/xen/core/smpboot.c	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/core/smpboot.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/drivers/xen/core/smpboot.c	2011-02-01 14:39:24.000000000 +0100
 @@ -25,10 +25,6 @@
  #include <xen/cpu_hotplug.h>
  #include <xen/xenbus.h>
@@ -23141,7 +23263,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  extern int local_setup_timer(unsigned int cpu);
  extern void local_teardown_timer(unsigned int cpu);
  
-@@ -183,7 +179,7 @@ static void __cpuexit xen_smp_intr_exit(
+@@ -147,7 +143,7 @@ static void __cpuinit xen_smp_intr_exit(
  }
  #endif
  
@@ -23150,7 +23272,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  {
  	cpu_init();
  	identify_secondary_cpu(&current_cpu_data);
-@@ -436,6 +432,20 @@ int __cpuinit __cpu_up(unsigned int cpu)
+@@ -381,6 +377,20 @@ int __cpuinit __cpu_up(unsigned int cpu)
  	return 0;
  }
  
@@ -23171,31 +23293,20 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  void __init smp_cpus_done(unsigned int max_cpus)
  {
  }
---- head-2010-04-29.orig/drivers/xen/core/spinlock.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/drivers/xen/core/spinlock.c	2010-03-24 15:14:47.000000000 +0100
-@@ -14,8 +14,6 @@
- 
- #ifdef TICKET_SHIFT
- 
--extern irqreturn_t smp_reschedule_interrupt(int, void *);
--
- static DEFINE_PER_CPU(int, spinlock_irq) = -1;
- static char spinlock_name[NR_CPUS][15];
- 
---- head-2010-04-29.orig/drivers/xen/netfront/netfront.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/drivers/xen/netfront/netfront.c	2010-03-24 15:14:47.000000000 +0100
-@@ -956,7 +956,7 @@ static int network_start_xmit(struct sk_
+--- head-2011-03-17.orig/drivers/xen/netfront/netfront.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/drivers/xen/netfront/netfront.c	2011-02-01 14:39:24.000000000 +0100
+@@ -952,7 +952,7 @@ static int network_start_xmit(struct sk_
   		return 0; 
   	} 
  
 -	frags += (offset + len + PAGE_SIZE - 1) / PAGE_SIZE;
 +	frags += DIV_ROUND_UP(offset + len, PAGE_SIZE);
  	if (unlikely(frags > MAX_SKB_FRAGS + 1)) {
- 		printk(KERN_ALERT "xennet: skb rides the rocket: %d frags\n",
- 		       frags);
---- head-2010-04-29.orig/drivers/xen/scsifront/scsifront.c	2010-03-24 15:10:37.000000000 +0100
-+++ head-2010-04-29/drivers/xen/scsifront/scsifront.c	2010-03-24 15:14:47.000000000 +0100
-@@ -348,7 +348,7 @@ static int scsifront_queuecommand(struct
+ 		pr_alert("xennet: skb rides the rocket: %d frags\n", frags);
+ 		dump_stack();
+--- head-2011-03-17.orig/drivers/xen/scsifront/scsifront.c	2011-01-31 18:01:51.000000000 +0100
++++ head-2011-03-17/drivers/xen/scsifront/scsifront.c	2011-02-08 10:04:41.000000000 +0100
+@@ -352,7 +352,7 @@ static int scsifront_queuecommand(struct
  		memset(ring_req->cmnd, 0, VSCSIIF_MAX_COMMAND_SIZE);
  
  	ring_req->sc_data_direction   = (uint8_t)sc->sc_data_direction;
@@ -23204,7 +23315,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	info->shadow[rqid].req_scsi_cmnd     = (unsigned long)sc;
  	info->shadow[rqid].sc_data_direction = sc->sc_data_direction;
-@@ -418,7 +418,7 @@ static int scsifront_dev_reset_handler(s
+@@ -421,7 +421,7 @@ static int scsifront_dev_reset_handler(s
  		memset(ring_req->cmnd, 0, VSCSIIF_MAX_COMMAND_SIZE);
  
  	ring_req->sc_data_direction   = (uint8_t)sc->sc_data_direction;
@@ -23213,8 +23324,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	ring_req->nr_segments         = 0;
  
  	scsifront_do_request(info);	
---- head-2010-04-29.orig/drivers/xen/xenbus/xenbus_probe.h	2010-03-24 15:09:22.000000000 +0100
-+++ head-2010-04-29/drivers/xen/xenbus/xenbus_probe.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_probe.h	2011-01-31 17:49:31.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_probe.h	2011-02-01 14:39:24.000000000 +0100
 @@ -40,6 +40,11 @@
  #define XEN_BUS_ID_SIZE			BUS_ID_SIZE
  #endif
@@ -23227,8 +23338,8 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #if defined(CONFIG_XEN_BACKEND) || defined(CONFIG_XEN_BACKEND_MODULE)
  extern void xenbus_backend_suspend(int (*fn)(struct device *, void *));
  extern void xenbus_backend_resume(int (*fn)(struct device *, void *));
---- head-2010-04-29.orig/include/xen/cpu_hotplug.h	2007-08-16 18:07:01.000000000 +0200
-+++ head-2010-04-29/include/xen/cpu_hotplug.h	2010-03-24 15:14:47.000000000 +0100
+--- head-2011-03-17.orig/include/xen/cpu_hotplug.h	2011-01-31 17:56:27.000000000 +0100
++++ head-2011-03-17/include/xen/cpu_hotplug.h	2011-02-01 14:39:24.000000000 +0100
 @@ -15,8 +15,6 @@ void init_xenbus_allowed_cpumask(void);
  int smp_suspend(void);
  void smp_resume(void);
@@ -23238,9 +23349,9 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  #else /* !defined(CONFIG_HOTPLUG_CPU) */
  
  #define cpu_up_check(cpu)		(0)
---- head-2010-04-29.orig/lib/swiotlb-xen.c	2010-03-24 15:12:46.000000000 +0100
-+++ head-2010-04-29/lib/swiotlb-xen.c	2010-03-24 15:14:47.000000000 +0100
-@@ -49,7 +49,6 @@ int swiotlb;
+--- head-2011-03-17.orig/lib/swiotlb-xen.c	2011-02-01 14:38:38.000000000 +0100
++++ head-2011-03-17/lib/swiotlb-xen.c	2011-02-01 14:39:24.000000000 +0100
+@@ -57,7 +57,6 @@ enum dma_sync_target {
  
  int swiotlb_force;
  
@@ -23248,7 +23359,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  static unsigned long iotlb_nslabs;
  
  /*
-@@ -57,16 +56,7 @@ static unsigned long iotlb_nslabs;
+@@ -65,16 +64,7 @@ static unsigned long iotlb_nslabs;
   * swiotlb_sync_single_*, to see if the memory was in fact allocated by this
   * API.
   */
@@ -23266,7 +23377,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  /*
   * When the IOMMU overflows we return a fallback buffer. This sets the size.
-@@ -151,15 +141,15 @@ swiotlb_init_with_default_size(size_t de
+@@ -159,15 +149,15 @@ swiotlb_init_with_default_size(size_t de
  	/*
  	 * Get IO TLB memory from the low pages
  	 */
@@ -23285,7 +23396,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  				get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT),
  				dma_bits);
  		} while (rc && dma_bits++ < max_dma_bits);
-@@ -170,10 +160,10 @@ swiotlb_init_with_default_size(size_t de
+@@ -178,10 +168,10 @@ swiotlb_init_with_default_size(size_t de
  				      "some DMA memory (e.g., dom0_mem=-128M).\n");
  			iotlb_nslabs = i;
  			i <<= IO_TLB_SHIFT;
@@ -23298,7 +23409,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  				if (bits > dma_bits)
  					dma_bits = bits;
-@@ -181,6 +171,7 @@ swiotlb_init_with_default_size(size_t de
+@@ -189,6 +179,7 @@ swiotlb_init_with_default_size(size_t de
  			break;
  		}
  	}
@@ -23306,7 +23417,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  	/*
  	 * Allocate and initialize the free list array.  This array is used
-@@ -209,15 +200,12 @@ swiotlb_init_with_default_size(size_t de
+@@ -217,15 +208,12 @@ swiotlb_init_with_default_size(size_t de
  	if (rc)
  		panic("No suitable physical memory available for SWIOTLB overflow buffer!\n");
  
@@ -23323,7 +23434,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	       dma_bits);
  }
  
-@@ -245,6 +233,18 @@ swiotlb_init(void)
+@@ -253,6 +241,18 @@ swiotlb_init(void)
  		printk(KERN_INFO "Software IO TLB disabled\n");
  }
  
@@ -23342,7 +23453,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  /*
   * We use __copy_to_user_inatomic to transfer to the host buffer because the
   * buffer may be mapped read-only (e.g, in blkback driver) but lower-level
-@@ -354,7 +354,7 @@ map_single(struct device *hwdev, struct 
+@@ -362,7 +362,7 @@ map_single(struct device *hwdev, struct 
  				io_tlb_list[i] = 0;
  			for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE) != IO_TLB_SEGSIZE - 1) && io_tlb_list[i]; i--)
  				io_tlb_list[i] = ++count;
@@ -23351,7 +23462,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  
  			/*
  			 * Update the indices to avoid searching in the next
-@@ -396,7 +396,7 @@ found:
+@@ -404,7 +404,7 @@ found:
  
  static struct phys_addr dma_addr_to_phys_addr(char *dma_addr)
  {
@@ -23360,7 +23471,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	struct phys_addr buffer = io_tlb_orig_addr[index];
  	buffer.offset += (long)dma_addr & ((1 << IO_TLB_SHIFT) - 1);
  	buffer.page += buffer.offset >> PAGE_SHIFT;
-@@ -412,7 +412,7 @@ unmap_single(struct device *hwdev, char 
+@@ -420,7 +420,7 @@ unmap_single(struct device *hwdev, char 
  {
  	unsigned long flags;
  	int i, count, nslots = ALIGN(size, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
@@ -23369,7 +23480,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	struct phys_addr buffer = dma_addr_to_phys_addr(dma_addr);
  
  	/*
-@@ -504,7 +504,7 @@ _swiotlb_map_single(struct device *hwdev
+@@ -527,7 +527,7 @@ _swiotlb_map_single(struct device *hwdev
  	 * buffering it.
  	 */
  	if (!range_straddles_page_boundary(paddr, size) &&
@@ -23378,7 +23489,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  		return dev_addr;
  
  	/*
-@@ -555,9 +555,11 @@ void
+@@ -578,9 +578,11 @@ void
  swiotlb_unmap_single_attrs(struct device *hwdev, dma_addr_t dev_addr,
  			   size_t size, int dir, struct dma_attrs *attrs)
  {
@@ -23392,60 +23503,36 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  	else
  		gnttab_dma_unmap_page(dev_addr);
  }
-@@ -583,36 +585,44 @@ void
- swiotlb_sync_single_for_cpu(struct device *hwdev, dma_addr_t dev_addr,
- 			    size_t size, int dir)
+@@ -606,9 +608,11 @@ static void
+ swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+ 		    size_t size, int dir, int target)
  {
 + 	char *dma_addr = bus_to_virt(dev_addr);
 +
  	BUG_ON(dir == DMA_NONE);
 -	if (in_swiotlb_aperture(dev_addr))
--		sync_single(hwdev, bus_to_virt(dev_addr), size, dir);
+-		sync_single(hwdev, bus_to_virt(dev_addr), size, dir, target);
 +	if (is_swiotlb_buffer(dev_addr))
-+		sync_single(hwdev, dma_addr, size, dir);
++		sync_single(hwdev, dma_addr, size, dir, target);
  }
  
  void
- swiotlb_sync_single_for_device(struct device *hwdev, dma_addr_t dev_addr,
- 			       size_t size, int dir)
+@@ -633,10 +637,11 @@ swiotlb_sync_single_range(struct device 
+ 			  unsigned long offset, size_t size,
+ 			  int dir, int target)
  {
 + 	char *dma_addr = bus_to_virt(dev_addr);
 +
  	BUG_ON(dir == DMA_NONE);
 -	if (in_swiotlb_aperture(dev_addr))
--		sync_single(hwdev, bus_to_virt(dev_addr), size, dir);
+-		sync_single(hwdev, bus_to_virt(dev_addr + offset), size,
+-			    dir, target);
 +	if (is_swiotlb_buffer(dev_addr))
-+		sync_single(hwdev, dma_addr, size, dir);
++		sync_single(hwdev, dma_addr + offset, size, dir, target);
  }
  
  void
- swiotlb_sync_single_range_for_cpu(struct device *hwdev, dma_addr_t dev_addr,
- 				  unsigned long offset, size_t size, int dir)
- {
-+ 	char *dma_addr = bus_to_virt(dev_addr);
-+
- 	BUG_ON(dir == DMA_NONE);
--	if (in_swiotlb_aperture(dev_addr))
--		sync_single(hwdev, bus_to_virt(dev_addr + offset), size, dir);
-+	if (is_swiotlb_buffer(dev_addr))
-+		sync_single(hwdev, dma_addr + offset, size, dir);
- }
- 
- void
- swiotlb_sync_single_range_for_device(struct device *hwdev, dma_addr_t dev_addr,
- 				     unsigned long offset, size_t size, int dir)
- {
-+ 	char *dma_addr = bus_to_virt(dev_addr);
-+
- 	BUG_ON(dir == DMA_NONE);
--	if (in_swiotlb_aperture(dev_addr))
--		sync_single(hwdev, bus_to_virt(dev_addr + offset), size, dir);
-+	if (is_swiotlb_buffer(dev_addr))
-+		sync_single(hwdev, dma_addr + offset, size, dir);
- }
- 
- void swiotlb_unmap_sg_attrs(struct device *, struct scatterlist *, int, int,
-@@ -650,7 +660,7 @@ swiotlb_map_sg_attrs(struct device *hwde
+@@ -690,7 +695,7 @@ swiotlb_map_sg_attrs(struct device *hwde
  
  		if (range_straddles_page_boundary(page_to_pseudophys(sg_page(sg))
  						  + sg->offset, sg->length)
@@ -23454,7 +23541,7 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			gnttab_dma_unmap_page(dev_addr);
  			buffer.page   = sg_page(sg);
  			buffer.offset = sg->offset;
-@@ -694,7 +704,7 @@ swiotlb_unmap_sg_attrs(struct device *hw
+@@ -734,7 +739,7 @@ swiotlb_unmap_sg_attrs(struct device *hw
  	BUG_ON(dir == DMA_NONE);
  
  	for_each_sg(sgl, sg, nelems, i) {
@@ -23463,27 +23550,18 @@ Automatically created from "patches.kernel.org/patch-2.6.28" by xen-port-patches
  			unmap_single(hwdev, bus_to_virt(sg->dma_address),
  				     sg->dma_length, dir);
  		else
-@@ -727,7 +737,7 @@ swiotlb_sync_sg_for_cpu(struct device *h
+@@ -767,7 +772,7 @@ swiotlb_sync_sg(struct device *hwdev, st
  	BUG_ON(dir == DMA_NONE);
  
  	for_each_sg(sgl, sg, nelems, i) {
 -		if (in_swiotlb_aperture(sg->dma_address))
 +		if (sg->dma_address != sg_phys(sg))
  			sync_single(hwdev, bus_to_virt(sg->dma_address),
- 				    sg->dma_length, dir);
+ 				    sg->dma_length, dir, target);
  	}
-@@ -743,7 +753,7 @@ swiotlb_sync_sg_for_device(struct device
- 	BUG_ON(dir == DMA_NONE);
- 
- 	for_each_sg(sgl, sg, nelems, i) {
--		if (in_swiotlb_aperture(sg->dma_address))
-+		if (sg->dma_address != sg_phys(sg))
- 			sync_single(hwdev, bus_to_virt(sg->dma_address),
- 				    sg->dma_length, dir);
- 	}
---- head-2010-04-29.orig/mm/vmalloc.c	2010-03-24 15:09:15.000000000 +0100
-+++ head-2010-04-29/mm/vmalloc.c	2010-03-24 15:14:47.000000000 +0100
-@@ -479,6 +479,8 @@ static void vmap_debug_free_range(unsign
+--- head-2011-03-17.orig/mm/vmalloc.c	2011-01-31 17:32:29.000000000 +0100
++++ head-2011-03-17/mm/vmalloc.c	2011-02-01 14:39:24.000000000 +0100
+@@ -478,6 +478,8 @@ static void vmap_debug_free_range(unsign
  #ifdef CONFIG_DEBUG_PAGEALLOC
  	vunmap_page_range(start, end);
  	flush_tlb_kernel_range(start, end);

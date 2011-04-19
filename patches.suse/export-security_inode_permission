@@ -11,11 +11,11 @@ Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 
 --- a/security/security.c
 +++ b/security/security.c
-@@ -564,6 +564,7 @@ int security_inode_permission(struct ino
+@@ -528,6 +528,7 @@ int security_inode_permission(struct ino
  		return 0;
  	return security_ops->inode_permission(inode, mask);
  }
 +EXPORT_SYMBOL_GPL(security_inode_permission);
  
- int security_inode_setattr(struct dentry *dentry, struct iattr *attr)
+ int security_inode_exec_permission(struct inode *inode, unsigned int flags)
  {
