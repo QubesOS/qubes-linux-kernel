@@ -230,7 +230,7 @@ mkdir -p %buildroot/usr/src/kernels
 mv %buildroot/lib/modules/%kernelrelease/build/* %buildroot/%src_install_dir
 mv %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/%src_install_dir
 rmdir %buildroot/lib/modules/%kernelrelease/build
-ln -sf $src_install_dir %buildroot/lib/modules/%kernelrelease/build
+ln -sf %src_install_dir %buildroot/lib/modules/%kernelrelease/build
 
 
 # Abort if there are any undefined symbols
