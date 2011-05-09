@@ -66,7 +66,7 @@ RPM_WITH_DIRS = $(RPM) $(RPM_DEFINES)
 
 rpms: get-sources $(SPECFILE)
 	$(RPM_WITH_DIRS) -bb $(SPECFILE)
-	rpm --addsign $(RPMDIR)/x86_64/*.rpm
+	rpm --addsign $(RPMDIR)/x86_64/*$(VERSION)-$(RELEASE)*.rpm
 
 rpms-nobuild:
 	$(RPM_WITH_DIRS) --nobuild -bb $(SPECFILE)
