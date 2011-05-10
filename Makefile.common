@@ -98,6 +98,18 @@ update-repo-current:
 	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current/vm/f13/rpm/
 	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current/vm/f14/rpm/
 
+update-repo-current-testing:
+	ln -f rpm/x86_64/kernel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/dom0/rpm/
+	ln -f rpm/x86_64/kernel-debuginfo-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/dom0/rpm/
+	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/dom0/rpm/
+	ln -f rpm/x86_64/kernel-domU-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/vm/f13/rpm/
+	ln -f rpm/x86_64/kernel-domU-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/vm/f14/rpm/
+	ln -f rpm/x86_64/kernel-debuginfo-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/vm/f13/rpm/
+	ln -f rpm/x86_64/kernel-debuginfo-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/vm/f14/rpm/
+	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/vm/f13/rpm/
+	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/vm/f14/rpm/
+
+
 update-repo-unstable:
 	ln -f rpm/x86_64/kernel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/unstable/dom0/rpm/
 	ln -f rpm/x86_64/kernel-debuginfo-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/unstable/dom0/rpm/
@@ -130,4 +142,5 @@ help:
 	@echo "srpm             Create an srpm"
 	@echo
 	@echo "make update-repo-current  -- copy newly generated rpms to qubes yum repo"
-	@echo "make update-repo-unstable -- same, but to -testing repo"
+	@echo "make update-repo-current-testing  -- same, but to -current-testing"
+	@echo "make update-repo-unstable -- same, but to -unstable repo"
