@@ -22,13 +22,20 @@ Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>#
 Cc: "Xu, Dongxiao" <dongxiao.xu@intel.com>
 
+Subject: Add a missing test to tx_work_todo.
+
+Add a test so that, when netback is using worker threads, net_tx_action()
+gets called in a timely manner when the pending_inuse list is populated.
+
+Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
+
 jb: changed write_seq{,un}lock_irq() to write_seq{,un}lock_bh(), and
     made the use of kernel threads optional (but default)
 Acked-by: jbeulich@novell.com
 
---- head-2010-04-29.orig/drivers/xen/core/gnttab.c	2010-04-15 11:42:34.000000000 +0200
-+++ head-2010-04-29/drivers/xen/core/gnttab.c	2010-04-15 11:44:26.000000000 +0200
-@@ -554,14 +554,14 @@ int gnttab_copy_grant_page(grant_ref_t r
+--- head-2011-02-17.orig/drivers/xen/core/gnttab.c	2011-01-14 15:13:58.000000000 +0100
++++ head-2011-02-17/drivers/xen/core/gnttab.c	2010-09-23 17:06:35.000000000 +0200
+@@ -552,14 +552,14 @@ int gnttab_copy_grant_page(grant_ref_t r
  	mfn = pfn_to_mfn(pfn);
  	new_mfn = virt_to_mfn(new_addr);
  
@@ -45,18 +52,18 @@ Acked-by: jbeulich@novell.com
  		put_page(new_page);
  		err = -EBUSY;
  		goto out;
-@@ -578,7 +578,7 @@ int gnttab_copy_grant_page(grant_ref_t r
+@@ -576,7 +576,7 @@ int gnttab_copy_grant_page(grant_ref_t r
  	BUG_ON(err);
- 	BUG_ON(unmap.status);
+ 	BUG_ON(unmap.status != GNTST_okay);
  
 -	write_sequnlock(&gnttab_dma_lock);
 +	write_sequnlock_bh(&gnttab_dma_lock);
  
  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
  		set_phys_to_machine(page_to_pfn(new_page), INVALID_P2M_ENTRY);
---- head-2010-04-29.orig/drivers/xen/netback/common.h	2010-04-30 11:32:08.000000000 +0200
-+++ head-2010-04-29/drivers/xen/netback/common.h	2010-04-30 11:32:26.000000000 +0200
-@@ -239,8 +239,16 @@ struct netbk_tx_pending_inuse {
+--- head-2011-02-17.orig/drivers/xen/netback/common.h	2011-02-09 16:21:50.000000000 +0100
++++ head-2011-02-17/drivers/xen/netback/common.h	2011-02-17 10:34:35.000000000 +0100
+@@ -241,8 +241,16 @@ struct netbk_tx_pending_inuse {
  #define MAX_MFN_ALLOC 64
  
  struct xen_netbk {
@@ -75,17 +82,17 @@ Acked-by: jbeulich@novell.com
  
  	struct sk_buff_head rx_queue;
  	struct sk_buff_head tx_queue;
---- head-2010-04-29.orig/drivers/xen/netback/netback.c	2010-04-30 11:49:27.000000000 +0200
-+++ head-2010-04-29/drivers/xen/netback/netback.c	2010-04-30 11:49:32.000000000 +0200
-@@ -35,6 +35,7 @@
-  */
+--- head-2011-02-17.orig/drivers/xen/netback/netback.c	2011-03-01 11:53:33.000000000 +0100
++++ head-2011-02-17/drivers/xen/netback/netback.c	2011-03-02 13:33:15.000000000 +0100
+@@ -36,6 +36,7 @@
  
  #include "common.h"
+ #include <linux/if_vlan.h>
 +#include <linux/kthread.h>
  #include <linux/vmalloc.h>
+ #include <net/tcp.h>
  #include <xen/balloon.h>
- #include <xen/interface/memory.h>
-@@ -43,6 +44,8 @@
+@@ -46,6 +47,8 @@
  
  struct xen_netbk *__read_mostly xen_netbk;
  unsigned int __read_mostly netbk_nr_groups;
@@ -94,7 +101,7 @@ Acked-by: jbeulich@novell.com
  
  #define GET_GROUP_INDEX(netif) ((netif)->group)
  
-@@ -127,7 +130,11 @@ static int MODPARM_permute_returns = 0;
+@@ -137,7 +140,11 @@ static int MODPARM_permute_returns = 0;
  module_param_named(permute_returns, MODPARM_permute_returns, bool, S_IRUSR|S_IWUSR);
  MODULE_PARM_DESC(permute_returns, "Randomly permute the order in which TX responses are sent to the frontend");
  module_param_named(groups, netbk_nr_groups, uint, 0);
@@ -107,94 +114,91 @@ Acked-by: jbeulich@novell.com
  
  int netbk_copy_skb_mode;
  
-@@ -164,8 +171,12 @@ static inline void maybe_schedule_tx_act
+@@ -168,6 +175,19 @@ static int check_mfn(struct xen_netbk *n
+ 	return netbk->alloc_index >= nr ? 0 : -ENOMEM;
+ }
  
++static void netbk_schedule(struct xen_netbk *netbk)
++{
++	if (use_kthreads)
++		wake_up(&netbk->netbk_action_wq);
++	else
++		tasklet_schedule(&netbk->net_tx_tasklet);
++}
++
++static void netbk_schedule_group(unsigned long group)
++{
++	netbk_schedule(&xen_netbk[group]);
++}
++
+ static inline void maybe_schedule_tx_action(unsigned int group)
+ {
+ 	struct xen_netbk *netbk = &xen_netbk[group];
+@@ -175,7 +195,7 @@ static inline void maybe_schedule_tx_act
  	smp_mb();
  	if ((nr_pending_reqs(netbk) < (MAX_PENDING_REQS/2)) &&
--	    !list_empty(&netbk->net_schedule_list))
+ 	    !list_empty(&netbk->schedule_list))
 -		tasklet_schedule(&netbk->net_tx_tasklet);
-+	    !list_empty(&netbk->net_schedule_list)) {
-+		if (use_kthreads)
-+			wake_up(&netbk->netbk_action_wq);
-+		else
-+			tasklet_schedule(&netbk->net_tx_tasklet);
-+	}
++		netbk_schedule(netbk);
  }
  
  static struct sk_buff *netbk_copy_skb(struct sk_buff *skb)
-@@ -326,7 +337,10 @@ int netif_be_start_xmit(struct sk_buff *
+@@ -335,7 +355,7 @@ int netif_be_start_xmit(struct sk_buff *
  
  	netbk = &xen_netbk[GET_GROUP_INDEX(netif)];
  	skb_queue_tail(&netbk->rx_queue, skb);
 -	tasklet_schedule(&netbk->net_rx_tasklet);
-+	if (use_kthreads)
-+		wake_up(&netbk->netbk_action_wq);
-+	else
-+		tasklet_schedule(&netbk->net_rx_tasklet);
++	netbk_schedule(netbk);
  
  	return NETDEV_TX_OK;
  
-@@ -779,8 +793,12 @@ static void net_rx_action(unsigned long 
- 
+@@ -772,23 +792,13 @@ static void net_rx_action(unsigned long 
  	/* More work to do? */
  	if (!skb_queue_empty(&netbk->rx_queue) &&
--	    !timer_pending(&netbk->net_timer))
+ 	    !timer_pending(&netbk->net_timer))
 -		tasklet_schedule(&netbk->net_rx_tasklet);
-+	    !timer_pending(&netbk->net_timer)) {
-+		if (use_kthreads)
-+			wake_up(&netbk->netbk_action_wq);
-+		else
-+			tasklet_schedule(&netbk->net_rx_tasklet);
-+	}
++		netbk_schedule(netbk);
  #if 0
  	else
  		xen_network_done_notify();
-@@ -789,12 +807,18 @@ static void net_rx_action(unsigned long 
+ #endif
+ }
  
- static void net_alarm(unsigned long group)
- {
+-static void net_alarm(unsigned long group)
+-{
 -	tasklet_schedule(&xen_netbk[group].net_rx_tasklet);
-+	if (use_kthreads)
-+		wake_up(&xen_netbk[group].netbk_action_wq);
-+	else
-+		tasklet_schedule(&xen_netbk[group].net_rx_tasklet);
- }
- 
- static void netbk_tx_pending_timeout(unsigned long group)
- {
+-}
+-
+-static void netbk_tx_pending_timeout(unsigned long group)
+-{
 -	tasklet_schedule(&xen_netbk[group].net_tx_tasklet);
-+	if (use_kthreads)
-+		wake_up(&xen_netbk[group].netbk_action_wq);
-+	else
-+		tasklet_schedule(&xen_netbk[group].net_tx_tasklet);
- }
- 
- struct net_device_stats *netif_be_get_stats(struct net_device *dev)
-@@ -1506,7 +1530,10 @@ static void net_tx_action(unsigned long 
- 			continue;
- 		}
+-}
+-
+ static int __on_net_schedule_list(netif_t *netif)
+ {
+ 	return netif->list.next != NULL;
+@@ -1519,7 +1529,10 @@ static void net_tx_action(unsigned long 
+ 		dev->stats.rx_bytes += skb->len;
+ 		dev->stats.rx_packets++;
  
 -		netif_rx(skb);
 +		if (use_kthreads)
 +			netif_rx_ni(skb);
 +		else
 +			netif_rx(skb);
- 		netif->dev->last_rx = jiffies;
  	}
  
-@@ -1532,7 +1559,10 @@ static void netif_idx_release(struct xen
+  out:
+@@ -1544,7 +1557,7 @@ static void netif_idx_release(struct xen
  	netbk->dealloc_prod++;
  	spin_unlock_irqrestore(&netbk->release_lock, flags);
  
 -	tasklet_schedule(&netbk->net_tx_tasklet);
-+	if (use_kthreads)
-+		wake_up(&netbk->netbk_action_wq);
-+	else
-+		tasklet_schedule(&netbk->net_tx_tasklet);
++	netbk_schedule(netbk);
  }
  
  static void netif_page_release(struct page *page, unsigned int order)
-@@ -1670,6 +1700,46 @@ static struct irqaction netif_be_dbg_act
+@@ -1683,6 +1696,50 @@ static struct irqaction netif_be_dbg_act
  };
  #endif
  
@@ -208,8 +212,12 @@ Acked-by: jbeulich@novell.com
 +	if (netbk->dealloc_cons != netbk->dealloc_prod)
 +		return 1;
 +
++	if (netbk_copy_skb_mode == NETBK_DELAYED_COPY_SKB &&
++	    !list_empty(&netbk->pending_inuse_head))
++		return 1;
++
 +	if (nr_pending_reqs(netbk) + MAX_SKB_FRAGS < MAX_PENDING_REQS &&
-+	    !list_empty(&netbk->net_schedule_list))
++	    !list_empty(&netbk->schedule_list))
 +		return 1;
 +
 +	return 0;
@@ -241,46 +249,72 @@ Acked-by: jbeulich@novell.com
  static int __init netback_init(void)
  {
  	unsigned int i, group;
-@@ -1697,8 +1767,26 @@ static int __init netback_init(void)
+@@ -1717,20 +1774,16 @@ static int __init netback_init(void)
  	for (group = 0; group < netbk_nr_groups; group++) {
  		struct xen_netbk *netbk = &xen_netbk[group];
  
 -		tasklet_init(&netbk->net_tx_tasklet, net_tx_action, group);
 -		tasklet_init(&netbk->net_rx_tasklet, net_rx_action, group);
+-
+ 		skb_queue_head_init(&netbk->rx_queue);
+ 		skb_queue_head_init(&netbk->tx_queue);
+ 
+ 		init_timer(&netbk->net_timer);
+ 		netbk->net_timer.data = group;
+-		netbk->net_timer.function = net_alarm;
++		netbk->net_timer.function = netbk_schedule_group;
+ 
+ 		init_timer(&netbk->tx_pending_timer);
+ 		netbk->tx_pending_timer.data = group;
+-		netbk->tx_pending_timer.function =
+-			netbk_tx_pending_timeout;
++		netbk->tx_pending_timer.function = netbk_schedule_group;
+ 
+ 		netbk->pending_prod = MAX_PENDING_REQS;
+ 
+@@ -1755,6 +1808,25 @@ static int __init netback_init(void)
+ 			netbk->pending_ring[i] = i;
+ 			INIT_LIST_HEAD(&netbk->pending_inuse[i].list);
+ 		}
++
 +		if (use_kthreads) {
 +			init_waitqueue_head(&netbk->netbk_action_wq);
 +			netbk->task = kthread_create(netbk_action_thread,
 +						     (void *)(long)group,
 +						     "netback/%u", group);
 +
-+			if (!IS_ERR(netbk->task)) {
-+				if (bind_threads)
-+					kthread_bind(netbk->task, group);
-+				wake_up_process(netbk->task);
-+			} else {
-+				printk(KERN_ALERT
-+				       "kthread_create() fails at netback\n");
++			if (IS_ERR(netbk->task)) {
++				pr_alert("netback: kthread_create() failed\n");
 +				rc = PTR_ERR(netbk->task);
 +				goto failed_init;
 +			}
++			if (bind_threads)
++				kthread_bind(netbk->task, group);
++			wake_up_process(netbk->task);
 +		} else {
 +			tasklet_init(&netbk->net_tx_tasklet, net_tx_action, group);
 +			tasklet_init(&netbk->net_rx_tasklet, net_rx_action, group);
 +		}
+ 	}
  
- 		skb_queue_head_init(&netbk->rx_queue);
- 		skb_queue_head_init(&netbk->tx_queue);
-@@ -1762,8 +1850,11 @@ failed_init:
- 	while (group-- > 0) {
+ 	netbk_copy_skb_mode = NETBK_DONT_COPY_SKB;
+@@ -1779,12 +1851,15 @@ static int __init netback_init(void)
+ 	return 0;
+ 
+ failed_init:
+-	while (group-- > 0) {
++	do {
  		struct xen_netbk *netbk = &xen_netbk[group];
  
 -		free_empty_pages_and_pagevec(netbk->mmap_pages,
 -					     MAX_PENDING_REQS);
+-	}
 +		if (use_kthreads && netbk->task && !IS_ERR(netbk->task))
 +			kthread_stop(netbk->task);
 +		if (netbk->mmap_pages)
 +			free_empty_pages_and_pagevec(netbk->mmap_pages,
 +						     MAX_PENDING_REQS);
- 		del_timer(&netbk->tx_pending_timer);
- 		del_timer(&netbk->net_timer);
- 	}
++	} while (group--);
+ 	vfree(xen_netbk);
+ 	balloon_update_driver_allowance(-(long)netbk_nr_groups
+ 					* NET_RX_RING_SIZE);

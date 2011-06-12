@@ -11,10 +11,10 @@ Signed-off-by: Dongxiao Xu <dongxiao.xu@intel.com>
 jb: various cleanups
 Acked-by: jbeulich@novell.com
 
---- head-2010-04-29.orig/drivers/xen/netback/common.h	2010-03-24 15:06:12.000000000 +0100
-+++ head-2010-04-29/drivers/xen/netback/common.h	2010-04-30 11:11:33.000000000 +0200
-@@ -217,4 +217,74 @@ static inline int netbk_can_sg(struct ne
- 	return netif->features & NETIF_F_SG;
+--- head-2011-02-17.orig/drivers/xen/netback/common.h	2011-01-31 17:56:27.000000000 +0100
++++ head-2011-02-17/drivers/xen/netback/common.h	2011-02-17 10:33:48.000000000 +0100
+@@ -219,4 +219,74 @@ static inline int netbk_can_sg(struct ne
+ 	return netif->can_sg;
  }
  
 +struct pending_tx_info {
@@ -53,9 +53,9 @@ Acked-by: jbeulich@novell.com
 +	pending_ring_idx_t dealloc_cons;
 +
 +	struct list_head pending_inuse_head;
-+	struct list_head net_schedule_list;
++	struct list_head schedule_list;
 +
-+	spinlock_t net_schedule_list_lock;
++	spinlock_t schedule_list_lock;
 +	spinlock_t release_lock;
 +
 +	struct page **mmap_pages;
@@ -88,15 +88,17 @@ Acked-by: jbeulich@novell.com
 +	unsigned long mfn_list[MAX_MFN_ALLOC];
 +};
  #endif /* __NETIF__BACKEND__COMMON_H__ */
---- head-2010-04-29.orig/drivers/xen/netback/netback.c	2010-01-04 13:31:57.000000000 +0100
-+++ head-2010-04-29/drivers/xen/netback/netback.c	2010-04-30 11:49:12.000000000 +0200
-@@ -35,23 +35,18 @@
-  */
+--- head-2011-02-17.orig/drivers/xen/netback/netback.c	2011-01-03 13:30:15.000000000 +0100
++++ head-2011-02-17/drivers/xen/netback/netback.c	2011-03-01 11:53:28.000000000 +0100
+@@ -36,6 +36,7 @@
  
  #include "common.h"
+ #include <linux/if_vlan.h>
 +#include <linux/vmalloc.h>
+ #include <net/tcp.h>
  #include <xen/balloon.h>
  #include <xen/interface/memory.h>
+@@ -43,18 +44,12 @@
  
  /*define NETBE_DEBUG_INTERRUPT*/
  
@@ -106,7 +108,7 @@ Acked-by: jbeulich@novell.com
 -	u8 copy:1;
 -};
 +static struct xen_netbk *__read_mostly xen_netbk;
-+static const unsigned int __read_mostly netbk_nr_groups = 1;
++static const unsigned int netbk_nr_groups = 1;
  
 -struct netbk_tx_pending_inuse {
 -	struct list_head list;
@@ -119,7 +121,7 @@ Acked-by: jbeulich@novell.com
  static void make_tx_response(netif_t *netif, 
  			     netif_tx_request_t *txp,
  			     s8       st);
-@@ -62,81 +57,67 @@ static netif_rx_response_t *make_rx_resp
+@@ -65,47 +60,56 @@ static netif_rx_response_t *make_rx_resp
  					     u16      size,
  					     u16      flags);
  
@@ -201,7 +203,10 @@ Acked-by: jbeulich@novell.com
 +	return ext.e.idx;
  }
  
- #define PKT_PROT_LEN 64
+ /*
+@@ -117,36 +121,13 @@ static inline int netif_page_index(struc
+ 			 sizeof(struct iphdr) + MAX_IPOPTLEN + \
+ 			 sizeof(struct tcphdr) + MAX_TCP_OPTION_SPACE)
  
 -static struct pending_tx_info {
 -	netif_tx_request_t req;
@@ -212,11 +217,11 @@ Acked-by: jbeulich@novell.com
  #define MASK_PEND_IDX(_i) ((_i)&(MAX_PENDING_REQS-1))
 -static PEND_RING_IDX pending_prod, pending_cons;
 -#define NR_PENDING_REQS (MAX_PENDING_REQS - pending_prod + pending_cons)
- 
+-
 -/* Freed TX SKBs get batched on this ring before return to pending_ring. */
 -static u16 dealloc_ring[MAX_PENDING_REQS];
 -static PEND_RING_IDX dealloc_prod, dealloc_cons;
--
+ 
 -/* Doubly-linked list of in-use pending entries. */
 -static struct netbk_tx_pending_inuse pending_inuse[MAX_PENDING_REQS];
 -static LIST_HEAD(pending_inuse_head);
@@ -241,7 +246,7 @@ Acked-by: jbeulich@novell.com
  
  /* Setting this allows the safe use of this driver without netloop. */
  static int MODPARM_copy_skb = 1;
-@@ -148,13 +129,13 @@ MODULE_PARM_DESC(permute_returns, "Rando
+@@ -158,13 +139,13 @@ MODULE_PARM_DESC(permute_returns, "Rando
  
  int netbk_copy_skb_mode;
  
@@ -259,7 +264,7 @@ Acked-by: jbeulich@novell.com
  {
  	struct xen_memory_reservation reservation = {
  		.extent_order = 0,
-@@ -162,24 +143,27 @@ static int check_mfn(int nr)
+@@ -172,24 +153,27 @@ static int check_mfn(int nr)
  	};
  	int rc;
  
@@ -291,12 +296,12 @@ Acked-by: jbeulich@novell.com
 -	    !list_empty(&net_schedule_list))
 -		tasklet_schedule(&net_tx_tasklet);
 +	if ((nr_pending_reqs(netbk) < (MAX_PENDING_REQS/2)) &&
-+	    !list_empty(&netbk->net_schedule_list))
++	    !list_empty(&netbk->schedule_list))
 +		tasklet_schedule(&netbk->net_tx_tasklet);
  }
  
  static struct sk_buff *netbk_copy_skb(struct sk_buff *skb)
-@@ -288,6 +272,7 @@ static void tx_queue_callback(unsigned l
+@@ -298,6 +282,7 @@ static void tx_queue_callback(unsigned l
  int netif_be_start_xmit(struct sk_buff *skb, struct net_device *dev)
  {
  	netif_t *netif = netdev_priv(dev);
@@ -304,7 +309,7 @@ Acked-by: jbeulich@novell.com
  
  	BUG_ON(skb->dev != dev);
  
-@@ -337,8 +322,9 @@ int netif_be_start_xmit(struct sk_buff *
+@@ -346,8 +331,9 @@ int netif_be_start_xmit(struct sk_buff *
  		}
  	}
  
@@ -316,7 +321,7 @@ Acked-by: jbeulich@novell.com
  
  	return NETDEV_TX_OK;
  
-@@ -393,19 +379,29 @@ static u16 netbk_gop_frag(netif_t *netif
+@@ -402,19 +388,29 @@ static u16 netbk_gop_frag(netif_t *netif
  	multicall_entry_t *mcl;
  	netif_rx_request_t *req;
  	unsigned long old_mfn, new_mfn;
@@ -349,7 +354,7 @@ Acked-by: jbeulich@novell.com
  			copy_gop->source.domid = src_pend->netif->domid;
  			copy_gop->source.u.ref = src_pend->req.gref;
  			copy_gop->flags |= GNTCOPY_source_gref;
-@@ -421,7 +417,7 @@ static u16 netbk_gop_frag(netif_t *netif
+@@ -430,7 +426,7 @@ static u16 netbk_gop_frag(netif_t *netif
  	} else {
  		meta->copy = 0;
  		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
@@ -358,7 +363,7 @@ Acked-by: jbeulich@novell.com
  
  			/*
  			 * Set the new P2M table entry before
-@@ -566,7 +562,7 @@ static void netbk_add_frag_responses(net
+@@ -570,7 +566,7 @@ static void netbk_add_frag_responses(net
  	}
  }
  
@@ -367,16 +372,10 @@ Acked-by: jbeulich@novell.com
  {
  	netif_t *netif = NULL;
  	s8 status;
-@@ -576,52 +572,37 @@ static void net_rx_action(unsigned long 
- 	struct sk_buff_head rxq;
- 	struct sk_buff *skb;
- 	int notify_nr = 0;
--	int ret;
-+	int ret, eagain;
+@@ -584,47 +580,33 @@ static void net_rx_action(unsigned long 
  	int nr_frags;
  	int count;
  	unsigned long offset;
--    int eagain;
 -
 -	/*
 -	 * Putting hundreds of bytes on the stack is considered rude.
@@ -432,7 +431,7 @@ Acked-by: jbeulich@novell.com
  			break;
  		}
  
-@@ -636,39 +617,39 @@ static void net_rx_action(unsigned long 
+@@ -639,39 +621,39 @@ static void net_rx_action(unsigned long 
  			break;
  	}
  
@@ -479,7 +478,7 @@ Acked-by: jbeulich@novell.com
  		mcl->args[2] = npo.copy_prod;
  	}
  
-@@ -676,7 +657,7 @@ static void net_rx_action(unsigned long 
+@@ -679,7 +661,7 @@ static void net_rx_action(unsigned long 
  	if (!npo.mcl_prod)
  		return;
  
@@ -488,7 +487,7 @@ Acked-by: jbeulich@novell.com
  
  	ret = HYPERVISOR_multicall(npo.mcl, npo.mcl_prod);
  	BUG_ON(ret != 0);
-@@ -707,7 +688,7 @@ static void net_rx_action(unsigned long 
+@@ -705,13 +687,13 @@ static void net_rx_action(unsigned long 
  			atomic_set(&(skb_shinfo(skb)->dataref), 1);
  			skb_shinfo(skb)->frag_list = NULL;
  			skb_shinfo(skb)->nr_frags = 0;
@@ -496,19 +495,17 @@ Acked-by: jbeulich@novell.com
 +			netbk_free_pages(nr_frags, netbk->meta + npo.meta_cons + 1);
  		}
  
-         if(!eagain)
-@@ -716,7 +697,7 @@ static void net_rx_action(unsigned long 
- 		    netif->stats.tx_packets++;
-         }
+ 		skb->dev->stats.tx_bytes += skb->len;
+ 		skb->dev->stats.tx_packets++;
  
 -		id = meta[npo.meta_cons].id;
 +		id = netbk->meta[npo.meta_cons].id;
  		flags = nr_frags ? NETRXF_more_data : 0;
  
- 		if (skb->ip_summed == CHECKSUM_PARTIAL) /* local packet? */
-@@ -724,14 +705,14 @@ static void net_rx_action(unsigned long 
- 		else if (skb->proto_data_valid) /* remote but checksummed? */
- 			flags |= NETRXF_data_validated;
+ 		switch (skb->ip_summed) {
+@@ -723,14 +705,14 @@ static void net_rx_action(unsigned long 
+ 			break;
+ 		}
  
 -		if (meta[npo.meta_cons].copy)
 +		if (netbk->meta[npo.meta_cons].copy)
@@ -523,7 +520,7 @@ Acked-by: jbeulich@novell.com
  			struct netif_extra_info *gso =
  				(struct netif_extra_info *)
  				RING_GET_RESPONSE(&netif->rx,
-@@ -739,7 +720,7 @@ static void net_rx_action(unsigned long 
+@@ -738,7 +720,7 @@ static void net_rx_action(unsigned long 
  
  			resp->flags |= NETRXF_extra_info;
  
@@ -532,7 +529,7 @@ Acked-by: jbeulich@novell.com
  			gso->u.gso.type = XEN_NETIF_GSO_TYPE_TCPV4;
  			gso->u.gso.pad = 0;
  			gso->u.gso.features = 0;
-@@ -749,13 +730,13 @@ static void net_rx_action(unsigned long 
+@@ -748,13 +730,13 @@ static void net_rx_action(unsigned long 
  		}
  
  		netbk_add_frag_responses(netif, status,
@@ -549,15 +546,7 @@ Acked-by: jbeulich@novell.com
  
  		if (netif_queue_stopped(netif->dev) &&
  		    netif_schedulable(netif) &&
-@@ -772,45 +753,46 @@ static void net_rx_action(unsigned long 
-         {
- 	        netif->rx_req_cons_peek += skb_shinfo(skb)->nr_frags + 1 +
- 				   !!skb_shinfo(skb)->gso_size;
--            skb_queue_head(&rx_queue, skb);
-+            skb_queue_head(&netbk->rx_queue, skb);
-         }
- 
- 		npo.meta_cons += nr_frags + 1;
+@@ -768,38 +750,39 @@ static void net_rx_action(unsigned long 
  	}
  
  	if (notify_nr == 1) {
@@ -608,45 +597,61 @@ Acked-by: jbeulich@novell.com
 +	tasklet_schedule(&xen_netbk[group].net_tx_tasklet);
  }
  
- struct net_device_stats *netif_be_get_stats(struct net_device *dev)
-@@ -826,27 +808,31 @@ static int __on_net_schedule_list(netif_
+ static int __on_net_schedule_list(netif_t *netif)
+@@ -807,7 +790,7 @@ static int __on_net_schedule_list(netif_
+ 	return netif->list.next != NULL;
+ }
  
+-/* Must be called with net_schedule_list_lock held. */
++/* Must be called with netbk->schedule_list_lock held. */
  static void remove_from_net_schedule_list(netif_t *netif)
  {
--	spin_lock_irq(&net_schedule_list_lock);
-+	struct xen_netbk *netbk = &xen_netbk[GET_GROUP_INDEX(netif)];
-+
-+	spin_lock_irq(&netbk->net_schedule_list_lock);
  	if (likely(__on_net_schedule_list(netif))) {
- 		list_del(&netif->list);
- 		netif->list.next = NULL;
- 		netif_put(netif);
+@@ -817,34 +800,35 @@ static void remove_from_net_schedule_lis
+ 	}
+ }
+ 
+-static netif_t *poll_net_schedule_list(void)
++static netif_t *poll_net_schedule_list(struct xen_netbk *netbk)
+ {
+ 	netif_t *netif = NULL;
+ 
+-	spin_lock_irq(&net_schedule_list_lock);
+-	if (!list_empty(&net_schedule_list)) {
+-		netif = list_first_entry(&net_schedule_list, netif_t, list);
++	spin_lock_irq(&netbk->schedule_list_lock);
++	if (!list_empty(&netbk->schedule_list)) {
++		netif = list_first_entry(&netbk->schedule_list, netif_t, list);
+ 		netif_get(netif);
+ 		remove_from_net_schedule_list(netif);
  	}
 -	spin_unlock_irq(&net_schedule_list_lock);
-+	spin_unlock_irq(&netbk->net_schedule_list_lock);
++	spin_unlock_irq(&netbk->schedule_list_lock);
+ 	return netif;
  }
  
  static void add_to_net_schedule_list_tail(netif_t *netif)
  {
 +	struct xen_netbk *netbk = &xen_netbk[GET_GROUP_INDEX(netif)];
-+
+ 	unsigned long flags;
+ 
  	if (__on_net_schedule_list(netif))
  		return;
  
--	spin_lock_irq(&net_schedule_list_lock);
-+	spin_lock_irq(&netbk->net_schedule_list_lock);
+-	spin_lock_irqsave(&net_schedule_list_lock, flags);
++	spin_lock_irqsave(&netbk->schedule_list_lock, flags);
  	if (!__on_net_schedule_list(netif) &&
  	    likely(netif_schedulable(netif))) {
 -		list_add_tail(&netif->list, &net_schedule_list);
-+		list_add_tail(&netif->list, &netbk->net_schedule_list);
++		list_add_tail(&netif->list, &netbk->schedule_list);
  		netif_get(netif);
  	}
--	spin_unlock_irq(&net_schedule_list_lock);
-+	spin_unlock_irq(&netbk->net_schedule_list_lock);
+-	spin_unlock_irqrestore(&net_schedule_list_lock, flags);
++	spin_unlock_irqrestore(&netbk->schedule_list_lock, flags);
  }
  
  /*
-@@ -869,7 +855,7 @@ void netif_schedule_work(netif_t *netif)
+@@ -867,15 +851,17 @@ void netif_schedule_work(netif_t *netif)
  
  	if (more_to_do) {
  		add_to_net_schedule_list_tail(netif);
@@ -654,6 +659,18 @@ Acked-by: jbeulich@novell.com
 +		maybe_schedule_tx_action(GET_GROUP_INDEX(netif));
  	}
  }
+ 
+ void netif_deschedule_work(netif_t *netif)
+ {
+-	spin_lock_irq(&net_schedule_list_lock);
++	struct xen_netbk *netbk = &xen_netbk[GET_GROUP_INDEX(netif)];
++
++	spin_lock_irq(&netbk->schedule_list_lock);
+ 	remove_from_net_schedule_list(netif);
+-	spin_unlock_irq(&net_schedule_list_lock);
++	spin_unlock_irq(&netbk->schedule_list_lock);
+ }
+ 
  
 @@ -906,17 +892,19 @@ static void tx_credit_callback(unsigned 
  	netif_schedule_work(netif);
@@ -680,7 +697,7 @@ Acked-by: jbeulich@novell.com
  	u16 tmp;
  
  	while (dc != dp) {
-@@ -931,62 +919,67 @@ static void permute_dealloc_ring(PEND_RI
+@@ -931,67 +919,73 @@ static void permute_dealloc_ring(PEND_RI
  	}
  }
  
@@ -693,7 +710,6 @@ Acked-by: jbeulich@novell.com
 -	PEND_RING_IDX dc, dp;
 +	pending_ring_idx_t dc, dp;
  	netif_t *netif;
- 	int ret;
  	LIST_HEAD(list);
  
 -	dc = dealloc_cons;
@@ -738,13 +754,23 @@ Acked-by: jbeulich@novell.com
  			gop++;
  		}
  
- 		if (netbk_copy_skb_mode != NETBK_DELAYED_COPY_SKB ||
--		    list_empty(&pending_inuse_head))
-+		    list_empty(&netbk->pending_inuse_head))
- 			break;
+-	} while (dp != dealloc_prod);
++	} while (dp != netbk->dealloc_prod);
  
- 		/* Copy any entries that have been pending for too long. */
+-	dealloc_cons = dc;
++	netbk->dealloc_cons = dc;
+ 
+ 	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref,
+-				      tx_unmap_ops, gop - tx_unmap_ops))
++				      netbk->tx_unmap_ops,
++				      gop - netbk->tx_unmap_ops))
+ 		BUG();
+ 
+ 	/* Copy any entries that have been pending for too long. */
+ 	if (netbk_copy_skb_mode == NETBK_DELAYED_COPY_SKB &&
+-	    !list_empty(&pending_inuse_head)) {
 -		list_for_each_entry_safe(inuse, n, &pending_inuse_head, list) {
++	    !list_empty(&netbk->pending_inuse_head)) {
 +		list_for_each_entry_safe(inuse, n, &netbk->pending_inuse_head, list) {
 +			struct pending_tx_info *pending_tx_info
 +				= netbk->pending_tx_info;
@@ -762,21 +788,8 @@ Acked-by: jbeulich@novell.com
  			case 0:
  				list_move_tail(&inuse->list, &list);
  				continue;
-@@ -999,26 +992,30 @@ inline static void net_tx_action_dealloc
- 
- 			break;
- 		}
--	} while (dp != dealloc_prod);
-+	} while (dp != netbk->dealloc_prod);
- 
--	dealloc_cons = dc;
-+	netbk->dealloc_cons = dc;
- 
- 	ret = HYPERVISOR_grant_table_op(
--		GNTTABOP_unmap_grant_ref, tx_unmap_ops, gop - tx_unmap_ops);
-+		GNTTABOP_unmap_grant_ref, netbk->tx_unmap_ops,
-+		gop - netbk->tx_unmap_ops);
- 	BUG_ON(ret);
+@@ -1007,17 +1001,20 @@ inline static void net_tx_action_dealloc
+ 	}
  
  	list_for_each_entry_safe(inuse, n, &list, list) {
 -		pending_idx = inuse - pending_inuse;
@@ -799,7 +812,7 @@ Acked-by: jbeulich@novell.com
  
  		netif_put(netif);
  
-@@ -1095,9 +1092,14 @@ static gnttab_map_grant_ref_t *netbk_get
+@@ -1094,9 +1091,14 @@ static gnttab_map_grant_ref_t *netbk_get
  	start = ((unsigned long)shinfo->frags[0].page == pending_idx);
  
  	for (i = start; i < shinfo->nr_frags; i++, txp++) {
@@ -808,15 +821,15 @@ Acked-by: jbeulich@novell.com
 +		pending_ring_idx_t index = MASK_PEND_IDX(netbk->pending_cons++);
 +		struct pending_tx_info *pending_tx_info =
 +			netbk->pending_tx_info;
-+
-+		pending_idx = netbk->pending_ring[index];
  
 -		gnttab_set_map_op(mop++, idx_to_kaddr(pending_idx),
++		pending_idx = netbk->pending_ring[index];
++
 +		gnttab_set_map_op(mop++, idx_to_kaddr(netbk, pending_idx),
  				  GNTMAP_host_map | GNTMAP_readonly,
  				  txp->gref, netif->domid);
  
-@@ -1110,11 +1112,12 @@ static gnttab_map_grant_ref_t *netbk_get
+@@ -1109,11 +1111,12 @@ static gnttab_map_grant_ref_t *netbk_get
  	return mop;
  }
  
@@ -831,10 +844,10 @@ Acked-by: jbeulich@novell.com
  	netif_t *netif = pending_tx_info[pending_idx].netif;
  	netif_tx_request_t *txp;
  	struct skb_shared_info *shinfo = skb_shinfo(skb);
-@@ -1124,14 +1127,16 @@ static int netbk_tx_check_mop(struct sk_
+@@ -1123,14 +1126,16 @@ static int netbk_tx_check_mop(struct sk_
  	/* Check status of header. */
  	err = mop->status;
- 	if (unlikely(err)) {
+ 	if (unlikely(err != GNTST_okay)) {
 +		pending_ring_idx_t index = MASK_PEND_IDX(netbk->pending_prod++);
 +
  		txp = &pending_tx_info[pending_idx].req;
@@ -851,7 +864,7 @@ Acked-by: jbeulich@novell.com
  	}
  
  	/* Skip first skb fragment if it is on same page as header fragment. */
-@@ -1139,25 +1144,27 @@ static int netbk_tx_check_mop(struct sk_
+@@ -1138,25 +1143,27 @@ static int netbk_tx_check_mop(struct sk_
  
  	for (i = start; i < nr_frags; i++) {
  		int j, newerr;
@@ -861,14 +874,14 @@ Acked-by: jbeulich@novell.com
  
  		/* Check error status: if okay then remember grant handle. */
  		newerr = (++mop)->status;
- 		if (likely(!newerr)) {
+ 		if (likely(newerr == GNTST_okay)) {
 -			set_phys_to_machine(idx_to_pfn(pending_idx),
 +			set_phys_to_machine(idx_to_pfn(netbk, pending_idx),
  				FOREIGN_FRAME(mop->dev_bus_addr>>PAGE_SHIFT));
 -			grant_tx_handle[pending_idx] = mop->handle;
 +			netbk->grant_tx_handle[pending_idx] = mop->handle;
  			/* Had a previous error? Invalidate this fragment. */
- 			if (unlikely(err))
+ 			if (unlikely(err != GNTST_okay))
 -				netif_idx_release(pending_idx);
 +				netif_idx_release(netbk, pending_idx);
  			continue;
@@ -883,7 +896,7 @@ Acked-by: jbeulich@novell.com
  		netif_put(netif);
  
  		/* Not the first error? Preceding frags already invalidated. */
-@@ -1166,10 +1173,10 @@ static int netbk_tx_check_mop(struct sk_
+@@ -1165,10 +1172,10 @@ static int netbk_tx_check_mop(struct sk_
  
  		/* First error: invalidate header and preceding fragments. */
  		pending_idx = *((u16 *)skb->data);
@@ -896,7 +909,7 @@ Acked-by: jbeulich@novell.com
  		}
  
  		/* Remember the error: invalidate all subsequent fragments. */
-@@ -1180,7 +1187,7 @@ static int netbk_tx_check_mop(struct sk_
+@@ -1179,7 +1186,7 @@ static int netbk_tx_check_mop(struct sk_
  	return err;
  }
  
@@ -905,7 +918,7 @@ Acked-by: jbeulich@novell.com
  {
  	struct skb_shared_info *shinfo = skb_shinfo(skb);
  	int nr_frags = shinfo->nr_frags;
-@@ -1193,12 +1200,12 @@ static void netbk_fill_frags(struct sk_b
+@@ -1192,12 +1199,12 @@ static void netbk_fill_frags(struct sk_b
  
  		pending_idx = (unsigned long)frag->page;
  
@@ -923,19 +936,18 @@ Acked-by: jbeulich@novell.com
  		frag->size = txp->size;
  		frag->page_offset = txp->offset;
  
-@@ -1260,9 +1267,9 @@ static int netbk_set_skb_gso(struct sk_b
+@@ -1259,8 +1266,9 @@ static int netbk_set_skb_gso(struct sk_b
  }
  
  /* Called after netfront has transmitted */
 -static void net_tx_action(unsigned long unused)
 +static void net_tx_action(unsigned long group)
  {
--	struct list_head *ent;
 +	struct xen_netbk *netbk = &xen_netbk[group];
  	struct sk_buff *skb;
  	netif_t *netif;
  	netif_tx_request_t txreq;
-@@ -1274,15 +1281,15 @@ static void net_tx_action(unsigned long 
+@@ -1272,14 +1280,14 @@ static void net_tx_action(unsigned long 
  	unsigned int data_len;
  	int ret, work_to_do;
  
@@ -948,16 +960,14 @@ Acked-by: jbeulich@novell.com
 -	while (((NR_PENDING_REQS + MAX_SKB_FRAGS) < MAX_PENDING_REQS) &&
 -		!list_empty(&net_schedule_list)) {
 +	while (((nr_pending_reqs(netbk) + MAX_SKB_FRAGS) < MAX_PENDING_REQS) &&
-+		!list_empty(&netbk->net_schedule_list)) {
++	       !list_empty(&netbk->schedule_list)) {
  		/* Get a netif from the list with work to do. */
--		ent = net_schedule_list.next;
--		netif = list_entry(ent, netif_t, list);
-+		netif = list_first_entry(&netbk->net_schedule_list,
-+					 netif_t, list);
- 		netif_get(netif);
- 		remove_from_net_schedule_list(netif);
+-		netif = poll_net_schedule_list();
++		netif = poll_net_schedule_list(netbk);
+ 		if (!netif)
+ 			continue;
  
-@@ -1364,7 +1371,7 @@ static void net_tx_action(unsigned long 
+@@ -1361,7 +1369,7 @@ static void net_tx_action(unsigned long 
  			continue;
  		}
  
@@ -966,7 +976,7 @@ Acked-by: jbeulich@novell.com
  
  		data_len = (txreq.size > PKT_PROT_LEN &&
  			    ret < MAX_SKB_FRAGS) ?
-@@ -1392,14 +1399,14 @@ static void net_tx_action(unsigned long 
+@@ -1389,14 +1397,14 @@ static void net_tx_action(unsigned long 
  			}
  		}
  
@@ -984,7 +994,7 @@ Acked-by: jbeulich@novell.com
  		*((u16 *)skb->data) = pending_idx;
  
  		__skb_put(skb, data_len);
-@@ -1414,20 +1421,20 @@ static void net_tx_action(unsigned long 
+@@ -1411,20 +1419,20 @@ static void net_tx_action(unsigned long 
  			skb_shinfo(skb)->frags[0].page = (void *)~0UL;
  		}
  
@@ -1009,7 +1019,7 @@ Acked-by: jbeulich@novell.com
  		goto out;
  
      /* NOTE: some maps may fail with GNTST_eagain, which could be successfully
-@@ -1435,20 +1442,21 @@ static void net_tx_action(unsigned long 
+@@ -1432,22 +1440,23 @@ static void net_tx_action(unsigned long 
       * req and let the frontend resend the relevant packet again. This is fine
       * because it is unlikely that a network buffer will be paged out or shared,
       * and therefore it is unlikely to fail with GNTST_eagain. */
@@ -1024,13 +1034,15 @@ Acked-by: jbeulich@novell.com
 -	while ((skb = __skb_dequeue(&tx_queue)) != NULL) {
 +	mop = netbk->tx_map_ops;
 +	while ((skb = __skb_dequeue(&netbk->tx_queue)) != NULL) {
+ 		struct net_device *dev;
  		netif_tx_request_t *txp;
  
  		pending_idx = *((u16 *)skb->data);
 -		netif       = pending_tx_info[pending_idx].netif;
++		netif       = netbk->pending_tx_info[pending_idx].netif;
+ 		dev         = netif->dev;
 -		txp         = &pending_tx_info[pending_idx].req;
-+		netif = netbk->pending_tx_info[pending_idx].netif;
-+		txp = &netbk->pending_tx_info[pending_idx].req;
++		txp         = &netbk->pending_tx_info[pending_idx].req;
  
  		/* Check the remap error code. */
 -		if (unlikely(netbk_tx_check_mop(skb, &mop))) {
@@ -1038,7 +1050,7 @@ Acked-by: jbeulich@novell.com
  			DPRINTK("netback grant failed.\n");
  			skb_shinfo(skb)->nr_frags = 0;
  			kfree_skb(skb);
-@@ -1457,7 +1465,7 @@ static void net_tx_action(unsigned long 
+@@ -1457,7 +1466,7 @@ static void net_tx_action(unsigned long 
  
  		data_len = skb->len;
  		memcpy(skb->data,
@@ -1047,7 +1059,7 @@ Acked-by: jbeulich@novell.com
  		       data_len);
  		if (data_len < txp->size) {
  			/* Append the packet payload as a fragment. */
-@@ -1465,7 +1473,7 @@ static void net_tx_action(unsigned long 
+@@ -1465,7 +1474,7 @@ static void net_tx_action(unsigned long 
  			txp->size -= data_len;
  		} else {
  			/* Schedule a response immediately. */
@@ -1055,17 +1067,17 @@ Acked-by: jbeulich@novell.com
 +			netif_idx_release(netbk, pending_idx);
  		}
  
- 		/*
-@@ -1481,7 +1489,7 @@ static void net_tx_action(unsigned long 
- 		}
- 		skb->proto_csum_blank = !!(txp->flags & NETTXF_csum_blank);
+ 		if (txp->flags & NETTXF_csum_blank)
+@@ -1475,7 +1484,7 @@ static void net_tx_action(unsigned long 
+ 		else
+ 			skb->ip_summed = CHECKSUM_NONE;
  
 -		netbk_fill_frags(skb);
 +		netbk_fill_frags(netbk, skb);
  
- 		skb->dev      = netif->dev;
- 		skb->protocol = eth_type_trans(skb, skb->dev);
-@@ -1502,36 +1510,39 @@ static void net_tx_action(unsigned long 
+ 		/*
+ 		 * If the initial fragment was < PKT_PROT_LEN then
+@@ -1511,36 +1520,39 @@ static void net_tx_action(unsigned long 
  
   out:
  	if (netbk_copy_skb_mode == NETBK_DELAYED_COPY_SKB &&
@@ -1118,7 +1130,7 @@ Acked-by: jbeulich@novell.com
  }
  
  irqreturn_t netif_be_int(int irq, void *dev_id)
-@@ -1539,7 +1550,7 @@ irqreturn_t netif_be_int(int irq, void *
+@@ -1548,7 +1560,7 @@ irqreturn_t netif_be_int(int irq, void *
  	netif_t *netif = dev_id;
  
  	add_to_net_schedule_list_tail(netif);
@@ -1127,61 +1139,67 @@ Acked-by: jbeulich@novell.com
  
  	if (netif_schedulable(netif) && !netbk_queue_full(netif))
  		netif_wake_queue(netif->dev);
-@@ -1605,29 +1616,35 @@ static irqreturn_t netif_be_dbg(int irq,
+@@ -1612,33 +1624,38 @@ static netif_rx_response_t *make_rx_resp
+ #ifdef NETBE_DEBUG_INTERRUPT
+ static irqreturn_t netif_be_dbg(int irq, void *dev_id)
  {
- 	struct list_head *ent;
+-	struct list_head *ent;
  	netif_t *netif;
 -	int i = 0;
 +	unsigned int i = 0, group;
  
- 	printk(KERN_ALERT "netif_schedule_list:\n");
+ 	pr_alert("netif_schedule_list:\n");
 -	spin_lock_irq(&net_schedule_list_lock);
  
 -	list_for_each (ent, &net_schedule_list) {
 -		netif = list_entry(ent, netif_t, list);
--		printk(KERN_ALERT " %d: private(rx_req_cons=%08x "
--		       "rx_resp_prod=%08x\n",
--		       i, netif->rx.req_cons, netif->rx.rsp_prod_pvt);
--		printk(KERN_ALERT "   tx_req_cons=%08x tx_resp_prod=%08x)\n",
--		       netif->tx.req_cons, netif->tx.rsp_prod_pvt);
--		printk(KERN_ALERT "   shared(rx_req_prod=%08x "
--		       "rx_resp_prod=%08x\n",
--		       netif->rx.sring->req_prod, netif->rx.sring->rsp_prod);
--		printk(KERN_ALERT "   rx_event=%08x tx_req_prod=%08x\n",
--		       netif->rx.sring->rsp_event, netif->tx.sring->req_prod);
--		printk(KERN_ALERT "   tx_resp_prod=%08x, tx_event=%08x)\n",
--		       netif->tx.sring->rsp_prod, netif->tx.sring->rsp_event);
+-		pr_alert(" %d: private(rx_req_cons=%08x "
+-			 "rx_resp_prod=%08x\n",
+-			 i, netif->rx.req_cons, netif->rx.rsp_prod_pvt);
+-		pr_alert("   tx_req_cons=%08x tx_resp_prod=%08x)\n",
+-			 netif->tx.req_cons, netif->tx.rsp_prod_pvt);
+-		pr_alert("   shared(rx_req_prod=%08x "
+-			 "rx_resp_prod=%08x\n",
+-			 netif->rx.sring->req_prod, netif->rx.sring->rsp_prod);
+-		pr_alert("   rx_event=%08x tx_req_prod=%08x\n",
+-			 netif->rx.sring->rsp_event,
+-			 netif->tx.sring->req_prod);
+-		pr_alert("   tx_resp_prod=%08x, tx_event=%08x)\n",
+-			 netif->tx.sring->rsp_prod,
+-			 netif->tx.sring->rsp_event);
 -		i++;
 +	for (group = 0; group < netbk_nr_groups; ++group) {
 +		struct xen_netbk *netbk = &xen_netbk[group];
 +
-+		spin_lock_irq(&netbk->net_schedule_list_lock);
++		spin_lock_irq(&netbk->schedule_list_lock);
 +
-+		list_for_each(ent, &netbk->net_schedule_list) {
-+			netif = list_entry(ent, netif_t, list);
-+			printk(KERN_ALERT " %d: private(rx_req_cons=%08x "
-+			       "rx_resp_prod=%08x\n",
-+			       i, netif->rx.req_cons, netif->rx.rsp_prod_pvt);
-+			printk(KERN_ALERT "   tx_req_cons=%08x tx_resp_prod=%08x)\n",
-+			       netif->tx.req_cons, netif->tx.rsp_prod_pvt);
-+			printk(KERN_ALERT "   shared(rx_req_prod=%08x "
-+			       "rx_resp_prod=%08x\n",
-+			       netif->rx.sring->req_prod, netif->rx.sring->rsp_prod);
-+			printk(KERN_ALERT "   rx_event=%08x tx_req_prod=%08x\n",
-+			       netif->rx.sring->rsp_event, netif->tx.sring->req_prod);
-+			printk(KERN_ALERT "   tx_resp_prod=%08x, tx_event=%08x)\n",
-+			       netif->tx.sring->rsp_prod, netif->tx.sring->rsp_event);
++		list_for_each_entry(netif, &netbk->schedule_list, list) {
++			pr_alert(" %d: private(rx_req_cons=%08x "
++				 "rx_resp_prod=%08x\n", i,
++				 netif->rx.req_cons, netif->rx.rsp_prod_pvt);
++			pr_alert("   tx_req_cons=%08x tx_resp_prod=%08x)\n",
++				 netif->tx.req_cons, netif->tx.rsp_prod_pvt);
++			pr_alert("   shared(rx_req_prod=%08x "
++				 "rx_resp_prod=%08x\n",
++				 netif->rx.sring->req_prod,
++				 netif->rx.sring->rsp_prod);
++			pr_alert("   rx_event=%08x tx_req_prod=%08x\n",
++				 netif->rx.sring->rsp_event,
++				 netif->tx.sring->req_prod);
++			pr_alert("   tx_resp_prod=%08x, tx_event=%08x)\n",
++				 netif->tx.sring->rsp_prod,
++				 netif->tx.sring->rsp_event);
 +			i++;
 +		}
 +
-+		spin_unlock_irq(&netbk->netbk->net_schedule_list_lock);
++		spin_unlock_irq(&netbk->netbk->schedule_list_lock);
  	}
  
 -	spin_unlock_irq(&net_schedule_list_lock);
- 	printk(KERN_ALERT " ** End of netif_schedule_list **\n");
+ 	pr_alert(" ** End of netif_schedule_list **\n");
  
  	return IRQ_HANDLED;
-@@ -1642,7 +1659,8 @@ static struct irqaction netif_be_dbg_act
+@@ -1653,46 +1670,66 @@ static struct irqaction netif_be_dbg_act
  
  static int __init netback_init(void)
  {
@@ -1191,13 +1209,25 @@ Acked-by: jbeulich@novell.com
  	struct page *page;
  
  	if (!is_running_on_xen())
-@@ -1651,37 +1669,55 @@ static int __init netback_init(void)
+ 		return -ENODEV;
+ 
++	xen_netbk = __vmalloc(netbk_nr_groups * sizeof(*xen_netbk),
++			      GFP_KERNEL|__GFP_HIGHMEM|__GFP_ZERO,
++			      PAGE_KERNEL);
++	if (!xen_netbk) {
++		pr_err("%s: out of memory\n", __func__);
++		return -ENOMEM;
++	}
++
  	/* We can increase reservation by this much in net_rx_action(). */
- 	balloon_update_driver_allowance(NET_RX_RING_SIZE);
+-	balloon_update_driver_allowance(NET_RX_RING_SIZE);
++	balloon_update_driver_allowance(netbk_nr_groups * NET_RX_RING_SIZE);
  
 -	skb_queue_head_init(&rx_queue);
 -	skb_queue_head_init(&tx_queue);
--
++	for (group = 0; group < netbk_nr_groups; group++) {
++		struct xen_netbk *netbk = &xen_netbk[group];
+ 
 -	init_timer(&net_timer);
 -	net_timer.data = 0;
 -	net_timer.function = net_alarm;
@@ -1208,13 +1238,11 @@ Acked-by: jbeulich@novell.com
 -
 -	mmap_pages = alloc_empty_pages_and_pagevec(MAX_PENDING_REQS);
 -	if (mmap_pages == NULL) {
--		printk("%s: out of memory\n", __FUNCTION__);
-+	xen_netbk = __vmalloc(netbk_nr_groups * sizeof(*xen_netbk),
-+			    GFP_KERNEL|__GFP_HIGHMEM|__GFP_ZERO, PAGE_KERNEL);
-+	if (!xen_netbk) {
-+		printk(KERN_ALERT "%s: out of memory\n", __func__);
- 		return -ENOMEM;
- 	}
+-		pr_err("%s: out of memory\n", __FUNCTION__);
+-		return -ENOMEM;
+-	}
++		tasklet_init(&netbk->net_tx_tasklet, net_tx_action, group);
++		tasklet_init(&netbk->net_rx_tasklet, net_rx_action, group);
  
 -	for (i = 0; i < MAX_PENDING_REQS; i++) {
 -		page = mmap_pages[i];
@@ -1222,28 +1250,8 @@ Acked-by: jbeulich@novell.com
 -		netif_set_page_index(page, i);
 -		INIT_LIST_HEAD(&pending_inuse[i].list);
 -	}
-+	for (group = 0; group < netbk_nr_groups; group++) {
-+		struct xen_netbk *netbk = &xen_netbk[group];
- 
--	pending_cons = 0;
--	pending_prod = MAX_PENDING_REQS;
--	for (i = 0; i < MAX_PENDING_REQS; i++)
--		pending_ring[i] = i;
-+		tasklet_init(&netbk->net_tx_tasklet, net_tx_action, group);
-+		tasklet_init(&netbk->net_rx_tasklet, net_rx_action, group);
- 
--	spin_lock_init(&net_schedule_list_lock);
--	INIT_LIST_HEAD(&net_schedule_list);
 +		skb_queue_head_init(&netbk->rx_queue);
 +		skb_queue_head_init(&netbk->tx_queue);
-+
-+		netbk->mmap_pages =
-+			alloc_empty_pages_and_pagevec(MAX_PENDING_REQS);
-+		if (netbk->mmap_pages == NULL) {
-+			printk(KERN_ALERT "%s: out of memory\n", __func__);
-+			rc = -ENOMEM;
-+			goto failed_init;
-+		}
 +
 +		init_timer(&netbk->net_timer);
 +		netbk->net_timer.data = group;
@@ -1255,12 +1263,26 @@ Acked-by: jbeulich@novell.com
 +			netbk_tx_pending_timeout;
 +
 +		netbk->pending_prod = MAX_PENDING_REQS;
-+
+ 
+-	pending_cons = 0;
+-	pending_prod = MAX_PENDING_REQS;
+-	for (i = 0; i < MAX_PENDING_REQS; i++)
+-		pending_ring[i] = i;
 +		INIT_LIST_HEAD(&netbk->pending_inuse_head);
-+		INIT_LIST_HEAD(&netbk->net_schedule_list);
-+
-+		spin_lock_init(&netbk->net_schedule_list_lock);
++		INIT_LIST_HEAD(&netbk->schedule_list);
+ 
+-	spin_lock_init(&net_schedule_list_lock);
+-	INIT_LIST_HEAD(&net_schedule_list);
++		spin_lock_init(&netbk->schedule_list_lock);
 +		spin_lock_init(&netbk->release_lock);
++
++		netbk->mmap_pages =
++			alloc_empty_pages_and_pagevec(MAX_PENDING_REQS);
++		if (netbk->mmap_pages == NULL) {
++			pr_err("%s: out of memory\n", __func__);
++			rc = -ENOMEM;
++			goto failed_init;
++		}
 +
 +		for (i = 0; i < MAX_PENDING_REQS; i++) {
 +			page = netbk->mmap_pages[i];
@@ -1273,7 +1295,7 @@ Acked-by: jbeulich@novell.com
  
  	netbk_copy_skb_mode = NETBK_DONT_COPY_SKB;
  	if (MODPARM_copy_skb) {
-@@ -1703,6 +1739,19 @@ static int __init netback_init(void)
+@@ -1714,6 +1751,19 @@ static int __init netback_init(void)
  #endif
  
  	return 0;
@@ -1284,10 +1306,10 @@ Acked-by: jbeulich@novell.com
 +
 +		free_empty_pages_and_pagevec(netbk->mmap_pages,
 +					     MAX_PENDING_REQS);
-+		del_timer(&netbk->tx_pending_timer);
-+		del_timer(&netbk->net_timer);
 +	}
 +	vfree(xen_netbk);
++	balloon_update_driver_allowance(-(long)netbk_nr_groups
++					* NET_RX_RING_SIZE);
 +
 +	return rc;
  }

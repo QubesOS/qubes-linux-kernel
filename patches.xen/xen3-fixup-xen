@@ -1,12 +1,12 @@
 Subject: Fix Xen build wrt. Xen files coming from mainline.
-From: http://xenbits.xensource.com/linux-2.6.18-xen.hg (tip 1017:948c933f8839)
+From: http://xenbits.xensource.com/linux-2.6.18-xen.hg (tip 1073:8fe973d8fb98)
 Patch-mainline: n/a
 
 Acked-by: jbeulich@novell.com
 
---- head-2010-05-12.orig/drivers/xen/Makefile	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/Makefile	2010-01-19 16:01:03.000000000 +0100
-@@ -1,12 +1,28 @@
+--- head-2011-03-17.orig/drivers/xen/Makefile	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/Makefile	2011-01-31 15:14:12.000000000 +0100
+@@ -1,22 +1,28 @@
 -obj-y	+= grant-table.o features.o events.o manage.o
 +obj-y	+= core/
 +obj-y	+= console/
@@ -17,18 +17,27 @@ Acked-by: jbeulich@novell.com
 -nostackp := $(call cc-option, -fno-stack-protector)
 -CFLAGS_features.o			:= $(nostackp)
 -
+-obj-$(CONFIG_BLOCK)		+= biomerge.o
 -obj-$(CONFIG_HOTPLUG_CPU)	+= cpu_hotplug.o
 -obj-$(CONFIG_XEN_XENCOMM)	+= xencomm.o
 -obj-$(CONFIG_XEN_BALLOON)	+= balloon.o
--obj-$(CONFIG_XEN_DEV_EVTCHN)	+= evtchn.o
+-obj-$(CONFIG_XEN_DEV_EVTCHN)	+= xen-evtchn.o
+-obj-$(CONFIG_XEN_GNTDEV)	+= xen-gntdev.o
 -obj-$(CONFIG_XENFS)		+= xenfs/
 -obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
-\ No newline at end of file
+-obj-$(CONFIG_XEN_PLATFORM_PCI)	+= xen-platform-pci.o
+-obj-$(CONFIG_SWIOTLB_XEN)	+= swiotlb-xen.o
+-obj-$(CONFIG_XEN_DOM0)		+= pci.o
+-
+-xen-evtchn-y			:= evtchn.o
+-xen-gntdev-y				:= gntdev.o
+-
+-xen-platform-pci-y		:= platform-pci.o
 +obj-y	+= util.o
 +obj-$(CONFIG_XEN_BALLOON)		+= balloon/
 +obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= blkback/
 +obj-$(CONFIG_XEN_BLKDEV_TAP)		+= blktap/
-+obj-$(CONFIG_XEN_BLKDEV_TAP2)           += blktap2/
++obj-$(CONFIG_XEN_BLKDEV_TAP2)		+= blktap2/
 +obj-$(CONFIG_XEN_NETDEV_BACKEND)	+= netback/
 +obj-$(CONFIG_XEN_TPMDEV_BACKEND)	+= tpmback/
 +obj-$(CONFIG_XEN_BLKDEV_FRONTEND)	+= blkfront/
@@ -46,9 +55,9 @@ Acked-by: jbeulich@novell.com
 +obj-$(CONFIG_XEN_NETDEV_ACCEL_SFC_UTIL)		+= sfc_netutil/
 +obj-$(CONFIG_XEN_NETDEV_ACCEL_SFC_FRONTEND)	+= sfc_netfront/
 +obj-$(CONFIG_XEN_NETDEV_ACCEL_SFC_BACKEND)	+= sfc_netback/
---- head-2010-05-12.orig/drivers/xen/xenbus/Makefile	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/xenbus/Makefile	2010-01-19 16:01:03.000000000 +0100
-@@ -1,7 +1,9 @@
+--- head-2011-03-17.orig/drivers/xen/xenbus/Makefile	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/Makefile	2011-02-02 17:06:11.000000000 +0100
+@@ -1,12 +1,9 @@
 -obj-y	+= xenbus.o
 +obj-y += xenbus_client.o xenbus_comms.o xenbus_xs.o xenbus_probe.o
 +obj-$(CONFIG_XEN_BACKEND) += xenbus_be.o
@@ -60,12 +69,16 @@ Acked-by: jbeulich@novell.com
 -xenbus-objs += xenbus_probe.o
 +xenbus_be-objs =
 +xenbus_be-objs += xenbus_backend_client.o
-+
+ 
+-xenbus-be-objs-$(CONFIG_XEN_BACKEND) += xenbus_probe_backend.o
+-xenbus-objs += $(xenbus-be-objs-y)
+-
+-obj-$(CONFIG_XEN_XENBUS_FRONTEND) += xenbus_probe_frontend.o
 +xenbus-$(CONFIG_XEN_BACKEND) += xenbus_probe_backend.o
 +obj-y += $(xenbus-y) $(xenbus-m)
 +obj-$(CONFIG_XEN_XENBUS_DEV) += xenbus_dev.o
---- head-2010-05-12.orig/drivers/xen/xenbus/xenbus_client.c	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/xenbus/xenbus_client.c	2010-01-19 16:01:03.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_client.c	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_client.c	2011-01-31 15:14:12.000000000 +0100
 @@ -31,14 +31,17 @@
   */
  
@@ -91,10 +104,14 @@ Acked-by: jbeulich@novell.com
  
  const char *xenbus_strstate(enum xenbus_state state)
  {
-@@ -50,25 +53,13 @@ const char *xenbus_strstate(enum xenbus_
+@@ -49,28 +52,14 @@ const char *xenbus_strstate(enum xenbus_
+ 		[ XenbusStateInitialised  ] = "Initialised",
  		[ XenbusStateConnected    ] = "Connected",
  		[ XenbusStateClosing      ] = "Closing",
- 		[ XenbusStateClosed	  ] = "Closed",
+-		[ XenbusStateClosed	  ] = "Closed",
+-		[XenbusStateReconfiguring] = "Reconfiguring",
+-		[XenbusStateReconfigured] = "Reconfigured",
++		[ XenbusStateClosed       ] = "Closed",
 +		[ XenbusStateReconfiguring ] = "Reconfiguring",
 +		[ XenbusStateReconfigured ] = "Reconfigured",
  	};
@@ -119,7 +136,7 @@ Acked-by: jbeulich@novell.com
  int xenbus_watch_path(struct xenbus_device *dev, const char *path,
  		      struct xenbus_watch *watch,
  		      void (*callback)(struct xenbus_watch *,
-@@ -92,57 +83,26 @@ int xenbus_watch_path(struct xenbus_devi
+@@ -94,53 +83,27 @@ int xenbus_watch_path(struct xenbus_devi
  EXPORT_SYMBOL_GPL(xenbus_watch_path);
  
  
@@ -173,6 +190,67 @@ Acked-by: jbeulich@novell.com
 -EXPORT_SYMBOL_GPL(xenbus_watch_pathfmt);
 +EXPORT_SYMBOL_GPL(xenbus_watch_path2);
  
+-static void xenbus_switch_fatal(struct xenbus_device *, int, int,
+-				const char *, ...);
+ 
+-static int
+-__xenbus_switch_state(struct xenbus_device *dev,
+-		      enum xenbus_state state, int depth)
++int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state state)
+ {
+ 	/* We check whether the state is currently set to the given value, and
+ 	   if not, then the state is set.  We don't want to unconditionally
+@@ -155,59 +118,29 @@ __xenbus_switch_state(struct xenbus_devi
+ 	   would not get reset if the transaction was aborted.
+ 	 */
+ 
+-	struct xenbus_transaction xbt;
+ 	int current_state;
+-	int err, abort;
++	int err;
+ 
+ 	if (state == dev->state)
+ 		return 0;
+ 
+-again:
+-	abort = 1;
+-
+-	err = xenbus_transaction_start(&xbt);
+-	if (err) {
+-		xenbus_switch_fatal(dev, depth, err, "starting transaction");
+-		return 0;
+-	}
+-
+-	err = xenbus_scanf(xbt, dev->nodename, "state", "%d", &current_state);
++	err = xenbus_scanf(XBT_NIL, dev->nodename, "state", "%d",
++			   &current_state);
+ 	if (err != 1)
+-		goto abort;
++		return 0;
+ 
+-	err = xenbus_printf(xbt, dev->nodename, "state", "%d", state);
++	err = xenbus_printf(XBT_NIL, dev->nodename, "state", "%d", state);
+ 	if (err) {
+-		xenbus_switch_fatal(dev, depth, err, "writing new state");
+-		goto abort;
++		if (state != XenbusStateClosing) /* Avoid looping */
++			xenbus_dev_fatal(dev, err, "writing new state");
++		return err;
+ 	}
+ 
+-	abort = 0;
+-abort:
+-	err = xenbus_transaction_end(xbt, abort);
+-	if (err) {
+-		if (err == -EAGAIN && !abort)
+-			goto again;
+-		xenbus_switch_fatal(dev, depth, err, "ending transaction");
+-	} else
+-		dev->state = state;
++	dev->state = state;
+ 
+ 	return 0;
+ }
  
 -/**
 - * xenbus_switch_state
@@ -183,10 +261,15 @@ Acked-by: jbeulich@novell.com
 - * Return 0 on success, or -errno on error.  On error, the device will switch
 - * to XenbusStateClosing, and the error will be saved in the store.
 - */
- int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state state)
- {
- 	/* We check whether the state is currently set to the given value, and
-@@ -201,13 +161,12 @@ static char *error_path(struct xenbus_de
+-int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state state)
+-{
+-	return __xenbus_switch_state(dev, state, 0);
+-}
+-
+ EXPORT_SYMBOL_GPL(xenbus_switch_state);
+ 
+ int xenbus_frontend_closed(struct xenbus_device *dev)
+@@ -228,13 +161,12 @@ static char *error_path(struct xenbus_de
  }
  
  
@@ -203,7 +286,7 @@ Acked-by: jbeulich@novell.com
  
  #define PRINTF_BUFFER_SIZE 4096
  	printf_buffer = kmalloc(PRINTF_BUFFER_SIZE, GFP_KERNEL);
-@@ -224,13 +183,13 @@ static void xenbus_va_dev_error(struct x
+@@ -251,13 +183,13 @@ static void xenbus_va_dev_error(struct x
  	path_buffer = error_path(dev);
  
  	if (path_buffer == NULL) {
@@ -219,7 +302,7 @@ Acked-by: jbeulich@novell.com
  		       dev->nodename, printf_buffer);
  		goto fail;
  	}
-@@ -241,57 +200,32 @@ fail:
+@@ -268,74 +200,30 @@ fail:
  }
  
  
@@ -232,9 +315,7 @@ Acked-by: jbeulich@novell.com
 - * Report the given negative errno into the store, along with the given
 - * formatted message.
 - */
--void xenbus_dev_error(struct xenbus_device *dev, int err, const char *fmt, ...)
-+void xenbus_dev_error(struct xenbus_device *dev, int err, const char *fmt,
-+		      ...)
+ void xenbus_dev_error(struct xenbus_device *dev, int err, const char *fmt, ...)
  {
  	va_list ap;
  
@@ -256,9 +337,7 @@ Acked-by: jbeulich@novell.com
 - * closedown of this driver and its peer.
 - */
  
--void xenbus_dev_fatal(struct xenbus_device *dev, int err, const char *fmt, ...)
-+void xenbus_dev_fatal(struct xenbus_device *dev, int err, const char *fmt,
-+		      ...)
+ void xenbus_dev_fatal(struct xenbus_device *dev, int err, const char *fmt, ...)
  {
  	va_list ap;
  
@@ -272,6 +351,23 @@ Acked-by: jbeulich@novell.com
  EXPORT_SYMBOL_GPL(xenbus_dev_fatal);
  
 -/**
+- * Equivalent to xenbus_dev_fatal(dev, err, fmt, args), but helps
+- * avoiding recursion within xenbus_switch_state.
+- */
+-static void xenbus_switch_fatal(struct xenbus_device *dev, int depth, int err,
+-				const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	xenbus_va_dev_error(dev, err, fmt, ap);
+-	va_end(ap);
+ 
+-	if (!depth)
+-		__xenbus_switch_state(dev, XenbusStateClosing, 1);
+-}
+-
+-/**
 - * xenbus_grant_ring
 - * @dev: xenbus device
 - * @ring_mfn: mfn of ring to grant
@@ -280,11 +376,10 @@ Acked-by: jbeulich@novell.com
 - * 0 on success, or -errno on error.  On error, the device will switch to
 - * XenbusStateClosing, and the error will be saved in the store.
 - */
-+
  int xenbus_grant_ring(struct xenbus_device *dev, unsigned long ring_mfn)
  {
  	int err = gnttab_grant_foreign_access(dev->otherend_id, ring_mfn, 0);
-@@ -302,18 +236,12 @@ int xenbus_grant_ring(struct xenbus_devi
+@@ -346,18 +234,12 @@ int xenbus_grant_ring(struct xenbus_devi
  EXPORT_SYMBOL_GPL(xenbus_grant_ring);
  
  
@@ -304,7 +399,7 @@ Acked-by: jbeulich@novell.com
  	alloc_unbound.remote_dom = dev->otherend_id;
  
  	err = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound,
-@@ -328,36 +256,6 @@ int xenbus_alloc_evtchn(struct xenbus_de
+@@ -372,36 +254,6 @@ int xenbus_alloc_evtchn(struct xenbus_de
  EXPORT_SYMBOL_GPL(xenbus_alloc_evtchn);
  
  
@@ -341,7 +436,7 @@ Acked-by: jbeulich@novell.com
  int xenbus_free_evtchn(struct xenbus_device *dev, int port)
  {
  	struct evtchn_close close;
-@@ -374,189 +272,6 @@ int xenbus_free_evtchn(struct xenbus_dev
+@@ -418,189 +270,6 @@ int xenbus_free_evtchn(struct xenbus_dev
  EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
  
  
@@ -531,8 +626,8 @@ Acked-by: jbeulich@novell.com
  enum xenbus_state xenbus_read_driver_state(const char *path)
  {
  	enum xenbus_state result;
---- head-2010-05-12.orig/drivers/xen/xenbus/xenbus_comms.c	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/xenbus/xenbus_comms.c	2010-01-19 16:01:03.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_comms.c	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_comms.c	2011-01-31 15:14:12.000000000 +0100
 @@ -34,25 +34,55 @@
  #include <linux/interrupt.h>
  #include <linux/sched.h>
@@ -657,8 +752,8 @@ Acked-by: jbeulich@novell.com
 +
  	return 0;
  }
---- head-2010-05-12.orig/drivers/xen/xenbus/xenbus_comms.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/xenbus/xenbus_comms.h	2010-01-19 16:01:03.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_comms.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_comms.h	2011-01-31 15:14:12.000000000 +0100
 @@ -43,4 +43,20 @@ int xs_input_avail(void);
  extern struct xenstore_domain_interface *xen_store_interface;
  extern int xen_store_evtchn;
@@ -680,8 +775,8 @@ Acked-by: jbeulich@novell.com
 +}
 +
  #endif /* _XENBUS_COMMS_H */
---- head-2010-05-12.orig/drivers/xen/xenbus/xenbus_probe.c	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/xenbus/xenbus_probe.c	2010-01-26 09:08:16.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_probe.c	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_probe.c	2011-01-31 17:51:15.000000000 +0100
 @@ -4,6 +4,7 @@
   * Copyright (C) 2005 Rusty Russell, IBM Corporation
   * Copyright (C) 2005 Mike Wray, Hewlett-Packard
@@ -699,7 +794,7 @@ Acked-by: jbeulich@novell.com
  
  #include <linux/kernel.h>
  #include <linux/err.h>
-@@ -40,32 +41,37 @@
+@@ -40,38 +41,46 @@
  #include <linux/ctype.h>
  #include <linux/fcntl.h>
  #include <linux/mm.h>
@@ -723,11 +818,12 @@ Acked-by: jbeulich@novell.com
  #include <xen/xenbus.h>
 -#include <xen/events.h>
 -#include <xen/page.h>
+-
 +#include <xen/xen_proc.h>
 +#include <xen/evtchn.h>
 +#include <xen/features.h>
 +#ifdef MODULE
-+#include <xen/hvm.h>
+ #include <xen/hvm.h>
 +#endif
  
  #include "xenbus_comms.h"
@@ -738,50 +834,99 @@ Acked-by: jbeulich@novell.com
 +#endif
  
  int xen_store_evtchn;
--EXPORT_SYMBOL(xen_store_evtchn);
+-EXPORT_SYMBOL_GPL(xen_store_evtchn);
 -
  struct xenstore_domain_interface *xen_store_interface;
+-EXPORT_SYMBOL_GPL(xen_store_interface);
+ 
  static unsigned long xen_store_mfn;
  
 +extern struct mutex xenwatch_mutex;
 +
  static BLOCKING_NOTIFIER_HEAD(xenstore_chain);
  
- static void wait_for_devices(struct xenbus_driver *xendrv);
-@@ -74,9 +80,6 @@ static int xenbus_probe_frontend(const c
- 
- static void xenbus_dev_shutdown(struct device *_dev);
- 
--static int xenbus_dev_suspend(struct device *dev, pm_message_t state);
--static int xenbus_dev_resume(struct device *dev);
--
++static void wait_for_devices(struct xenbus_driver *xendrv);
++
++static int xenbus_probe_frontend(const char *type, const char *name);
++
++static void xenbus_dev_shutdown(struct device *_dev);
++
  /* If something in array of ids matches this device, return it. */
  static const struct xenbus_device_id *
  match_device(const struct xenbus_device_id *arr, struct xenbus_device *dev)
-@@ -98,16 +101,6 @@ int xenbus_match(struct device *_dev, st
+@@ -92,7 +101,24 @@ int xenbus_match(struct device *_dev, st
+ 
  	return match_device(drv->ids, to_xenbus_device(_dev)) != NULL;
  }
+-EXPORT_SYMBOL_GPL(xenbus_match);
++
++/* device/<type>/<id> => <type>-<id> */
++static int frontend_bus_id(char bus_id[XEN_BUS_ID_SIZE], const char *nodename)
++{
++	nodename = strchr(nodename, '/');
++	if (!nodename || strlen(nodename + 1) >= XEN_BUS_ID_SIZE) {
++		printk(KERN_WARNING "XENBUS: bad frontend %s\n", nodename);
++		return -EINVAL;
++	}
++
++	strlcpy(bus_id, nodename + 1, XEN_BUS_ID_SIZE);
++	if (!strchr(bus_id, '/')) {
++		printk(KERN_WARNING "XENBUS: bus_id %s no slash\n", bus_id);
++		return -EINVAL;
++	}
++	*strchr(bus_id, '/') = '-';
++	return 0;
++}
  
--static int xenbus_uevent(struct device *_dev, struct kobj_uevent_env *env)
--{
--	struct xenbus_device *dev = to_xenbus_device(_dev);
--
--	if (add_uevent_var(env, "MODALIAS=xen:%s", dev->devicetype))
--		return -ENOMEM;
--
--	return 0;
--}
--
- /* device/<type>/<id> => <type>-<id> */
- static int frontend_bus_id(char bus_id[XEN_BUS_ID_SIZE], const char *nodename)
- {
-@@ -176,9 +169,30 @@ static int read_backend_details(struct x
- 	return read_otherend_details(xendev, "backend-id", "backend");
+ 
+ static void free_otherend_details(struct xenbus_device *dev)
+@@ -112,30 +138,7 @@ static void free_otherend_watch(struct x
  }
  
--static struct device_attribute xenbus_dev_attrs[] = {
--	__ATTR_NULL
--};
+ 
+-static int talk_to_otherend(struct xenbus_device *dev)
+-{
+-	struct xenbus_driver *drv = to_xenbus_driver(dev->dev.driver);
+-
+-	free_otherend_watch(dev);
+-	free_otherend_details(dev);
+-
+-	return drv->read_otherend_details(dev);
+-}
+-
+-
+-
+-static int watch_otherend(struct xenbus_device *dev)
+-{
+-	struct xen_bus_type *bus =
+-		container_of(dev->dev.bus, struct xen_bus_type, bus);
+-
+-	return xenbus_watch_pathfmt(dev, &dev->otherend_watch,
+-				    bus->otherend_changed,
+-				    "%s/%s", dev->otherend, "state");
+-}
+-
+-
+-int xenbus_read_otherend_details(struct xenbus_device *xendev,
++int read_otherend_details(struct xenbus_device *xendev,
+ 				 char *id_node, char *path_node)
+ {
+ 	int err = xenbus_gather(XBT_NIL, xendev->nodename,
+@@ -160,11 +163,62 @@ int xenbus_read_otherend_details(struct 
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(xenbus_read_otherend_details);
+ 
+-void xenbus_otherend_changed(struct xenbus_watch *watch,
+-			     const char **vec, unsigned int len,
+-			     int ignore_on_shutdown)
++
++static int read_backend_details(struct xenbus_device *xendev)
++{
++	return read_otherend_details(xendev, "backend-id", "backend");
++}
++
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
 +static int xenbus_uevent_frontend(struct device *dev, char **envp,
 +				  int num_envp, char *buffer, int buffer_size)
@@ -806,25 +951,15 @@ Acked-by: jbeulich@novell.com
 +	return 0;
 +}
 +#endif
- 
- /* Bus type for frontend drivers. */
- static struct xen_bus_type xenbus_frontend = {
-@@ -186,17 +200,19 @@ static struct xen_bus_type xenbus_fronte
- 	.levels = 2, 		/* device/type/<id> */
- 	.get_bus_id = frontend_bus_id,
- 	.probe = xenbus_probe_frontend,
++
++/* Bus type for frontend drivers. */
++static struct xen_bus_type xenbus_frontend = {
++	.root = "device",
++	.levels = 2, 		/* device/type/<id> */
++	.get_bus_id = frontend_bus_id,
++	.probe = xenbus_probe_frontend,
 +	.error = -ENODEV,
- 	.bus = {
--		.name      = "xen",
--		.match     = xenbus_match,
--		.uevent    = xenbus_uevent,
--		.probe     = xenbus_dev_probe,
--		.remove    = xenbus_dev_remove,
--		.shutdown  = xenbus_dev_shutdown,
--		.dev_attrs = xenbus_dev_attrs,
--
--		.suspend   = xenbus_dev_suspend,
--		.resume    = xenbus_dev_resume,
++	.bus = {
 +		.name     = "xen",
 +		.match    = xenbus_match,
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
@@ -836,10 +971,15 @@ Acked-by: jbeulich@novell.com
 +	},
 +	.dev = {
 +		.bus_id = "xen",
- 	},
- };
- 
-@@ -213,17 +229,16 @@ static void otherend_changed(struct xenb
++	},
++};
++
++static void otherend_changed(struct xenbus_watch *watch,
++			     const char **vec, unsigned int len)
+ {
+ 	struct xenbus_device *dev =
+ 		container_of(watch, struct xenbus_device, otherend_watch);
+@@ -176,31 +230,54 @@ void xenbus_otherend_changed(struct xenb
  	if (!dev->otherend ||
  	    strncmp(dev->otherend, vec[XS_WATCH_PATH],
  		    strlen(dev->otherend))) {
@@ -861,7 +1001,14 @@ Acked-by: jbeulich@novell.com
  	/*
  	 * Ignore xenbus transitions during shutdown. This prevents us doing
  	 * work that can fail e.g., when the rootfs is gone.
-@@ -237,6 +252,7 @@ static void otherend_changed(struct xenb
+ 	 */
+ 	if (system_state > SYSTEM_RUNNING) {
+-		if (ignore_on_shutdown && (state == XenbusStateClosing))
++		struct xen_bus_type *bus = bus;
++		bus = container_of(dev->dev.bus, struct xen_bus_type, bus);
++		/* If we're frontend, drive the state machine to Closed. */
++		/* This should cause the backend to release our resources. */
++		if ((bus == &xenbus_frontend) && (state == XenbusStateClosing))
  			xenbus_frontend_closed(dev);
  		return;
  	}
@@ -869,18 +1016,32 @@ Acked-by: jbeulich@novell.com
  
  	if (drv->otherend_changed)
  		drv->otherend_changed(dev, state);
-@@ -256,8 +272,8 @@ static int talk_to_otherend(struct xenbu
- 
- static int watch_otherend(struct xenbus_device *dev)
- {
--	return xenbus_watch_pathfmt(dev, &dev->otherend_watch, otherend_changed,
--				    "%s/%s", dev->otherend, "state");
+ }
+-EXPORT_SYMBOL_GPL(xenbus_otherend_changed);
++
++
++static int talk_to_otherend(struct xenbus_device *dev)
++{
++	struct xenbus_driver *drv = to_xenbus_driver(dev->dev.driver);
++
++	free_otherend_watch(dev);
++	free_otherend_details(dev);
++
++	return drv->read_otherend_details(dev);
++}
++
++
++
++static int watch_otherend(struct xenbus_device *dev)
++{
 +	return xenbus_watch_path2(dev, dev->otherend, "state",
 +				  &dev->otherend_watch, otherend_changed);
- }
++}
++
  
- 
-@@ -283,8 +299,9 @@ int xenbus_dev_probe(struct device *_dev
+ int xenbus_dev_probe(struct device *_dev)
+ {
+@@ -224,8 +301,9 @@ int xenbus_dev_probe(struct device *_dev
  
  	err = talk_to_otherend(dev);
  	if (err) {
@@ -892,7 +1053,7 @@ Acked-by: jbeulich@novell.com
  		return err;
  	}
  
-@@ -294,7 +311,8 @@ int xenbus_dev_probe(struct device *_dev
+@@ -235,7 +313,8 @@ int xenbus_dev_probe(struct device *_dev
  
  	err = watch_otherend(dev);
  	if (err) {
@@ -902,7 +1063,28 @@ Acked-by: jbeulich@novell.com
  		       dev->nodename);
  		return err;
  	}
-@@ -330,43 +348,64 @@ static void xenbus_dev_shutdown(struct d
+@@ -244,9 +323,8 @@ int xenbus_dev_probe(struct device *_dev
+ fail:
+ 	xenbus_dev_error(dev, err, "xenbus_dev_probe on %s", dev->nodename);
+ 	xenbus_switch_state(dev, XenbusStateClosed);
+-	return err;
++	return -ENODEV;
+ }
+-EXPORT_SYMBOL_GPL(xenbus_dev_probe);
+ 
+ int xenbus_dev_remove(struct device *_dev)
+ {
+@@ -264,44 +342,81 @@ int xenbus_dev_remove(struct device *_de
+ 	xenbus_switch_state(dev, XenbusStateClosed);
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(xenbus_dev_remove);
+ 
+-void xenbus_dev_shutdown(struct device *_dev)
++static void xenbus_dev_shutdown(struct device *_dev)
+ {
+ 	struct xenbus_device *dev = to_xenbus_device(_dev);
+ 	unsigned long timeout = 5*HZ;
  
  	DPRINTK("%s", dev->nodename);
  
@@ -934,6 +1116,7 @@ Acked-by: jbeulich@novell.com
   out:
  	put_device(&dev->dev);
  }
+-EXPORT_SYMBOL_GPL(xenbus_dev_shutdown);
  
  int xenbus_register_driver_common(struct xenbus_driver *drv,
 -				  struct xen_bus_type *bus,
@@ -958,38 +1141,35 @@ Acked-by: jbeulich@novell.com
 +	drv->driver.remove = xenbus_dev_remove;
 +	drv->driver.shutdown = xenbus_dev_shutdown;
 +#endif
- 
--	return driver_register(&drv->driver);
++
 +	mutex_lock(&xenwatch_mutex);
 +	ret = driver_register(&drv->driver);
 +	mutex_unlock(&xenwatch_mutex);
 +	return ret;
- }
- 
--int __xenbus_register_frontend(struct xenbus_driver *drv,
--			       struct module *owner, const char *mod_name)
++}
++
 +int xenbus_register_frontend(struct xenbus_driver *drv)
- {
- 	int ret;
- 
- 	drv->read_otherend_details = read_backend_details;
- 
--	ret = xenbus_register_driver_common(drv, &xenbus_frontend,
--					    owner, mod_name);
++{
++	int ret;
++
++	drv->read_otherend_details = read_backend_details;
++
 +	ret = xenbus_register_driver_common(drv, &xenbus_frontend);
- 	if (ret)
- 		return ret;
++	if (ret)
++		return ret;
  
-@@ -375,7 +414,7 @@ int __xenbus_register_frontend(struct xe
- 
- 	return 0;
+-	return driver_register(&drv->driver);
++	/* If this driver is loaded as a module wait for devices to attach. */
++	wait_for_devices(drv);
++
++	return 0;
  }
--EXPORT_SYMBOL_GPL(__xenbus_register_frontend);
+-EXPORT_SYMBOL_GPL(xenbus_register_driver_common);
 +EXPORT_SYMBOL_GPL(xenbus_register_frontend);
  
  void xenbus_unregister_driver(struct xenbus_driver *drv)
  {
-@@ -453,31 +492,30 @@ static void xenbus_dev_release(struct de
+@@ -379,31 +494,30 @@ static void xenbus_dev_release(struct de
  }
  
  static ssize_t xendev_show_nodename(struct device *dev,
@@ -1029,7 +1209,7 @@ Acked-by: jbeulich@novell.com
  	int err;
  	struct xenbus_device *xendev;
  	size_t stringlen;
-@@ -485,6 +523,9 @@ int xenbus_probe_node(struct xen_bus_typ
+@@ -411,6 +525,9 @@ int xenbus_probe_node(struct xen_bus_typ
  
  	enum xenbus_state state = xenbus_read_driver_state(nodename);
  
@@ -1039,7 +1219,7 @@ Acked-by: jbeulich@novell.com
  	if (state != XenbusStateInitialising) {
  		/* Device is not new, so ignore it.  This can happen if a
  		   device is going away after switching to Closed.  */
-@@ -509,15 +550,14 @@ int xenbus_probe_node(struct xen_bus_typ
+@@ -435,15 +552,14 @@ int xenbus_probe_node(struct xen_bus_typ
  	xendev->devicetype = tmpstring;
  	init_completion(&xendev->down);
  
@@ -1057,7 +1237,7 @@ Acked-by: jbeulich@novell.com
  	/* Register with generic device framework. */
  	err = device_register(&xendev->dev);
  	if (err)
-@@ -525,22 +565,15 @@ int xenbus_probe_node(struct xen_bus_typ
+@@ -451,28 +567,40 @@ int xenbus_probe_node(struct xen_bus_typ
  
  	err = device_create_file(&xendev->dev, &dev_attr_nodename);
  	if (err)
@@ -1084,20 +1264,42 @@ Acked-by: jbeulich@novell.com
  	device_unregister(&xendev->dev);
  fail:
  	kfree(xendev);
-@@ -553,8 +586,10 @@ static int xenbus_probe_frontend(const c
- 	char *nodename;
- 	int err;
- 
--	nodename = kasprintf(GFP_KERNEL, "%s/%s/%s",
--			     xenbus_frontend.root, type, name);
+ 	return err;
+ }
+-EXPORT_SYMBOL_GPL(xenbus_probe_node);
++
++/* device/<typename>/<name> */
++static int xenbus_probe_frontend(const char *type, const char *name)
++{
++	char *nodename;
++	int err;
++
 +	if (!strcmp(type, "console"))
 +		return 0;
 +
 +	nodename = kasprintf(GFP_KERNEL, "%s/%s/%s", xenbus_frontend.root, type, name);
- 	if (!nodename)
- 		return -ENOMEM;
++	if (!nodename)
++		return -ENOMEM;
++
++	DPRINTK("%s", nodename);
++
++	err = xenbus_probe_node(&xenbus_frontend, type, nodename);
++	kfree(nodename);
++	return err;
++}
  
-@@ -591,6 +626,9 @@ int xenbus_probe_devices(struct xen_bus_
+ static int xenbus_probe_device_type(struct xen_bus_type *bus, const char *type)
+ {
+@@ -486,7 +614,7 @@ static int xenbus_probe_device_type(stru
+ 		return PTR_ERR(dir);
+ 
+ 	for (i = 0; i < dir_n; i++) {
+-		err = bus->probe(bus, type, dir[i]);
++		err = bus->probe(type, dir[i]);
+ 		if (err)
+ 			break;
+ 	}
+@@ -501,6 +629,9 @@ int xenbus_probe_devices(struct xen_bus_
  	char **dir;
  	unsigned int i, dir_n;
  
@@ -1107,7 +1309,15 @@ Acked-by: jbeulich@novell.com
  	dir = xenbus_directory(XBT_NIL, bus->root, "", &dir_n);
  	if (IS_ERR(dir))
  		return PTR_ERR(dir);
-@@ -627,15 +665,15 @@ static int strsep_len(const char *str, c
+@@ -514,7 +645,6 @@ int xenbus_probe_devices(struct xen_bus_
+ 	kfree(dir);
+ 	return err;
+ }
+-EXPORT_SYMBOL_GPL(xenbus_probe_devices);
+ 
+ static unsigned int char_count(const char *str, char c)
+ {
+@@ -539,15 +669,15 @@ static int strsep_len(const char *str, c
  	return (len == 0) ? i : -ERANGE;
  }
  
@@ -1126,43 +1336,54 @@ Acked-by: jbeulich@novell.com
  
  	exists = xenbus_exists(XBT_NIL, node, "");
  	if (!exists) {
-@@ -663,14 +701,13 @@ void xenbus_dev_changed(const char *node
+@@ -575,46 +705,81 @@ void xenbus_dev_changed(const char *node
  
  	kfree(root);
  }
 -EXPORT_SYMBOL_GPL(xenbus_dev_changed);
  
- static void frontend_changed(struct xenbus_watch *watch,
- 			     const char **vec, unsigned int len)
- {
- 	DPRINTK("");
- 
--	xenbus_dev_changed(vec[XS_WATCH_PATH], &xenbus_frontend);
+-int xenbus_dev_suspend(struct device *dev, pm_message_t state)
++static void frontend_changed(struct xenbus_watch *watch,
++			     const char **vec, unsigned int len)
++{
++	DPRINTK("");
++
 +	dev_changed(vec[XS_WATCH_PATH], &xenbus_frontend);
- }
- 
- /* We watch for devices appearing and vanishing. */
-@@ -679,7 +716,7 @@ static struct xenbus_watch fe_watch = {
- 	.callback = frontend_changed,
- };
- 
--static int xenbus_dev_suspend(struct device *dev, pm_message_t state)
++}
++
++/* We watch for devices appearing and vanishing. */
++static struct xenbus_watch fe_watch = {
++	.node = "device",
++	.callback = frontend_changed,
++};
++
 +static int suspend_dev(struct device *dev, void *data)
  {
  	int err = 0;
  	struct xenbus_driver *drv;
-@@ -692,14 +729,35 @@ static int xenbus_dev_suspend(struct dev
+-	struct xenbus_device *xdev
+-		= container_of(dev, struct xenbus_device, dev);
++	struct xenbus_device *xdev;
+ 
+-	DPRINTK("%s", xdev->nodename);
++	DPRINTK("");
+ 
+ 	if (dev->driver == NULL)
+ 		return 0;
  	drv = to_xenbus_driver(dev->driver);
- 	xdev = container_of(dev, struct xenbus_device, dev);
++	xdev = container_of(dev, struct xenbus_device, dev);
  	if (drv->suspend)
 -		err = drv->suspend(xdev, state);
 +		err = drv->suspend(xdev);
-+	if (err)
-+		printk(KERN_WARNING
+ 	if (err)
+ 		printk(KERN_WARNING
+-		       "xenbus: suspend %s failed: %i\n", dev_name(dev), err);
 +		       "xenbus: suspend %s failed: %i\n", dev->bus_id, err);
-+	return 0;
-+}
-+
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(xenbus_dev_suspend);
+ 
+-int xenbus_dev_resume(struct device *dev)
 +static int suspend_cancel_dev(struct device *dev, void *data)
 +{
 +	int err = 0;
@@ -1177,20 +1398,31 @@ Acked-by: jbeulich@novell.com
 +	xdev = container_of(dev, struct xenbus_device, dev);
 +	if (drv->suspend_cancel)
 +		err = drv->suspend_cancel(xdev);
- 	if (err)
- 		printk(KERN_WARNING
--		       "xenbus: suspend %s failed: %i\n", dev_name(dev), err);
++	if (err)
++		printk(KERN_WARNING
 +		       "xenbus: suspend_cancel %s failed: %i\n",
 +		       dev->bus_id, err);
- 	return 0;
- }
- 
--static int xenbus_dev_resume(struct device *dev)
++	return 0;
++}
++
 +static int resume_dev(struct device *dev, void *data)
  {
  	int err;
  	struct xenbus_driver *drv;
-@@ -717,7 +775,7 @@ static int xenbus_dev_resume(struct devi
+-	struct xenbus_device *xdev
+-		= container_of(dev, struct xenbus_device, dev);
++	struct xenbus_device *xdev;
+ 
+-	DPRINTK("%s", xdev->nodename);
++	DPRINTK("");
+ 
+ 	if (dev->driver == NULL)
+ 		return 0;
++
+ 	drv = to_xenbus_driver(dev->driver);
++	xdev = container_of(dev, struct xenbus_device, dev);
++
+ 	err = talk_to_otherend(xdev);
  	if (err) {
  		printk(KERN_WARNING
  		       "xenbus: resume (talk_to_otherend) %s failed: %i\n",
@@ -1199,7 +1431,7 @@ Acked-by: jbeulich@novell.com
  		return err;
  	}
  
-@@ -728,7 +786,7 @@ static int xenbus_dev_resume(struct devi
+@@ -625,7 +790,7 @@ int xenbus_dev_resume(struct device *dev
  		if (err) {
  			printk(KERN_WARNING
  			       "xenbus: resume %s failed: %i\n",
@@ -1208,7 +1440,7 @@ Acked-by: jbeulich@novell.com
  			return err;
  		}
  	}
-@@ -737,22 +795,52 @@ static int xenbus_dev_resume(struct devi
+@@ -634,23 +799,52 @@ int xenbus_dev_resume(struct device *dev
  	if (err) {
  		printk(KERN_WARNING
  		       "xenbus_probe: resume (watch_otherend) %s failed: "
@@ -1219,7 +1451,8 @@ Acked-by: jbeulich@novell.com
  
  	return 0;
  }
- 
+-EXPORT_SYMBOL_GPL(xenbus_dev_resume);
++
 +void xenbus_suspend(void)
 +{
 +	DPRINTK("");
@@ -1249,7 +1482,7 @@ Acked-by: jbeulich@novell.com
 +	xenbus_backend_resume(suspend_cancel_dev);
 +}
 +EXPORT_SYMBOL_GPL(xenbus_suspend_cancel);
-+
+ 
  /* A flag to determine if xenstored is 'ready' (i.e. has started) */
 -int xenstored_ready = 0;
 +atomic_t xenbus_xsd_state = ATOMIC_INIT(XENBUS_XSD_UNCOMMITTED);
@@ -1264,7 +1497,7 @@ Acked-by: jbeulich@novell.com
  		ret = nb->notifier_call(nb, 0, NULL);
  	else
  		blocking_notifier_chain_register(&xenstore_chain, nb);
-@@ -767,9 +855,10 @@ void unregister_xenstore_notifier(struct
+@@ -665,50 +859,167 @@ void unregister_xenstore_notifier(struct
  }
  EXPORT_SYMBOL_GPL(unregister_xenstore_notifier);
  
@@ -1272,17 +1505,26 @@ Acked-by: jbeulich@novell.com
 +
 +void xenbus_probe(void *unused)
  {
--	BUG_ON((xenstored_ready <= 0));
+-	xenstored_ready = 1;
 +	BUG_ON(!is_xenstored_ready());
++
++	/* Enumerate devices in xenstore and watch for changes. */
++	xenbus_probe_devices(&xenbus_frontend);
++	register_xenbus_watch(&fe_watch);
++	xenbus_backend_probe_and_watch();
  
- 	/* Enumerate devices in xenstore and watch for changes. */
- 	xenbus_probe_devices(&xenbus_frontend);
-@@ -780,71 +869,252 @@ void xenbus_probe(struct work_struct *un
+ 	/* Notify others that xenstore is up */
  	blocking_notifier_call_chain(&xenstore_chain, 0, NULL);
  }
+-EXPORT_SYMBOL_GPL(xenbus_probe);
  
--static int __init xenbus_probe_init(void)
-+
+-static int __init xenbus_probe_initcall(void)
+-{
+-	if (!xen_domain())
+-		return -ENODEV;
+ 
+-	if (xen_initial_domain() || xen_hvm_domain())
+-		return 0;
 +#if defined(CONFIG_PROC_FS) && defined(CONFIG_XEN_PRIVILEGED_GUEST)
 +static struct file_operations xsd_kva_fops;
 +static struct proc_dir_entry *xsd_kva_intf;
@@ -1320,10 +1562,12 @@ Acked-by: jbeulich@novell.com
 +	if (remap_pfn_range(vma, vma->vm_start, mfn_to_pfn(xen_store_mfn),
 +			    size, vma->vm_page_prot))
 +		return -EAGAIN;
-+
-+	return 0;
-+}
-+
+ 
+-	xenbus_probe(NULL);
+ 	return 0;
+ }
+ 
+-device_initcall(xenbus_probe_initcall);
 +static int xsd_kva_read(char *page, char **start, off_t off,
 +			int count, int *eof, void *data)
 +{
@@ -1364,7 +1608,8 @@ Acked-by: jbeulich@novell.com
 +	remove_xen_proc_entry("xsd_kva");
 +	remove_xen_proc_entry("xsd_port");
 +#endif
-+
+ 
+-static int __init xenbus_init(void)
 +	rc = xb_free_port(xen_store_evtchn);
 +	if (rc != 0)
 +		goto fail0;
@@ -1404,24 +1649,17 @@ Acked-by: jbeulich@novell.com
 +static int xenbus_probe_init(void)
  {
  	int err = 0;
-+	unsigned long page = 0;
+ 	unsigned long page = 0;
  
  	DPRINTK("");
  
 -	err = -ENODEV;
 -	if (!xen_domain())
--		goto out_error;
+-		return err;
 +	if (!is_running_on_xen())
 +		return -ENODEV;
- 
- 	/* Register ourselves with the kernel bus subsystem */
--	err = bus_register(&xenbus_frontend.bus);
--	if (err)
--		goto out_error;
--
--	err = xenbus_backend_bus_register();
--	if (err)
--		goto out_unreg_front;
++
++	/* Register ourselves with the kernel bus subsystem */
 +	xenbus_frontend.error = bus_register(&xenbus_frontend.bus);
 +	if (xenbus_frontend.error)
 +		printk(KERN_WARNING
@@ -1433,31 +1671,34 @@ Acked-by: jbeulich@novell.com
  	 * Domain0 doesn't have a store_evtchn or store_mfn yet.
  	 */
 -	if (xen_initial_domain()) {
--		/* dom0 not yet supported */
 +	if (is_initial_xendomain()) {
-+		struct evtchn_alloc_unbound alloc_unbound;
-+
-+		/* Allocate page. */
-+		page = get_zeroed_page(GFP_KERNEL);
-+		if (!page)
+ 		struct evtchn_alloc_unbound alloc_unbound;
+ 
+ 		/* Allocate Xenstore page */
+ 		page = get_zeroed_page(GFP_KERNEL);
+ 		if (!page)
+-			goto out_error;
 +			return -ENOMEM;
-+
-+		xen_store_mfn = xen_start_info->store_mfn =
-+			pfn_to_mfn(virt_to_phys((void *)page) >>
-+				   PAGE_SHIFT);
-+
-+		/* Next allocate a local port which xenstored can bind to */
-+		alloc_unbound.dom        = DOMID_SELF;
+ 
+ 		xen_store_mfn = xen_start_info->store_mfn =
+ 			pfn_to_mfn(virt_to_phys((void *)page) >>
+@@ -716,63 +1027,226 @@ static int __init xenbus_init(void)
+ 
+ 		/* Next allocate a local port which xenstored can bind to */
+ 		alloc_unbound.dom        = DOMID_SELF;
+-		alloc_unbound.remote_dom = 0;
 +		alloc_unbound.remote_dom = DOMID_SELF;
-+
-+		err = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound,
-+						  &alloc_unbound);
-+		if (err == -ENOSYS)
+ 
+ 		err = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound,
+ 						  &alloc_unbound);
+ 		if (err == -ENOSYS)
+-			goto out_error;
 +			goto err;
-+		BUG_ON(err);
-+		xen_store_evtchn = xen_start_info->store_evtchn =
-+			alloc_unbound.port;
-+
+ 
+ 		BUG_ON(err);
+ 		xen_store_evtchn = xen_start_info->store_evtchn =
+ 			alloc_unbound.port;
+ 
 +#if defined(CONFIG_PROC_FS) && defined(CONFIG_XEN_PRIVILEGED_GUEST)
 +		/* And finally publish the above info in /proc/xen */
 +		xsd_kva_intf = create_xen_proc_entry("xsd_kva", 0600);
@@ -1472,13 +1713,29 @@ Acked-by: jbeulich@novell.com
 +		if (xsd_port_intf)
 +			xsd_port_intf->read_proc = xsd_port_read;
 +#endif
-+		xen_store_interface = mfn_to_virt(xen_store_mfn);
+ 		xen_store_interface = mfn_to_virt(xen_store_mfn);
  	} else {
--		xenstored_ready = 1;
+-		if (xen_hvm_domain()) {
+-			uint64_t v = 0;
+-			err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
+-			if (err)
+-				goto out_error;
+-			xen_store_evtchn = (int)v;
+-			err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
+-			if (err)
+-				goto out_error;
+-			xen_store_mfn = (unsigned long)v;
+-			xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
+-		} else {
+-			xen_store_evtchn = xen_start_info->store_evtchn;
+-			xen_store_mfn = xen_start_info->store_mfn;
+-			xen_store_interface = mfn_to_virt(xen_store_mfn);
+-			xenstored_ready = 1;
+-		}
 +		atomic_set(&xenbus_xsd_state, XENBUS_XSD_FOREIGN_READY);
 +#ifdef CONFIG_XEN
- 		xen_store_evtchn = xen_start_info->store_evtchn;
- 		xen_store_mfn = xen_start_info->store_mfn;
++		xen_store_evtchn = xen_start_info->store_evtchn;
++		xen_store_mfn = xen_start_info->store_mfn;
 +		xen_store_interface = mfn_to_virt(xen_store_mfn);
 +#else
 +		xen_store_evtchn = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN);
@@ -1491,21 +1748,18 @@ Acked-by: jbeulich@novell.com
 +		if (err)
 +			goto err;
  	}
--	xen_store_interface = mfn_to_virt(xen_store_mfn);
-+
-+	xenbus_dev_init();
  
++	xenbus_dev_init();
++
  	/* Initialize the interface to xenstore. */
  	err = xs_init();
  	if (err) {
  		printk(KERN_WARNING
  		       "XENBUS: Error initializing xenstore comms: %i\n", err);
--		goto out_unreg_back;
+-		goto out_error;
 +		goto err;
- 	}
- 
--	if (!xen_initial_domain())
--		xenbus_probe(NULL);
++	}
++
 +	/* Register ourselves with the kernel device subsystem */
 +	if (!xenbus_frontend.error) {
 +		xenbus_frontend.error = device_register(&xenbus_frontend.dev);
@@ -1515,127 +1769,179 @@ Acked-by: jbeulich@novell.com
 +			       "XENBUS: Error registering frontend device: %i\n",
 +			       xenbus_frontend.error);
 +		}
-+	}
+ 	}
 +	xenbus_backend_device_register();
  
 -#ifdef CONFIG_XEN_COMPAT_XENFS
--	/*
--	 * Create xenfs mountpoint in /proc for compatibility with
--	 * utilities that expect to find "xenbus" under "/proc/xen".
--	 */
--	proc_mkdir("xen", NULL);
--#endif
 +	if (!is_initial_xendomain())
 +		xenbus_probe(NULL);
- 
- 	return 0;
- 
--  out_unreg_back:
--	xenbus_backend_bus_unregister();
++
++	return 0;
++
 + err:
-+	if (page)
-+		free_page(page);
- 
--  out_unreg_front:
--	bus_unregister(&xenbus_frontend.bus);
-+	/*
+ 	/*
+-	 * Create xenfs mountpoint in /proc for compatibility with
+-	 * utilities that expect to find "xenbus" under "/proc/xen".
 +	 * Do not unregister the xenbus front/backend buses here. The buses
 +	 * must exist because front/backend drivers will use them when they are
 +	 * registered.
-+	 */
- 
--  out_error:
- 	return err;
- }
- 
+ 	 */
+-	proc_mkdir("xen", NULL);
++
++	if (page != 0)
++		free_page(page);
++	return err;
++}
++
 +#ifdef CONFIG_XEN
- postcore_initcall(xenbus_probe_init);
--
--MODULE_LICENSE("GPL");
++postcore_initcall(xenbus_probe_init);
 +MODULE_LICENSE("Dual BSD/GPL");
 +#else
 +int xenbus_init(void)
 +{
 +	return xenbus_probe_init();
 +}
-+#endif
+ #endif
  
- static int is_device_connecting(struct device *dev, void *data)
- {
-@@ -871,6 +1141,8 @@ static int is_device_connecting(struct d
- 
- static int exists_connecting_device(struct device_driver *drv)
- {
++static int is_device_connecting(struct device *dev, void *data)
++{
++	struct xenbus_device *xendev = to_xenbus_device(dev);
++	struct device_driver *drv = data;
++	struct xenbus_driver *xendrv;
++
++	/*
++	 * A device with no driver will never connect. We care only about
++	 * devices which should currently be in the process of connecting.
++	 */
++	if (!dev->driver)
++		return 0;
++
++	/* Is this search limited to a particular driver? */
++	if (drv && (dev->driver != drv))
++		return 0;
++
++	xendrv = to_xenbus_driver(dev->driver);
++	return (xendev->state < XenbusStateConnected ||
++		(xendev->state == XenbusStateConnected &&
++		 xendrv->is_ready && !xendrv->is_ready(xendev)));
++}
++
++static int exists_connecting_device(struct device_driver *drv)
++{
 +	if (xenbus_frontend.error)
 +		return xenbus_frontend.error;
- 	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
- 				is_device_connecting);
- }
-@@ -879,6 +1151,7 @@ static int print_device_status(struct de
- {
- 	struct xenbus_device *xendev = to_xenbus_device(dev);
- 	struct device_driver *drv = data;
++	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
++				is_device_connecting);
++}
++
++static int print_device_status(struct device *dev, void *data)
++{
++	struct xenbus_device *xendev = to_xenbus_device(dev);
++	struct device_driver *drv = data;
 +	struct xenbus_driver *xendrv;
- 
- 	/* Is this operation limited to a particular driver? */
- 	if (drv && (dev->driver != drv))
-@@ -888,7 +1161,10 @@ static int print_device_status(struct de
- 		/* Information only: is this too noisy? */
- 		printk(KERN_INFO "XENBUS: Device with no driver: %s\n",
- 		       xendev->nodename);
--	} else if (xendev->state < XenbusStateConnected) {
++
++	/* Is this operation limited to a particular driver? */
++	if (drv && (dev->driver != drv))
++		return 0;
++
++	if (!dev->driver) {
++		/* Information only: is this too noisy? */
++		printk(KERN_INFO "XENBUS: Device with no driver: %s\n",
++		       xendev->nodename);
 +		return 0;
 +	}
 +
 +	if (xendev->state < XenbusStateConnected) {
- 		enum xenbus_state rstate = XenbusStateUnknown;
- 		if (xendev->otherend)
- 			rstate = xenbus_read_driver_state(xendev->otherend);
-@@ -897,6 +1173,11 @@ static int print_device_status(struct de
- 		       xendev->nodename, xendev->state, rstate);
- 	}
- 
++		enum xenbus_state rstate = XenbusStateUnknown;
++		if (xendev->otherend)
++			rstate = xenbus_read_driver_state(xendev->otherend);
++		printk(KERN_WARNING "XENBUS: Timeout connecting "
++		       "to device: %s (local state %d, remote state %d)\n",
++		       xendev->nodename, xendev->state, rstate);
++	}
++
 +	xendrv = to_xenbus_driver(dev->driver);
 +	if (xendrv->is_ready && !xendrv->is_ready(xendev))
 +		printk(KERN_WARNING "XENBUS: Device not ready: %s\n",
 +		       xendev->nodename);
 +
  	return 0;
++}
+ 
+-  out_error:
+-	if (page != 0)
+-		free_page(page);
++/* We only wait for device setup after most initcalls have run. */
++static int ready_to_wait_for_devices;
+ 
+-	return err;
++/*
++ * On a 5-minute timeout, wait for all devices currently configured.  We need
++ * to do this to guarantee that the filesystems and / or network devices
++ * needed for boot are available, before we can allow the boot to proceed.
++ *
++ * This needs to be on a late_initcall, to happen after the frontend device
++ * drivers have been initialised, but before the root fs is mounted.
++ *
++ * A possible improvement here would be to have the tools add a per-device
++ * flag to the store entry, indicating whether it is needed at boot time.
++ * This would allow people who knew what they were doing to accelerate their
++ * boot slightly, but of course needs tools or manual intervention to set up
++ * those flags correctly.
++ */
++static void wait_for_devices(struct xenbus_driver *xendrv)
++{
++	unsigned long start = jiffies;
++	struct device_driver *drv = xendrv ? &xendrv->driver : NULL;
++	unsigned int seconds_waited = 0;
++
++	if (!ready_to_wait_for_devices || !is_running_on_xen())
++		return;
++
++	while (exists_connecting_device(drv)) {
++		if (time_after(jiffies, start + (seconds_waited+5)*HZ)) {
++			if (!seconds_waited)
++				printk(KERN_WARNING "XENBUS: Waiting for "
++				       "devices to initialise: ");
++			seconds_waited += 5;
++			printk("%us...", 300 - seconds_waited);
++			if (seconds_waited == 300)
++				break;
++		}
++
++		schedule_timeout_interruptible(HZ/10);
++	}
++
++	if (seconds_waited)
++		printk("\n");
++
++	bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
++			 print_device_status);
  }
  
-@@ -923,7 +1204,7 @@ static void wait_for_devices(struct xenb
- 	struct device_driver *drv = xendrv ? &xendrv->driver : NULL;
- 	unsigned int seconds_waited = 0;
- 
--	if (!ready_to_wait_for_devices || !xen_domain())
-+	if (!ready_to_wait_for_devices || !is_running_on_xen())
- 		return;
- 
- 	while (exists_connecting_device(drv)) {
-@@ -950,10 +1231,18 @@ static void wait_for_devices(struct xenb
- #ifndef MODULE
- static int __init boot_wait_for_devices(void)
- {
--	ready_to_wait_for_devices = 1;
--	wait_for_devices(NULL);
+-postcore_initcall(xenbus_init);
++#ifndef MODULE
++static int __init boot_wait_for_devices(void)
++{
 +	if (!xenbus_frontend.error) {
 +		ready_to_wait_for_devices = 1;
 +		wait_for_devices(NULL);
 +	}
- 	return 0;
- }
++	return 0;
++}
  
- late_initcall(boot_wait_for_devices);
- #endif
+-MODULE_LICENSE("GPL");
++late_initcall(boot_wait_for_devices);
++#endif
 +
 +int xenbus_for_each_frontend(void *arg, int (*fn)(struct device *, void *))
 +{
 +	return bus_for_each_dev(&xenbus_frontend.bus, NULL, arg, fn);
 +}
 +EXPORT_SYMBOL_GPL(xenbus_for_each_frontend);
---- head-2010-05-12.orig/drivers/xen/xenbus/xenbus_probe.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/xenbus/xenbus_probe.h	2010-01-19 16:01:04.000000000 +0100
-@@ -34,43 +34,47 @@
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_probe.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_probe.h	2011-01-31 16:11:24.000000000 +0100
+@@ -34,44 +34,47 @@
  #ifndef _XENBUS_PROBE_H
  #define _XENBUS_PROBE_H
  
@@ -1644,25 +1950,20 @@ Acked-by: jbeulich@novell.com
 +#else
 +#define XEN_BUS_ID_SIZE			BUS_ID_SIZE
 +#endif
- 
--#ifdef CONFIG_XEN_BACKEND
++
 +#if defined(CONFIG_XEN_BACKEND) || defined(CONFIG_XEN_BACKEND_MODULE)
- extern void xenbus_backend_suspend(int (*fn)(struct device *, void *));
- extern void xenbus_backend_resume(int (*fn)(struct device *, void *));
- extern void xenbus_backend_probe_and_watch(void);
--extern int xenbus_backend_bus_register(void);
--extern void xenbus_backend_bus_unregister(void);
++extern void xenbus_backend_suspend(int (*fn)(struct device *, void *));
++extern void xenbus_backend_resume(int (*fn)(struct device *, void *));
++extern void xenbus_backend_probe_and_watch(void);
 +extern void xenbus_backend_bus_register(void);
 +extern void xenbus_backend_device_register(void);
- #else
- static inline void xenbus_backend_suspend(int (*fn)(struct device *, void *)) {}
- static inline void xenbus_backend_resume(int (*fn)(struct device *, void *)) {}
- static inline void xenbus_backend_probe_and_watch(void) {}
--static inline int xenbus_backend_bus_register(void) { return 0; }
--static inline void xenbus_backend_bus_unregister(void) {}
++#else
++static inline void xenbus_backend_suspend(int (*fn)(struct device *, void *)) {}
++static inline void xenbus_backend_resume(int (*fn)(struct device *, void *)) {}
++static inline void xenbus_backend_probe_and_watch(void) {}
 +static inline void xenbus_backend_bus_register(void) {}
 +static inline void xenbus_backend_device_register(void) {}
- #endif
++#endif
  
  struct xen_bus_type
  {
@@ -1670,7 +1971,11 @@ Acked-by: jbeulich@novell.com
 +	int error;
  	unsigned int levels;
  	int (*get_bus_id)(char bus_id[XEN_BUS_ID_SIZE], const char *nodename);
- 	int (*probe)(const char *type, const char *dir);
+-	int (*probe)(struct xen_bus_type *bus, const char *type,
+-		     const char *dir);
+-	void (*otherend_changed)(struct xenbus_watch *watch, const char **vec,
+-				 unsigned int len);
++	int (*probe)(const char *type, const char *dir);
  	struct bus_type bus;
 +	struct device dev;
  };
@@ -1689,11 +1994,335 @@ Acked-by: jbeulich@novell.com
  extern int xenbus_probe_devices(struct xen_bus_type *bus);
  
 -extern void xenbus_dev_changed(const char *node, struct xen_bus_type *bus);
+-
+-extern void xenbus_dev_shutdown(struct device *_dev);
+-
+-extern int xenbus_dev_suspend(struct device *dev, pm_message_t state);
+-extern int xenbus_dev_resume(struct device *dev);
+-
+-extern void xenbus_otherend_changed(struct xenbus_watch *watch,
+-				    const char **vec, unsigned int len,
+-				    int ignore_on_shutdown);
+-
+-extern int xenbus_read_otherend_details(struct xenbus_device *xendev,
+-					char *id_node, char *path_node);
 +extern void dev_changed(const char *node, struct xen_bus_type *bus);
  
  #endif
---- head-2010-05-12.orig/drivers/xen/xenbus/xenbus_xs.c	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/drivers/xen/xenbus/xenbus_xs.c	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_probe_backend.c	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_probe_backend.c	2011-02-01 14:49:58.000000000 +0100
+@@ -33,7 +33,7 @@
+ 
+ #define DPRINTK(fmt, args...)				\
+ 	pr_debug("xenbus_probe (%s:%d) " fmt ".\n",	\
+-		 __func__, __LINE__, ##args)
++		 __FUNCTION__, __LINE__, ##args)
+ 
+ #include <linux/kernel.h>
+ #include <linux/err.h>
+@@ -43,16 +43,35 @@
+ #include <linux/mm.h>
+ #include <linux/notifier.h>
+ 
++#include <asm/io.h>
+ #include <asm/page.h>
++#include <asm/maddr.h>
+ #include <asm/pgtable.h>
+-#include <asm/xen/hypervisor.h>
+ #include <asm/hypervisor.h>
+ #include <xen/xenbus.h>
++#include <xen/xen_proc.h>
++#include <xen/evtchn.h>
+ #include <xen/features.h>
+ 
+ #include "xenbus_comms.h"
+ #include "xenbus_probe.h"
+ 
++#ifdef HAVE_XEN_PLATFORM_COMPAT_H
++#include <xen/platform-compat.h>
++#endif
++
++static int xenbus_uevent_backend(struct device *dev, char **envp,
++				 int num_envp, char *buffer, int buffer_size);
++static int xenbus_probe_backend(const char *type, const char *domid);
++
++extern int read_otherend_details(struct xenbus_device *xendev,
++				 char *id_node, char *path_node);
++
++static int read_frontend_details(struct xenbus_device *xendev)
++{
++	return read_otherend_details(xendev, "frontend-id", "frontend");
++}
++
+ /* backend/<type>/<fe-uuid>/<id> => <type>-<fe-domid>-<id> */
+ static int backend_bus_id(char bus_id[XEN_BUS_ID_SIZE], const char *nodename)
+ {
+@@ -90,12 +109,32 @@ static int backend_bus_id(char bus_id[XE
+ 	return 0;
+ }
+ 
+-static int xenbus_uevent_backend(struct device *dev,
+-				 struct kobj_uevent_env *env)
++static struct xen_bus_type xenbus_backend = {
++	.root = "backend",
++	.levels = 3, 		/* backend/type/<frontend>/<id> */
++	.get_bus_id = backend_bus_id,
++	.probe = xenbus_probe_backend,
++	.error = -ENODEV,
++	.bus = {
++		.name     = "xen-backend",
++		.match    = xenbus_match,
++		.probe    = xenbus_dev_probe,
++		.remove   = xenbus_dev_remove,
++//		.shutdown = xenbus_dev_shutdown,
++		.uevent   = xenbus_uevent_backend,
++	},
++	.dev = {
++		.bus_id = "xen-backend",
++	},
++};
++
++static int xenbus_uevent_backend(struct device *dev, char **envp,
++				 int num_envp, char *buffer, int buffer_size)
+ {
+ 	struct xenbus_device *xdev;
+ 	struct xenbus_driver *drv;
+-	struct xen_bus_type *bus;
++	int i = 0;
++	int length = 0;
+ 
+ 	DPRINTK("");
+ 
+@@ -103,32 +142,46 @@ static int xenbus_uevent_backend(struct 
+ 		return -ENODEV;
+ 
+ 	xdev = to_xenbus_device(dev);
+-	bus = container_of(xdev->dev.bus, struct xen_bus_type, bus);
+ 	if (xdev == NULL)
+ 		return -ENODEV;
+ 
+ 	/* stuff we want to pass to /sbin/hotplug */
+-	if (add_uevent_var(env, "XENBUS_TYPE=%s", xdev->devicetype))
+-		return -ENOMEM;
++	add_uevent_var(envp, num_envp, &i, buffer, buffer_size, &length,
++		       "XENBUS_TYPE=%s", xdev->devicetype);
+ 
+-	if (add_uevent_var(env, "XENBUS_PATH=%s", xdev->nodename))
+-		return -ENOMEM;
++	add_uevent_var(envp, num_envp, &i, buffer, buffer_size, &length,
++		       "XENBUS_PATH=%s", xdev->nodename);
+ 
+-	if (add_uevent_var(env, "XENBUS_BASE_PATH=%s", bus->root))
+-		return -ENOMEM;
++	add_uevent_var(envp, num_envp, &i, buffer, buffer_size, &length,
++		       "XENBUS_BASE_PATH=%s", xenbus_backend.root);
++
++	/* terminate, set to next free slot, shrink available space */
++	envp[i] = NULL;
++	envp = &envp[i];
++	num_envp -= i;
++	buffer = &buffer[length];
++	buffer_size -= length;
+ 
+ 	if (dev->driver) {
+ 		drv = to_xenbus_driver(dev->driver);
+ 		if (drv && drv->uevent)
+-			return drv->uevent(xdev, env);
++			return drv->uevent(xdev, envp, num_envp, buffer,
++					   buffer_size);
+ 	}
+ 
+ 	return 0;
+ }
+ 
++int xenbus_register_backend(struct xenbus_driver *drv)
++{
++	drv->read_otherend_details = read_frontend_details;
++
++	return xenbus_register_driver_common(drv, &xenbus_backend);
++}
++EXPORT_SYMBOL_GPL(xenbus_register_backend);
++
+ /* backend/<typename>/<frontend-uuid>/<name> */
+-static int xenbus_probe_backend_unit(struct xen_bus_type *bus,
+-				     const char *dir,
++static int xenbus_probe_backend_unit(const char *dir,
+ 				     const char *type,
+ 				     const char *name)
+ {
+@@ -141,14 +194,13 @@ static int xenbus_probe_backend_unit(str
+ 
+ 	DPRINTK("%s\n", nodename);
+ 
+-	err = xenbus_probe_node(bus, type, nodename);
++	err = xenbus_probe_node(&xenbus_backend, type, nodename);
+ 	kfree(nodename);
+ 	return err;
+ }
+ 
+ /* backend/<typename>/<frontend-domid> */
+-static int xenbus_probe_backend(struct xen_bus_type *bus, const char *type,
+-				const char *domid)
++static int xenbus_probe_backend(const char *type, const char *domid)
+ {
+ 	char *nodename;
+ 	int err = 0;
+@@ -157,7 +209,7 @@ static int xenbus_probe_backend(struct x
+ 
+ 	DPRINTK("");
+ 
+-	nodename = kasprintf(GFP_KERNEL, "%s/%s/%s", bus->root, type, domid);
++	nodename = kasprintf(GFP_KERNEL, "%s/%s/%s", xenbus_backend.root, type, domid);
+ 	if (!nodename)
+ 		return -ENOMEM;
+ 
+@@ -168,7 +220,7 @@ static int xenbus_probe_backend(struct x
+ 	}
+ 
+ 	for (i = 0; i < dir_n; i++) {
+-		err = xenbus_probe_backend_unit(bus, nodename, type, dir[i]);
++		err = xenbus_probe_backend_unit(nodename, type, dir[i]);
+ 		if (err)
+ 			break;
+ 	}
+@@ -177,39 +229,12 @@ static int xenbus_probe_backend(struct x
+ 	return err;
+ }
+ 
+-static void frontend_changed(struct xenbus_watch *watch,
+-			    const char **vec, unsigned int len)
+-{
+-	xenbus_otherend_changed(watch, vec, len, 0);
+-}
+-
+-static struct device_attribute xenbus_backend_dev_attrs[] = {
+-	__ATTR_NULL
+-};
+-
+-static struct xen_bus_type xenbus_backend = {
+-	.root = "backend",
+-	.levels = 3,		/* backend/type/<frontend>/<id> */
+-	.get_bus_id = backend_bus_id,
+-	.probe = xenbus_probe_backend,
+-	.otherend_changed = frontend_changed,
+-	.bus = {
+-		.name		= "xen-backend",
+-		.match		= xenbus_match,
+-		.uevent		= xenbus_uevent_backend,
+-		.probe		= xenbus_dev_probe,
+-		.remove		= xenbus_dev_remove,
+-		.shutdown	= xenbus_dev_shutdown,
+-		.dev_attrs	= xenbus_backend_dev_attrs,
+-	},
+-};
+-
+ static void backend_changed(struct xenbus_watch *watch,
+ 			    const char **vec, unsigned int len)
+ {
+ 	DPRINTK("");
+ 
+-	xenbus_dev_changed(vec[XS_WATCH_PATH], &xenbus_backend);
++	dev_changed(vec[XS_WATCH_PATH], &xenbus_backend);
+ }
+ 
+ static struct xenbus_watch be_watch = {
+@@ -217,60 +242,51 @@ static struct xenbus_watch be_watch = {
+ 	.callback = backend_changed,
+ };
+ 
+-static int read_frontend_details(struct xenbus_device *xendev)
+-{
+-	return xenbus_read_otherend_details(xendev, "frontend-id", "frontend");
+-}
+-
+-int xenbus_dev_is_online(struct xenbus_device *dev)
++void xenbus_backend_suspend(int (*fn)(struct device *, void *))
+ {
+-	int rc, val;
+-
+-	rc = xenbus_scanf(XBT_NIL, dev->nodename, "online", "%d", &val);
+-	if (rc != 1)
+-		val = 0; /* no online node present */
+-
+-	return val;
++	DPRINTK("");
++	if (!xenbus_backend.error)
++		bus_for_each_dev(&xenbus_backend.bus, NULL, NULL, fn);
+ }
+-EXPORT_SYMBOL_GPL(xenbus_dev_is_online);
+ 
+-int __xenbus_register_backend(struct xenbus_driver *drv,
+-			      struct module *owner, const char *mod_name)
++void xenbus_backend_resume(int (*fn)(struct device *, void *))
+ {
+-	drv->read_otherend_details = read_frontend_details;
+-
+-	return xenbus_register_driver_common(drv, &xenbus_backend,
+-					     owner, mod_name);
++	DPRINTK("");
++	if (!xenbus_backend.error)
++		bus_for_each_dev(&xenbus_backend.bus, NULL, NULL, fn);
+ }
+-EXPORT_SYMBOL_GPL(__xenbus_register_backend);
+ 
+-static int backend_probe_and_watch(struct notifier_block *notifier,
+-				   unsigned long event,
+-				   void *data)
++void xenbus_backend_probe_and_watch(void)
+ {
+-	/* Enumerate devices in xenstore and watch for changes. */
+ 	xenbus_probe_devices(&xenbus_backend);
+ 	register_xenbus_watch(&be_watch);
+-
+-	return NOTIFY_DONE;
+ }
+ 
+-static int __init xenbus_probe_backend_init(void)
++void xenbus_backend_bus_register(void)
+ {
+-	static struct notifier_block xenstore_notifier = {
+-		.notifier_call = backend_probe_and_watch
+-	};
+-	int err;
+-
+-	DPRINTK("");
+-
+-	/* Register ourselves with the kernel bus subsystem */
+-	err = bus_register(&xenbus_backend.bus);
+-	if (err)
+-		return err;
+-
+-	register_xenstore_notifier(&xenstore_notifier);
++	xenbus_backend.error = bus_register(&xenbus_backend.bus);
++	if (xenbus_backend.error)
++		printk(KERN_WARNING
++		       "XENBUS: Error registering backend bus: %i\n",
++		       xenbus_backend.error);
++}
++
++void xenbus_backend_device_register(void)
++{
++	if (xenbus_backend.error)
++		return;
++
++	xenbus_backend.error = device_register(&xenbus_backend.dev);
++	if (xenbus_backend.error) {
++		bus_unregister(&xenbus_backend.bus);
++		printk(KERN_WARNING
++		       "XENBUS: Error registering backend device: %i\n",
++		       xenbus_backend.error);
++	}
++}
+ 
+-	return 0;
++int xenbus_for_each_backend(void *arg, int (*fn)(struct device *, void *))
++{
++	return bus_for_each_dev(&xenbus_backend.bus, NULL, arg, fn);
+ }
+-subsys_initcall(xenbus_probe_backend_init);
++EXPORT_SYMBOL_GPL(xenbus_for_each_backend);
+--- head-2011-03-17.orig/drivers/xen/xenbus/xenbus_xs.c	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/drivers/xen/xenbus/xenbus_xs.c	2011-01-31 15:14:12.000000000 +0100
 @@ -47,6 +47,14 @@
  #include <xen/xenbus.h>
  #include "xenbus_comms.h"
@@ -1709,33 +2338,7 @@ Acked-by: jbeulich@novell.com
  struct xs_stored_msg {
  	struct list_head list;
  
-@@ -76,6 +84,14 @@ struct xs_handle {
- 	/*
- 	 * Mutex ordering: transaction_mutex -> watch_mutex -> request_mutex.
- 	 * response_mutex is never taken simultaneously with the other three.
-+	 *
-+	 * transaction_mutex must be held before incrementing
-+	 * transaction_count. The mutex is held when a suspend is in
-+	 * progress to prevent new transactions starting.
-+	 *
-+	 * When decrementing transaction_count to zero the wait queue
-+	 * should be woken up, the suspend code waits for count to
-+	 * reach zero.
- 	 */
- 
- 	/* One request at a time. */
-@@ -85,7 +101,9 @@ struct xs_handle {
- 	struct mutex response_mutex;
- 
- 	/* Protect transactions against save/restore. */
--	struct rw_semaphore transaction_mutex;
-+	struct mutex transaction_mutex;
-+	atomic_t transaction_count;
-+	wait_queue_head_t transaction_wq;
- 
- 	/* Protect watch (de)register against save/restore. */
- 	struct rw_semaphore watch_mutex;
-@@ -108,7 +126,7 @@ static DEFINE_SPINLOCK(watch_events_lock
+@@ -118,7 +126,7 @@ static DEFINE_SPINLOCK(watch_events_lock
   * carrying out work.
   */
  static pid_t xenwatch_pid;
@@ -1744,48 +2347,7 @@ Acked-by: jbeulich@novell.com
  static DECLARE_WAIT_QUEUE_HEAD(watch_events_waitq);
  
  static int get_error(const char *errorstring)
-@@ -157,6 +175,31 @@ static void *read_reply(enum xsd_sockmsg
- 	return body;
- }
- 
-+static void transaction_start(void)
-+{
-+	mutex_lock(&xs_state.transaction_mutex);
-+	atomic_inc(&xs_state.transaction_count);
-+	mutex_unlock(&xs_state.transaction_mutex);
-+}
-+
-+static void transaction_end(void)
-+{
-+	if (atomic_dec_and_test(&xs_state.transaction_count))
-+		wake_up(&xs_state.transaction_wq);
-+}
-+
-+static void transaction_suspend(void)
-+{
-+	mutex_lock(&xs_state.transaction_mutex);
-+	wait_event(xs_state.transaction_wq,
-+		   atomic_read(&xs_state.transaction_count) == 0);
-+}
-+
-+static void transaction_resume(void)
-+{
-+	mutex_unlock(&xs_state.transaction_mutex);
-+}
-+
- void *xenbus_dev_request_and_reply(struct xsd_sockmsg *msg)
- {
- 	void *ret;
-@@ -164,7 +207,7 @@ void *xenbus_dev_request_and_reply(struc
- 	int err;
- 
- 	if (req_msg.type == XS_TRANSACTION_START)
--		down_read(&xs_state.transaction_mutex);
-+		transaction_start();
- 
- 	mutex_lock(&xs_state.request_mutex);
- 
-@@ -177,14 +220,13 @@ void *xenbus_dev_request_and_reply(struc
+@@ -212,14 +220,13 @@ void *xenbus_dev_request_and_reply(struc
  
  	mutex_unlock(&xs_state.request_mutex);
  
@@ -1793,8 +2355,7 @@ Acked-by: jbeulich@novell.com
 +	if ((req_msg.type == XS_TRANSACTION_END) ||
  	    ((req_msg.type == XS_TRANSACTION_START) &&
  	     (msg->type == XS_ERROR)))
--		up_read(&xs_state.transaction_mutex);
-+		transaction_end();
+ 		transaction_end();
  
  	return ret;
  }
@@ -1802,16 +2363,7 @@ Acked-by: jbeulich@novell.com
  
  /* Send message to xs, get kmalloc'ed reply.  ERR_PTR() on error. */
  static void *xs_talkv(struct xenbus_transaction t,
-@@ -214,7 +256,7 @@ static void *xs_talkv(struct xenbus_tran
- 	}
- 
- 	for (i = 0; i < num_vecs; i++) {
--		err = xb_write(iovec[i].iov_base, iovec[i].iov_len);
-+		err = xb_write(iovec[i].iov_base, iovec[i].iov_len);;
- 		if (err) {
- 			mutex_unlock(&xs_state.request_mutex);
- 			return ERR_PTR(err);
-@@ -295,7 +337,7 @@ static char **split(char *strings, unsig
+@@ -330,7 +337,7 @@ static char **split(char *strings, unsig
  	char *p, **ret;
  
  	/* Count the strings. */
@@ -1820,7 +2372,7 @@ Acked-by: jbeulich@novell.com
  
  	/* Transfer to one big alloc for easy freeing. */
  	ret = kmalloc(*num * sizeof(char *) + len, GFP_NOIO | __GFP_HIGH);
-@@ -309,6 +351,7 @@ static char **split(char *strings, unsig
+@@ -344,6 +351,7 @@ static char **split(char *strings, unsig
  	strings = (char *)&ret[*num];
  	for (p = strings, *num = 0; p < strings + len; p += strlen(p) + 1)
  		ret[(*num)++] = p;
@@ -1828,30 +2380,7 @@ Acked-by: jbeulich@novell.com
  
  	return ret;
  }
-@@ -432,11 +475,11 @@ int xenbus_transaction_start(struct xenb
- {
- 	char *id_str;
- 
--	down_read(&xs_state.transaction_mutex);
-+	transaction_start();
- 
- 	id_str = xs_single(XBT_NIL, XS_TRANSACTION_START, "", NULL);
- 	if (IS_ERR(id_str)) {
--		up_read(&xs_state.transaction_mutex);
-+		transaction_end();
- 		return PTR_ERR(id_str);
- 	}
- 
-@@ -461,7 +504,7 @@ int xenbus_transaction_end(struct xenbus
- 
- 	err = xs_error(xs_single(t, XS_TRANSACTION_END, abortstr, NULL));
- 
--	up_read(&xs_state.transaction_mutex);
-+	transaction_end();
- 
- 	return err;
- }
-@@ -622,6 +665,8 @@ void unregister_xenbus_watch(struct xenb
+@@ -657,6 +665,8 @@ void unregister_xenbus_watch(struct xenb
  	char token[sizeof(watch) * 2 + 1];
  	int err;
  
@@ -1860,7 +2389,7 @@ Acked-by: jbeulich@novell.com
  	sprintf(token, "%lX", (long)watch);
  
  	down_read(&xs_state.watch_mutex);
-@@ -639,11 +684,6 @@ void unregister_xenbus_watch(struct xenb
+@@ -674,11 +684,6 @@ void unregister_xenbus_watch(struct xenb
  
  	up_read(&xs_state.watch_mutex);
  
@@ -1872,7 +2401,7 @@ Acked-by: jbeulich@novell.com
  	/* Cancel pending watch events. */
  	spin_lock(&watch_events_lock);
  	list_for_each_entry_safe(msg, tmp, &watch_events, list) {
-@@ -655,14 +695,17 @@ void unregister_xenbus_watch(struct xenb
+@@ -690,8 +695,11 @@ void unregister_xenbus_watch(struct xenb
  	}
  	spin_unlock(&watch_events_lock);
  
@@ -1885,14 +2414,7 @@ Acked-by: jbeulich@novell.com
  }
  EXPORT_SYMBOL_GPL(unregister_xenbus_watch);
  
- void xs_suspend(void)
- {
--	down_write(&xs_state.transaction_mutex);
-+	transaction_suspend();
- 	down_write(&xs_state.watch_mutex);
- 	mutex_lock(&xs_state.request_mutex);
- 	mutex_lock(&xs_state.response_mutex);
-@@ -673,11 +716,9 @@ void xs_resume(void)
+@@ -708,8 +716,6 @@ void xs_resume(void)
  	struct xenbus_watch *watch;
  	char token[sizeof(watch) * 2 + 1];
  
@@ -1900,19 +2422,11 @@ Acked-by: jbeulich@novell.com
 -
  	mutex_unlock(&xs_state.response_mutex);
  	mutex_unlock(&xs_state.request_mutex);
--	up_write(&xs_state.transaction_mutex);
-+	transaction_resume();
+ 	transaction_resume();
+@@ -731,11 +737,30 @@ void xs_suspend_cancel(void)
+ 	mutex_unlock(&xs_state.transaction_mutex);
+ }
  
- 	/* No need for watches_lock: the watch_mutex is sufficient. */
- 	list_for_each_entry(watch, &watches, list) {
-@@ -693,7 +734,25 @@ void xs_suspend_cancel(void)
- 	mutex_unlock(&xs_state.response_mutex);
- 	mutex_unlock(&xs_state.request_mutex);
- 	up_write(&xs_state.watch_mutex);
--	up_write(&xs_state.transaction_mutex);
-+	mutex_unlock(&xs_state.transaction_mutex);
-+}
-+
 +static int xenwatch_handle_callback(void *data)
 +{
 +	struct xs_stored_msg *msg = data;
@@ -1929,10 +2443,10 @@ Acked-by: jbeulich@novell.com
 +		do_exit(0);
 +
 +	return 0;
- }
- 
++}
++
  static int xenwatch_thread(void *unused)
-@@ -701,6 +760,7 @@ static int xenwatch_thread(void *unused)
+ {
  	struct list_head *ent;
  	struct xs_stored_msg *msg;
  
@@ -1940,7 +2454,7 @@ Acked-by: jbeulich@novell.com
  	for (;;) {
  		wait_event_interruptible(watch_events_waitq,
  					 !list_empty(&watch_events));
-@@ -716,17 +776,29 @@ static int xenwatch_thread(void *unused)
+@@ -751,17 +776,29 @@ static int xenwatch_thread(void *unused)
  			list_del(ent);
  		spin_unlock(&watch_events_lock);
  
@@ -1979,7 +2493,7 @@ Acked-by: jbeulich@novell.com
  	}
  
  	return 0;
-@@ -820,6 +892,7 @@ static int xenbus_thread(void *unused)
+@@ -855,6 +892,7 @@ static int xenbus_thread(void *unused)
  {
  	int err;
  
@@ -1987,7 +2501,7 @@ Acked-by: jbeulich@novell.com
  	for (;;) {
  		err = process_msg();
  		if (err)
-@@ -834,7 +907,6 @@ static int xenbus_thread(void *unused)
+@@ -869,7 +907,6 @@ static int xenbus_thread(void *unused)
  
  int xs_init(void)
  {
@@ -1995,25 +2509,20 @@ Acked-by: jbeulich@novell.com
  	struct task_struct *task;
  
  	INIT_LIST_HEAD(&xs_state.reply_list);
-@@ -843,13 +915,10 @@ int xs_init(void)
+@@ -883,11 +920,6 @@ int xs_init(void)
+ 	atomic_set(&xs_state.transaction_count, 0);
+ 	init_waitqueue_head(&xs_state.transaction_wq);
  
- 	mutex_init(&xs_state.request_mutex);
- 	mutex_init(&xs_state.response_mutex);
--	init_rwsem(&xs_state.transaction_mutex);
-+	mutex_init(&xs_state.transaction_mutex);
- 	init_rwsem(&xs_state.watch_mutex);
--
 -	/* Initialize the shared memory rings to talk to xenstored */
 -	err = xb_init_comms();
 -	if (err)
 -		return err;
-+	atomic_set(&xs_state.transaction_count, 0);
-+	init_waitqueue_head(&xs_state.transaction_wq);
- 
+-
  	task = kthread_run(xenwatch_thread, NULL, "xenwatch");
  	if (IS_ERR(task))
---- head-2010-05-12.orig/include/xen/evtchn.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/evtchn.h	2010-01-19 16:01:04.000000000 +0100
+ 		return PTR_ERR(task);
+--- head-2011-03-17.orig/include/xen/evtchn.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/evtchn.h	2011-01-31 15:14:12.000000000 +0100
 @@ -1,7 +1,11 @@
 +#if defined(CONFIG_PARAVIRT_XEN) || !defined(__KERNEL__)
 +#include "public/evtchn.h"
@@ -2189,8 +2698,39 @@ Acked-by: jbeulich@novell.com
 -#endif /* __LINUX_PUBLIC_EVTCHN_H__ */
 +#endif /* __ASM_EVTCHN_H__ */
 +#endif /* CONFIG_PARAVIRT_XEN */
---- head-2010-05-12.orig/include/xen/interface/callback.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/callback.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/hvm.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/hvm.h	2011-01-31 15:14:12.000000000 +0100
+@@ -3,9 +3,8 @@
+ #define XEN_HVM_H__
+ 
+ #include <xen/interface/hvm/params.h>
+-#include <asm/xen/hypercall.h>
+ 
+-static inline int hvm_get_parameter(int idx, uint64_t *value)
++static inline unsigned long hvm_get_parameter(int idx)
+ {
+ 	struct xen_hvm_param xhv;
+ 	int r;
+@@ -16,15 +15,9 @@ static inline int hvm_get_parameter(int 
+ 	if (r < 0) {
+ 		printk(KERN_ERR "Cannot get hvm parameter %d: %d!\n",
+ 			idx, r);
+-		return r;
++		return 0;
+ 	}
+-	*value = xhv.value;
+-	return r;
++	return xhv.value;
+ }
+ 
+-#define HVM_CALLBACK_VIA_TYPE_VECTOR 0x2
+-#define HVM_CALLBACK_VIA_TYPE_SHIFT 56
+-#define HVM_CALLBACK_VECTOR(x) (((uint64_t)HVM_CALLBACK_VIA_TYPE_VECTOR)<<\
+-		HVM_CALLBACK_VIA_TYPE_SHIFT | (x))
+-
+ #endif /* XEN_HVM_H__ */
+--- head-2011-03-17.orig/include/xen/interface/callback.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/callback.h	2011-01-31 15:14:12.000000000 +0100
 @@ -86,6 +86,8 @@ struct callback_register {
  	uint16_t flags;
  	xen_callback_t address;
@@ -2213,8 +2753,8 @@ Acked-by: jbeulich@novell.com
 +#endif
  
  #endif /* __XEN_PUBLIC_CALLBACK_H__ */
---- head-2010-05-12.orig/include/xen/interface/elfnote.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/elfnote.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/elfnote.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/elfnote.h	2011-03-17 13:50:24.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Definitions used for the Xen ELF notes.
@@ -2272,7 +2812,7 @@ Acked-by: jbeulich@novell.com
   *
   * LEGACY: PAE (n.b. The legacy interface included a provision to
   * indicate 'extended-cr3' support allowing L3 page tables to be
-@@ -140,6 +161,76 @@
+@@ -140,6 +161,82 @@
   */
  #define XEN_ELFNOTE_SUSPEND_CANCEL 14
  
@@ -2288,9 +2828,15 @@ Acked-by: jbeulich@novell.com
 +#define XEN_ELFNOTE_INIT_P2M      15
 +
 +/*
++ * Whether or not the guest can deal with being passed an initrd not
++ * mapped through its initial page tables.
++ */
++#define XEN_ELFNOTE_MOD_START_PFN 16
++
++/*
 + * The number of the highest elfnote defined.
 + */
-+#define XEN_ELFNOTE_MAX XEN_ELFNOTE_INIT_P2M
++#define XEN_ELFNOTE_MAX XEN_ELFNOTE_MOD_START_PFN
 +
 +/*
 + * System information exported through crash notes.
@@ -2349,8 +2895,8 @@ Acked-by: jbeulich@novell.com
  #endif /* __XEN_PUBLIC_ELFNOTE_H__ */
  
  /*
---- head-2010-05-12.orig/include/xen/interface/event_channel.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/event_channel.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/event_channel.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/event_channel.h	2011-01-31 15:14:12.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Event channels between domains.
@@ -2680,8 +3226,8 @@ Acked-by: jbeulich@novell.com
 +DEFINE_XEN_GUEST_HANDLE(evtchn_op_t);
  
  #endif /* __XEN_PUBLIC_EVENT_CHANNEL_H__ */
---- head-2010-05-12.orig/include/xen/interface/features.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/features.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/features.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/features.h	2011-01-31 15:14:12.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Feature flags, reported by XENVER_get_features.
@@ -2720,20 +3266,12 @@ Acked-by: jbeulich@novell.com
 + */
 +#define XENFEAT_gnttab_map_avail_bits      7
 +
- #define XENFEAT_NR_SUBMAPS 1
+ /* x86: Does this Xen host support the HVM callback vector type? */
+ #define XENFEAT_hvm_callback_vector        8
  
- #endif /* __XEN_PUBLIC_FEATURES_H__ */
---- head-2010-05-12.orig/include/xen/interface/grant_table.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/grant_table.h	2010-01-19 16:01:04.000000000 +0100
-@@ -28,6 +28,7 @@
- #ifndef __XEN_PUBLIC_GRANT_TABLE_H__
- #define __XEN_PUBLIC_GRANT_TABLE_H__
- 
-+#include "xen.h"
- 
- /***********************************
-  * GRANT TABLE REPRESENTATION
-@@ -84,12 +85,26 @@
+--- head-2011-03-17.orig/include/xen/interface/grant_table.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/grant_table.h	2011-01-31 15:14:12.000000000 +0100
+@@ -85,12 +85,26 @@
   */
  
  /*
@@ -2761,7 +3299,7 @@ Acked-by: jbeulich@novell.com
      /* GTF_xxx: various type and flag information.  [XEN,GST] */
      uint16_t flags;
      /* The domain being granted foreign privileges. [GST] */
-@@ -100,6 +115,7 @@ struct grant_entry {
+@@ -101,6 +115,7 @@ struct grant_entry {
       */
      uint32_t frame;
  };
@@ -2769,7 +3307,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * Type of grant entry.
-@@ -107,10 +123,13 @@ struct grant_entry {
+@@ -108,10 +123,13 @@ struct grant_entry {
   *  GTF_permit_access: Allow @domid to map/access @frame.
   *  GTF_accept_transfer: Allow @domid to transfer ownership of one page frame
   *                       to this guest. Xen writes the page number to @frame.
@@ -2783,7 +3321,7 @@ Acked-by: jbeulich@novell.com
  #define GTF_type_mask       (3U<<0)
  
  /*
-@@ -118,6 +137,10 @@ struct grant_entry {
+@@ -119,6 +137,10 @@ struct grant_entry {
   *  GTF_readonly: Restrict @domid to read-only mappings and accesses. [GST]
   *  GTF_reading: Grant entry is currently mapped for reading by @domid. [XEN]
   *  GTF_writing: Grant entry is currently mapped for writing by @domid. [XEN]
@@ -2794,7 +3332,7 @@ Acked-by: jbeulich@novell.com
   */
  #define _GTF_readonly       (2)
  #define GTF_readonly        (1U<<_GTF_readonly)
-@@ -125,6 +148,14 @@ struct grant_entry {
+@@ -126,6 +148,14 @@ struct grant_entry {
  #define GTF_reading         (1U<<_GTF_reading)
  #define _GTF_writing        (4)
  #define GTF_writing         (1U<<_GTF_writing)
@@ -2809,7 +3347,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * Subflags for GTF_accept_transfer:
-@@ -141,15 +172,87 @@ struct grant_entry {
+@@ -142,15 +172,87 @@ struct grant_entry {
  #define _GTF_transfer_completed (3)
  #define GTF_transfer_completed  (1U<<_GTF_transfer_completed)
  
@@ -2902,7 +3440,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * Handle to track a mapping created via a grant reference.
-@@ -185,7 +288,8 @@ struct gnttab_map_grant_ref {
+@@ -186,7 +288,8 @@ struct gnttab_map_grant_ref {
      grant_handle_t handle;
      uint64_t dev_bus_addr;
  };
@@ -2912,7 +3450,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * GNTTABOP_unmap_grant_ref: Destroy one or more grant-reference mappings
-@@ -207,7 +311,8 @@ struct gnttab_unmap_grant_ref {
+@@ -208,7 +311,8 @@ struct gnttab_unmap_grant_ref {
      /* OUT parameters. */
      int16_t  status;              /* GNTST_* */
  };
@@ -2922,7 +3460,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * GNTTABOP_setup_table: Set up a grant table for <dom> comprising at least
-@@ -225,9 +330,10 @@ struct gnttab_setup_table {
+@@ -226,9 +330,10 @@ struct gnttab_setup_table {
      uint32_t nr_frames;
      /* OUT parameters. */
      int16_t  status;              /* GNTST_* */
@@ -2935,7 +3473,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * GNTTABOP_dump_table: Dump the contents of the grant table to the
-@@ -240,7 +346,8 @@ struct gnttab_dump_table {
+@@ -241,7 +346,8 @@ struct gnttab_dump_table {
      /* OUT parameters. */
      int16_t status;               /* GNTST_* */
  };
@@ -2945,7 +3483,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * GNTTABOP_transfer_grant_ref: Transfer <frame> to a foreign domain. The
-@@ -253,13 +360,15 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_dump_t
+@@ -254,13 +360,15 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_dump_t
  #define GNTTABOP_transfer                4
  struct gnttab_transfer {
      /* IN parameters. */
@@ -2963,7 +3501,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * GNTTABOP_copy: Hypervisor based copy
-@@ -283,24 +392,26 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_transf
+@@ -284,24 +392,26 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_transf
  #define GNTCOPY_source_gref       (1<<_GNTCOPY_source_gref)
  #define _GNTCOPY_dest_gref        (1)
  #define GNTCOPY_dest_gref         (1<<_GNTCOPY_dest_gref)
@@ -3006,7 +3544,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * GNTTABOP_query_size: Query the current and maximum sizes of the shared
-@@ -318,10 +429,92 @@ struct gnttab_query_size {
+@@ -319,10 +429,92 @@ struct gnttab_query_size {
      uint32_t max_nr_frames;
      int16_t  status;              /* GNTST_* */
  };
@@ -3101,7 +3639,7 @@ Acked-by: jbeulich@novell.com
   */
   /* Map the grant entry for access by I/O devices. */
  #define _GNTMAP_device_map      (0)
-@@ -348,6 +541,16 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_query_
+@@ -349,6 +541,16 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_query_
  #define _GNTMAP_contains_pte    (4)
  #define GNTMAP_contains_pte     (1<<_GNTMAP_contains_pte)
  
@@ -3118,7 +3656,7 @@ Acked-by: jbeulich@novell.com
  /*
   * Values for error status returns. All errors are -ve.
   */
-@@ -361,7 +564,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_query_
+@@ -362,7 +564,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_query_
  #define GNTST_no_device_space  (-7) /* Out of space in I/O MMU.              */
  #define GNTST_permission_denied (-8) /* Not enough privilege for operation.  */
  #define GNTST_bad_page         (-9) /* Specified page was invalid for op.    */
@@ -3129,7 +3667,7 @@ Acked-by: jbeulich@novell.com
  
  #define GNTTABOP_error_msgs {                   \
      "okay",                                     \
-@@ -374,7 +579,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_query_
+@@ -375,7 +579,9 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_query_
      "no spare translation slot in the I/O MMU", \
      "permission denied",                        \
      "bad page",                                 \
@@ -3140,8 +3678,299 @@ Acked-by: jbeulich@novell.com
  }
  
  #endif /* __XEN_PUBLIC_GRANT_TABLE_H__ */
---- head-2010-05-12.orig/include/xen/interface/io/blkif.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/blkif.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/hvm/hvm_op.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/hvm/hvm_op.h	2011-03-17 13:50:24.000000000 +0100
+@@ -21,6 +21,9 @@
+ #ifndef __XEN_PUBLIC_HVM_HVM_OP_H__
+ #define __XEN_PUBLIC_HVM_HVM_OP_H__
+ 
++#include "../xen.h"
++#include "../trace.h"
++
+ /* Get/set subcommands: the second argument of the hypercall is a
+  * pointer to a xen_hvm_param struct. */
+ #define HVMOP_set_param           0
+@@ -30,17 +33,197 @@ struct xen_hvm_param {
+     uint32_t index;    /* IN */
+     uint64_t value;    /* IN/OUT */
+ };
+-DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_param);
++typedef struct xen_hvm_param xen_hvm_param_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_param_t);
++
++/* Set the logical level of one of a domain's PCI INTx wires. */
++#define HVMOP_set_pci_intx_level  2
++struct xen_hvm_set_pci_intx_level {
++    /* Domain to be updated. */
++    domid_t  domid;
++    /* PCI INTx identification in PCI topology (domain:bus:device:intx). */
++    uint8_t  domain, bus, device, intx;
++    /* Assertion level (0 = unasserted, 1 = asserted). */
++    uint8_t  level;
++};
++typedef struct xen_hvm_set_pci_intx_level xen_hvm_set_pci_intx_level_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_set_pci_intx_level_t);
++
++/* Set the logical level of one of a domain's ISA IRQ wires. */
++#define HVMOP_set_isa_irq_level   3
++struct xen_hvm_set_isa_irq_level {
++    /* Domain to be updated. */
++    domid_t  domid;
++    /* ISA device identification, by ISA IRQ (0-15). */
++    uint8_t  isa_irq;
++    /* Assertion level (0 = unasserted, 1 = asserted). */
++    uint8_t  level;
++};
++typedef struct xen_hvm_set_isa_irq_level xen_hvm_set_isa_irq_level_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_set_isa_irq_level_t);
++
++#define HVMOP_set_pci_link_route  4
++struct xen_hvm_set_pci_link_route {
++    /* Domain to be updated. */
++    domid_t  domid;
++    /* PCI link identifier (0-3). */
++    uint8_t  link;
++    /* ISA IRQ (1-15), or 0 (disable link). */
++    uint8_t  isa_irq;
++};
++typedef struct xen_hvm_set_pci_link_route xen_hvm_set_pci_link_route_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_set_pci_link_route_t);
++
++/* Flushes all VCPU TLBs: @arg must be NULL. */
++#define HVMOP_flush_tlbs          5
++
++/* Following tools-only interfaces may change in future. */
++#if defined(__XEN__) || defined(__XEN_TOOLS__)
++
++/* Track dirty VRAM. */
++#define HVMOP_track_dirty_vram    6
++struct xen_hvm_track_dirty_vram {
++    /* Domain to be tracked. */
++    domid_t  domid;
++    /* First pfn to track. */
++    uint64_aligned_t first_pfn;
++    /* Number of pages to track. */
++    uint64_aligned_t nr;
++    /* OUT variable. */
++    /* Dirty bitmap buffer. */
++    XEN_GUEST_HANDLE_64(uint8) dirty_bitmap;
++};
++typedef struct xen_hvm_track_dirty_vram xen_hvm_track_dirty_vram_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_track_dirty_vram_t);
++
++/* Notify that some pages got modified by the Device Model. */
++#define HVMOP_modified_memory    7
++struct xen_hvm_modified_memory {
++    /* Domain to be updated. */
++    domid_t  domid;
++    /* First pfn. */
++    uint64_aligned_t first_pfn;
++    /* Number of pages. */
++    uint64_aligned_t nr;
++};
++typedef struct xen_hvm_modified_memory xen_hvm_modified_memory_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_modified_memory_t);
++
++#define HVMOP_set_mem_type    8
++typedef enum {
++    HVMMEM_ram_rw,             /* Normal read/write guest RAM */
++    HVMMEM_ram_ro,             /* Read-only; writes are discarded */
++    HVMMEM_mmio_dm,            /* Reads and write go to the device model */
++} hvmmem_type_t;
++/* Notify that a region of memory is to be treated in a specific way. */
++struct xen_hvm_set_mem_type {
++    /* Domain to be updated. */
++    domid_t domid;
++    /* Memory type */
++    uint16_t hvmmem_type;
++    /* Number of pages. */
++    uint32_t nr;
++    /* First pfn. */
++    uint64_aligned_t first_pfn;
++};
++typedef struct xen_hvm_set_mem_type xen_hvm_set_mem_type_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_set_mem_type_t);
++
++#endif /* defined(__XEN__) || defined(__XEN_TOOLS__) */
+ 
+ /* Hint from PV drivers for pagetable destruction. */
+ #define HVMOP_pagetable_dying       9
+ struct xen_hvm_pagetable_dying {
+     /* Domain with a pagetable about to be destroyed. */
+     domid_t  domid;
++    uint16_t pad[3]; /* align next field on 8-byte boundary */
+     /* guest physical address of the toplevel pagetable dying */
+-    aligned_u64 gpa;
++    uint64_t gpa;
+ };
+ typedef struct xen_hvm_pagetable_dying xen_hvm_pagetable_dying_t;
+-DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_pagetable_dying_t);
+- 
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_pagetable_dying_t);
++
++/* Get the current Xen time, in nanoseconds since system boot. */
++#define HVMOP_get_time              10
++struct xen_hvm_get_time {
++    uint64_t now;      /* OUT */
++};
++typedef struct xen_hvm_get_time xen_hvm_get_time_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_get_time_t);
++
++#define HVMOP_xentrace              11
++struct xen_hvm_xentrace {
++    uint16_t event, extra_bytes;
++    uint8_t extra[TRACE_EXTRA_MAX * sizeof(uint32_t)];
++};
++typedef struct xen_hvm_xentrace xen_hvm_xentrace_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_xentrace_t);
++
++/* Following tools-only interfaces may change in future. */
++#if defined(__XEN__) || defined(__XEN_TOOLS__)
++
++#define HVMOP_set_mem_access        12
++typedef enum {
++    HVMMEM_access_n,
++    HVMMEM_access_r,
++    HVMMEM_access_w,
++    HVMMEM_access_rw,
++    HVMMEM_access_x,
++    HVMMEM_access_rx,
++    HVMMEM_access_wx,
++    HVMMEM_access_rwx,
++    HVMMEM_access_rx2rw,       /* Page starts off as r-x, but automatically
++                                * change to r-w on a write */
++    HVMMEM_access_default      /* Take the domain default */
++} hvmmem_access_t;
++/* Notify that a region of memory is to have specific access types */
++struct xen_hvm_set_mem_access {
++    /* Domain to be updated. */
++    domid_t domid;
++    /* Memory type */
++    uint16_t hvmmem_access; /* hvm_access_t */
++    /* Number of pages, ignored on setting default access */
++    uint32_t nr;
++    /* First pfn, or ~0ull to set the default access for new pages */
++    uint64_aligned_t first_pfn;
++};
++typedef struct xen_hvm_set_mem_access xen_hvm_set_mem_access_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_set_mem_access_t);
++
++#define HVMOP_get_mem_access        13
++/* Get the specific access type for that region of memory */
++struct xen_hvm_get_mem_access {
++    /* Domain to be queried. */
++    domid_t domid;
++    /* Memory type: OUT */
++    uint16_t hvmmem_access; /* hvm_access_t */
++    /* pfn, or ~0ull for default access for new pages.  IN */
++    uint64_aligned_t pfn;
++};
++typedef struct xen_hvm_get_mem_access xen_hvm_get_mem_access_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_get_mem_access_t);
++
++#define HVMOP_inject_trap            14
++/* Inject a trap into a VCPU, which will get taken up on the next
++ * scheduling of it. Note that the caller should know enough of the
++ * state of the CPU before injecting, to know what the effect of
++ * injecting the trap will be.
++ */
++struct xen_hvm_inject_trap {
++    /* Domain to be queried. */
++    domid_t domid;
++    /* VCPU */
++    uint32_t vcpuid;
++    /* Trap number */
++    uint32_t trap;
++    /* Error code, or -1 to skip */
++    uint32_t error_code;
++    /* CR2 for page faults */
++    uint64_aligned_t cr2;
++};
++typedef struct xen_hvm_inject_trap xen_hvm_inject_trap_t;
++DEFINE_XEN_GUEST_HANDLE(xen_hvm_inject_trap_t);
++
++#endif /* defined(__XEN__) || defined(__XEN_TOOLS__) */
++
+ #endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
+--- head-2011-03-17.orig/include/xen/interface/hvm/params.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/hvm/params.h	2011-03-17 13:50:24.000000000 +0100
+@@ -33,11 +33,17 @@
+  * val[63:56] == 1: val[55:0] is a delivery PCI INTx line, as follows:
+  *                  Domain = val[47:32], Bus  = val[31:16],
+  *                  DevFn  = val[15: 8], IntX = val[ 1: 0]
+- * val[63:56] == 2: val[7:0] is a vector number.
++ * val[63:56] == 2: val[7:0] is a vector number, check for
++ *                  XENFEAT_hvm_callback_vector to know if this delivery
++ *                  method is available.
+  * If val == 0 then CPU0 event-channel notifications are not delivered.
+  */
+ #define HVM_PARAM_CALLBACK_IRQ 0
+ 
++/*
++ * These are not used by Xen. They are here for convenience of HVM-guest
++ * xenbus implementations.
++ */
+ #define HVM_PARAM_STORE_PFN    1
+ #define HVM_PARAM_STORE_EVTCHN 2
+ 
+@@ -47,6 +53,19 @@
+ 
+ #define HVM_PARAM_BUFIOREQ_PFN 6
+ 
++#ifdef __ia64__
++
++#define HVM_PARAM_NVRAM_FD     7
++#define HVM_PARAM_VHPT_SIZE    8
++#define HVM_PARAM_BUFPIOREQ_PFN	9
++
++#elif defined(__i386__) || defined(__x86_64__)
++
++/* Expose Viridian interfaces to this HVM guest? */
++#define HVM_PARAM_VIRIDIAN     9
++
++#endif
++
+ /*
+  * Set mode for virtual timers (currently x86 only):
+  *  delay_for_missed_ticks (default):
+@@ -90,6 +109,34 @@
+ /* Boolean: Enable aligning all periodic vpts to reduce interrupts */
+ #define HVM_PARAM_VPT_ALIGN    16
+ 
+-#define HVM_NR_PARAMS          17
++/* Console debug shared memory ring and event channel */
++#define HVM_PARAM_CONSOLE_PFN    17
++#define HVM_PARAM_CONSOLE_EVTCHN 18
++
++/*
++ * Select location of ACPI PM1a and TMR control blocks. Currently two locations
++ * are supported, specified by version 0 or 1 in this parameter:
++ *   - 0: default, use the old addresses
++ *        PM1A_EVT == 0x1f40; PM1A_CNT == 0x1f44; PM_TMR == 0x1f48
++ *   - 1: use the new default qemu addresses
++ *        PM1A_EVT == 0xb000; PM1A_CNT == 0xb004; PM_TMR == 0xb008
++ * You can find these address definitions in <hvm/ioreq.h>
++ */
++#define HVM_PARAM_ACPI_IOPORTS_LOCATION 19
++
++/* Enable blocking memory events, async or sync (pause vcpu until response) 
++ * onchangeonly indicates messages only on a change of value */
++#define HVM_PARAM_MEMORY_EVENT_CR0   20
++#define HVM_PARAM_MEMORY_EVENT_CR3   21
++#define HVM_PARAM_MEMORY_EVENT_CR4   22
++#define HVM_PARAM_MEMORY_EVENT_INT3  23
++
++#define HVMPME_MODE_MASK       (3 << 0)
++#define HVMPME_mode_disabled   0
++#define HVMPME_mode_async      1
++#define HVMPME_mode_sync       2
++#define HVMPME_onchangeonly    (1 << 2)
++
++#define HVM_NR_PARAMS          24
+ 
+ #endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */
+--- head-2011-03-17.orig/include/xen/interface/io/blkif.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/blkif.h	2011-03-17 13:50:24.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Unified block-device I/O interface for Xen guest OSes.
@@ -3189,7 +4018,7 @@ Acked-by: jbeulich@novell.com
   * requests are likely to succeed or fail. Either way, a barrier request
   * may fail at any time with BLKIF_RSP_EOPNOTSUPP if it is unsupported by
   * the underlying block-device hardware. The boolean simply indicates whether
-@@ -43,33 +63,57 @@ typedef uint64_t blkif_sector_t;
+@@ -43,33 +63,96 @@ typedef uint64_t blkif_sector_t;
   * create the "feature-barrier" node!
   */
  #define BLKIF_OP_WRITE_BARRIER     2
@@ -3206,6 +4035,31 @@ Acked-by: jbeulich@novell.com
 + * "feature-flush-cache" node!
 + */
 +#define BLKIF_OP_FLUSH_DISKCACHE   3
++/*
++ * Used in SLES sources for device specific command packet
++ * contained within the request. Reserved for that purpose.
++ */
++#define BLKIF_OP_RESERVED_1        4
++/*
++ * Recognised only if "feature-trim" is present in backend xenbus info.
++ * The "feature-trim" node contains a boolean indicating whether trim
++ * requests are likely to succeed or fail. Either way, a trim request
++ * may fail at any time with BLKIF_RSP_EOPNOTSUPP if it is unsupported by
++ * the underlying block-device hardware. The boolean simply indicates whether
++ * or not it is worthwhile for the frontend to attempt trim requests.
++ * If a backend does not recognise BLKIF_OP_TRIM, it should *not*
++ * create the "feature-trim" node!
++ * 
++ * Trim operation is a request for the underlying block device to mark
++ * extents to be erased. Trim operations are passed with sector_number as the
++ * sector index to begin trim operations at and nr_sectors as the number of
++ * sectors to be trimmed. The specified sectors should be trimmed if the
++ * underlying block device supports trim operations, or a BLKIF_RSP_EOPNOTSUPP
++ * should be returned. More information about trim operations at:
++ * http://t13.org/Documents/UploadedDocuments/docs2008/
++ *     e07154r6-Data_Set_Management_Proposal_for_ATA-ACS2.doc
++ */
++#define BLKIF_OP_TRIM              5
  
  /*
   * Maximum scatter/gather segments per request.
@@ -3247,8 +4101,22 @@ Acked-by: jbeulich@novell.com
 +    uint64_t       id;           /* private guest value, echoed in resp  */
 +    blkif_sector_t sector_number;/* start sector idx on disk (r/w only)  */
 +    struct blkif_request_segment seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
- };
++};
 +typedef struct blkif_request blkif_request_t;
++
++/*
++ * Cast to this structure when blkif_request.operation == BLKIF_OP_TRIM
++ * sizeof(struct blkif_request_trim) <= sizeof(struct blkif_request)
++ */
++struct blkif_request_trim {
++    uint8_t        operation;    /* BLKIF_OP_TRIM                        */
++    uint8_t        reserved;     /*                                      */
++    blkif_vdev_t   handle;       /* same as for read/write requests      */
++    uint64_t       id;           /* private guest value, echoed in resp  */
++    blkif_sector_t sector_number;/* start sector idx on disk             */
++    uint64_t       nr_sectors;   /* number of contiguous sectors to trim */
+ };
++typedef struct blkif_request_trim blkif_request_trim_t;
  
  struct blkif_response {
 -	uint64_t        id;              /* copied from request */
@@ -3262,8 +4130,8 @@ Acked-by: jbeulich@novell.com
  
  /*
   * STATUS RETURN CODES.
---- head-2010-05-12.orig/include/xen/interface/io/console.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/console.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/io/console.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/console.h	2011-01-31 15:14:12.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Console I/O interface for Xen guest OSes.
@@ -3289,8 +4157,8 @@ Acked-by: jbeulich@novell.com
   * Copyright (c) 2005, Keir Fraser
   */
  
---- head-2010-05-12.orig/include/xen/interface/io/fbif.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/fbif.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/io/fbif.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/fbif.h	2011-01-31 15:14:12.000000000 +0100
 @@ -41,12 +41,13 @@
   */
  #define XENFB_TYPE_UPDATE 2
@@ -3455,8 +4323,8 @@ Acked-by: jbeulich@novell.com
  };
  
  /*
---- head-2010-05-12.orig/include/xen/interface/io/kbdif.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/kbdif.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/io/kbdif.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/kbdif.h	2011-01-31 15:14:12.000000000 +0100
 @@ -45,34 +45,38 @@
   */
  #define XENKBD_TYPE_POS     4
@@ -3564,8 +4432,8 @@ Acked-by: jbeulich@novell.com
  };
  
  #endif
---- head-2010-05-12.orig/include/xen/interface/io/netif.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/netif.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/io/netif.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/netif.h	2011-01-31 15:14:12.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Unified network-device I/O interface for Xen guest OSes.
@@ -3751,8 +4619,8 @@ Acked-by: jbeulich@novell.com
  
  #define NETIF_RSP_DROPPED         -2
  #define NETIF_RSP_ERROR           -1
---- head-2010-05-12.orig/include/xen/interface/io/protocols.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/protocols.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/io/protocols.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/protocols.h	2011-01-31 15:14:12.000000000 +0100
 @@ -1,10 +1,31 @@
 +/******************************************************************************
 + * protocols.h
@@ -3795,8 +4663,8 @@ Acked-by: jbeulich@novell.com
  #else
  # error arch fixup needed here
  #endif
---- head-2010-05-12.orig/include/xen/interface/io/ring.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/ring.h	2010-02-24 13:13:46.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/io/ring.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/ring.h	2011-01-31 15:14:12.000000000 +0100
 @@ -3,16 +3,42 @@
   *
   * Shared producer-consumer ring macros.
@@ -3841,18 +4709,13 @@ Acked-by: jbeulich@novell.com
  #define __RD4(_x)  (((_x) & 0x0000000c) ? __RD2((_x)>>2)<<2    : __RD2(_x))
  #define __RD8(_x)  (((_x) & 0x000000f0) ? __RD4((_x)>>4)<<4    : __RD4(_x))
  #define __RD16(_x) (((_x) & 0x0000ff00) ? __RD8((_x)>>8)<<8    : __RD8(_x))
-@@ -24,74 +50,84 @@ typedef unsigned int RING_IDX;
-  * A ring contains as many entries as will fit, rounded down to the nearest
-  * power of two (so we can mask with (size-1) to loop around).
+@@ -31,74 +57,86 @@ typedef unsigned int RING_IDX;
+ /*
+  * The same for passing in an actual pointer instead of a name tag.
   */
-+#define __CONST_RING_SIZE(_s, _sz) \
-+    (__RD32(((_sz) - offsetof(struct _s##_sring, ring)) / \
-+	    sizeof(((struct _s##_sring *)0)->ring[0])))
-+/*
-+ * The same for passing in an actual pointer instead of a name tag.
-+ */
- #define __RING_SIZE(_s, _sz) \
--    (__RD32(((_sz) - (long)&(_s)->ring + (long)(_s)) / sizeof((_s)->ring[0])))
+-#define __RING_SIZE(_s, _sz)						\
+-	(__RD32(((_sz) - (long)&(_s)->ring + (long)(_s)) / sizeof((_s)->ring[0])))
++#define __RING_SIZE(_s, _sz) \
 +    (__RD32(((_sz) - (long)(_s)->ring + (long)(_s)) / sizeof((_s)->ring[0])))
  
  /*
@@ -3942,8 +4805,16 @@ Acked-by: jbeulich@novell.com
 +struct __name##_sring {                                                 \
 +    RING_IDX req_prod, req_event;                                       \
 +    RING_IDX rsp_prod, rsp_event;                                       \
-+    uint8_t  netfront_smartpoll_active;                                 \
-+    uint8_t  pad[47];                                                   \
++    union {                                                             \
++        struct {                                                        \
++            uint8_t smartpoll_active;                                   \
++        } netif;                                                        \
++        struct {                                                        \
++            uint8_t msg;                                                \
++        } tapif_user;                                                   \
++        uint8_t pvt_pad[4];                                             \
++    } private;                                                          \
++    uint8_t __pad[44];                                                  \
 +    union __name##_sring_entry ring[1]; /* variable-length */           \
 +};                                                                      \
 +                                                                        \
@@ -3970,7 +4841,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * Macros for manipulating rings.
-@@ -109,86 +145,94 @@ struct __name##_back_ring {						\
+@@ -116,86 +154,95 @@ struct __name##_back_ring {						\
   */
  
  /* Initialising empty rings */
@@ -3981,7 +4852,8 @@ Acked-by: jbeulich@novell.com
 +#define SHARED_RING_INIT(_s) do {                                       \
 +    (_s)->req_prod  = (_s)->rsp_prod  = 0;                              \
 +    (_s)->req_event = (_s)->rsp_event = 1;                              \
-+    (void)memset((_s)->pad, 0, sizeof((_s)->pad));                      \
++    (void)memset((_s)->private.pvt_pad, 0, sizeof((_s)->private.pvt_pad)); \
++    (void)memset((_s)->__pad, 0, sizeof((_s)->__pad));                  \
  } while(0)
  
 -#define FRONT_RING_INIT(_r, _s, __size) do {				\
@@ -4109,7 +4981,7 @@ Acked-by: jbeulich@novell.com
  } while (0)
  
  /*
-@@ -221,40 +265,40 @@ struct __name##_back_ring {						\
+@@ -228,40 +275,40 @@ struct __name##_back_ring {						\
   *  field appropriately.
   */
  
@@ -4178,108 +5050,18 @@ Acked-by: jbeulich@novell.com
  } while (0)
  
  #endif /* __XEN_PUBLIC_IO_RING_H__ */
---- head-2010-05-12.orig/include/xen/interface/io/xenbus.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/xenbus.h	2010-01-19 16:01:04.000000000 +0100
-@@ -3,42 +3,68 @@
-  *
-  * Xenbus protocol details.
-  *
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ *
-  * Copyright (C) 2005 XenSource Ltd.
-  */
+--- head-2011-03-17.orig/include/xen/interface/io/xenbus.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/xenbus.h	2011-01-31 15:14:12.000000000 +0100
+@@ -36,6 +36,7 @@ enum xenbus_state
  
- #ifndef _XEN_PUBLIC_IO_XENBUS_H
- #define _XEN_PUBLIC_IO_XENBUS_H
- 
--/* The state of either end of the Xenbus, i.e. the current communication
--   status of initialisation across the bus.  States here imply nothing about
--   the state of the connection between the driver and the kernel's device
--   layers.  */
--enum xenbus_state
--{
--	XenbusStateUnknown      = 0,
--	XenbusStateInitialising = 1,
--	XenbusStateInitWait     = 2,  /* Finished early
--					 initialisation, but waiting
--					 for information from the peer
--					 or hotplug scripts. */
--	XenbusStateInitialised  = 3,  /* Initialised and waiting for a
--					 connection from the peer. */
--	XenbusStateConnected    = 4,
--	XenbusStateClosing      = 5,  /* The device is being closed
--					 due to an error or an unplug
--					 event. */
--	XenbusStateClosed       = 6
-+/*
-+ * The state of either end of the Xenbus, i.e. the current communication
-+ * status of initialisation across the bus.  States here imply nothing about
-+ * the state of the connection between the driver and the kernel's device
-+ * layers.
-+ */
-+enum xenbus_state {
-+    XenbusStateUnknown       = 0,
-+
-+    XenbusStateInitialising  = 1,
-+
-+    /*
-+     * InitWait: Finished early initialisation but waiting for information
-+     * from the peer or hotplug scripts.
-+     */
-+    XenbusStateInitWait      = 2,
-+
-+    /*
-+     * Initialised: Waiting for a connection from the peer.
-+     */
-+    XenbusStateInitialised   = 3,
- 
-+    XenbusStateConnected     = 4,
-+
-+    /*
-+     * Closing: The device is being closed due to an error or an unplug event.
-+     */
-+    XenbusStateClosing       = 5,
-+
-+    XenbusStateClosed        = 6,
-+
-+    /*
-+     * Reconfiguring: The device is being reconfigured.
-+     */
-+    XenbusStateReconfiguring = 7,
-+
-+    XenbusStateReconfigured  = 8
+ 	XenbusStateReconfigured  = 8
  };
 +typedef enum xenbus_state XenbusState;
  
  #endif /* _XEN_PUBLIC_IO_XENBUS_H */
--
--/*
-- * Local variables:
-- *  c-file-style: "linux"
-- *  indent-tabs-mode: t
-- *  c-indent-level: 8
-- *  c-basic-offset: 8
-- *  tab-width: 8
-- * End:
-- */
---- head-2010-05-12.orig/include/xen/interface/io/xs_wire.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/io/xs_wire.h	2010-01-19 16:01:04.000000000 +0100
+ 
+--- head-2011-03-17.orig/include/xen/interface/io/xs_wire.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/io/xs_wire.h	2011-01-31 15:14:12.000000000 +0100
 @@ -1,6 +1,25 @@
  /*
   * Details of the "wire" protocol between Xen Store Daemon and client
@@ -4306,18 +5088,19 @@ Acked-by: jbeulich@novell.com
   * Copyright (C) 2005 Rusty Russell IBM Corporation
   */
  
-@@ -26,7 +45,9 @@ enum xsd_sockmsg_type
+@@ -26,7 +45,10 @@ enum xsd_sockmsg_type
      XS_SET_PERMS,
      XS_WATCH_EVENT,
      XS_ERROR,
 -    XS_IS_DOMAIN_INTRODUCED
 +    XS_IS_DOMAIN_INTRODUCED,
 +    XS_RESUME,
-+    XS_SET_TARGET
++    XS_SET_TARGET,
++    XS_RESTRICT
  };
  
  #define XS_WRITE_NONE "NONE"
-@@ -39,8 +60,14 @@ struct xsd_errors
+@@ -39,8 +61,14 @@ struct xsd_errors
      int errnum;
      const char *errstring;
  };
@@ -4333,7 +5116,7 @@ Acked-by: jbeulich@novell.com
      XSD_ERROR(EINVAL),
      XSD_ERROR(EACCES),
      XSD_ERROR(EEXIST),
-@@ -56,6 +83,7 @@ static struct xsd_errors xsd_errors[] __
+@@ -56,6 +84,7 @@ static struct xsd_errors xsd_errors[] __
      XSD_ERROR(EAGAIN),
      XSD_ERROR(EISCONN)
  };
@@ -4341,7 +5124,7 @@ Acked-by: jbeulich@novell.com
  
  struct xsd_sockmsg
  {
-@@ -84,4 +112,11 @@ struct xenstore_domain_interface {
+@@ -84,4 +113,11 @@ struct xenstore_domain_interface {
      XENSTORE_RING_IDX rsp_cons, rsp_prod;
  };
  
@@ -4353,9 +5136,9 @@ Acked-by: jbeulich@novell.com
 +#define XENSTORE_REL_PATH_MAX 2048
 +
  #endif /* _XS_WIRE_H */
---- head-2010-05-12.orig/include/xen/interface/memory.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/memory.h	2010-01-19 16:01:04.000000000 +0100
-@@ -3,20 +3,57 @@
+--- head-2011-03-17.orig/include/xen/interface/memory.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/memory.h	2011-01-31 15:14:12.000000000 +0100
+@@ -3,13 +3,31 @@
   *
   * Memory reservation and information.
   *
@@ -4383,15 +5166,12 @@ Acked-by: jbeulich@novell.com
  #ifndef __XEN_PUBLIC_MEMORY_H__
  #define __XEN_PUBLIC_MEMORY_H__
  
+-#include <linux/spinlock.h>
 +#include "xen.h"
-+
+ 
  /*
-- * Increase or decrease the specified domain's memory reservation. Returns a
-- * -ve errcode on failure, or the # extents successfully allocated or freed.
-+ * Increase or decrease the specified domain's memory reservation. Returns the
-+ * number of extents successfully allocated or freed.
-  * arg == addr of struct xen_memory_reservation.
-  */
+  * Increase or decrease the specified domain's memory reservation. Returns a
+@@ -19,6 +37,26 @@
  #define XENMEM_increase_reservation 0
  #define XENMEM_decrease_reservation 1
  #define XENMEM_populate_physmap     6
@@ -4410,12 +5190,15 @@ Acked-by: jbeulich@novell.com
 +#define XENMEMF_get_node(x) ((((x) >> 8) - 1) & 0xffu)
 +/* Flag to populate physmap with populate-on-demand entries */
 +#define XENMEMF_populate_on_demand (1<<16)
++/* Flag to request allocation only from the node specified */
++#define XENMEMF_exact_node_request  (1<<17)
++#define XENMEMF_exact_node(n) (XENMEMF_node(n) | XENMEMF_exact_node_request)
 +#endif
 +
  struct xen_memory_reservation {
  
      /*
-@@ -29,28 +66,70 @@ struct xen_memory_reservation {
+@@ -31,28 +69,27 @@ struct xen_memory_reservation {
       *   OUT: GMFN bases of extents that were allocated
       *   (NB. This command also updates the mach_to_phys translation table)
       */
@@ -4445,57 +5228,29 @@ Acked-by: jbeulich@novell.com
       * Unprivileged domains can specify only DOMID_SELF.
       */
      domid_t        domid;
-+};
+-
+ };
+-DEFINE_GUEST_HANDLE_STRUCT(xen_memory_reservation);
 +typedef struct xen_memory_reservation xen_memory_reservation_t;
 +DEFINE_XEN_GUEST_HANDLE(xen_memory_reservation_t);
  
-+/*
-+ * An atomic exchange of memory pages. If return code is zero then
-+ * @out.extent_list provides GMFNs of the newly-allocated memory.
-+ * Returns zero on complete success, otherwise a negative error code.
-+ * On complete success then always @nr_exchanged == @in.nr_extents.
-+ * On partial success @nr_exchanged indicates how much work was done.
-+ */
-+#define XENMEM_exchange             11
-+struct xen_memory_exchange {
-+    /*
-+     * [IN] Details of memory extents to be exchanged (GMFN bases).
-+     * Note that @in.address_bits is ignored and unused.
-+     */
-+    struct xen_memory_reservation in;
-+
-+    /*
-+     * [IN/OUT] Details of new memory extents.
-+     * We require that:
-+     *  1. @in.domid == @out.domid
-+     *  2. @in.nr_extents  << @in.extent_order ==
-+     *     @out.nr_extents << @out.extent_order
-+     *  3. @in.extent_start and @out.extent_start lists must not overlap
-+     *  4. @out.extent_start lists GPFN bases to be populated
-+     *  5. @out.extent_start is overwritten with allocated GMFN bases
-+     */
-+    struct xen_memory_reservation out;
-+
-+    /*
-+     * [OUT] Number of input extents that were successfully exchanged:
-+     *  1. The first @nr_exchanged input extents were successfully
-+     *     deallocated.
-+     *  2. The corresponding first entries in the output extent list correctly
-+     *     indicate the GMFNs that were successfully exchanged.
-+     *  3. All other input and output extents are untouched.
-+     *  4. If not all input exents are exchanged then the return code of this
-+     *     command will be non-zero.
-+     *  5. THIS FIELD MUST BE INITIALISED TO ZERO BY THE CALLER!
-+     */
+ /*
+  * An atomic exchange of memory pages. If return code is zero then
+@@ -92,10 +129,11 @@ struct xen_memory_exchange {
+      *     command will be non-zero.
+      *  5. THIS FIELD MUST BE INITIALISED TO ZERO BY THE CALLER!
+      */
+-    unsigned long nr_exchanged;
 +    xen_ulong_t nr_exchanged;
  };
--DEFINE_GUEST_HANDLE_STRUCT(xen_memory_reservation);
 +typedef struct xen_memory_exchange xen_memory_exchange_t;
 +DEFINE_XEN_GUEST_HANDLE(xen_memory_exchange_t);
  
+-DEFINE_GUEST_HANDLE_STRUCT(xen_memory_exchange);
  /*
   * Returns the maximum machine frame number of mapped RAM in this system.
-@@ -68,6 +147,11 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_memory_re
+  * This command always succeeds (it never returns an error code).
+@@ -112,6 +150,11 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_memory_ex
  #define XENMEM_maximum_reservation  4
  
  /*
@@ -4507,7 +5262,7 @@ Acked-by: jbeulich@novell.com
   * Returns a list of MFN bases of 2MB extents comprising the machine_to_phys
   * mapping table. Architectures which do not have a m2p table do not implement
   * this command.
-@@ -86,7 +170,7 @@ struct xen_machphys_mfn_list {
+@@ -130,7 +173,7 @@ struct xen_machphys_mfn_list {
       * any large discontiguities in the machine address space, 2MB gaps in
       * the machphys table will be represented by an MFN base of zero.
       */
@@ -4516,31 +5271,32 @@ Acked-by: jbeulich@novell.com
  
      /*
       * Number of extents written to the above array. This will be smaller
-@@ -94,7 +178,22 @@ struct xen_machphys_mfn_list {
+@@ -138,7 +181,8 @@ struct xen_machphys_mfn_list {
       */
      unsigned int nr_extents;
  };
 -DEFINE_GUEST_HANDLE_STRUCT(xen_machphys_mfn_list);
 +typedef struct xen_machphys_mfn_list xen_machphys_mfn_list_t;
 +DEFINE_XEN_GUEST_HANDLE(xen_machphys_mfn_list_t);
-+
-+/*
-+ * Returns the location in virtual address space of the machine_to_phys
-+ * mapping table. Architectures which do not have a m2p table, or which do not
-+ * map it by default into guest address space, do not implement this command.
-+ * arg == addr of xen_machphys_mapping_t.
-+ */
-+#define XENMEM_machphys_mapping     12
-+struct xen_machphys_mapping {
+ 
+ /*
+  * Returns the location in virtual address space of the machine_to_phys
+@@ -148,10 +192,11 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_machphys_
+  */
+ #define XENMEM_machphys_mapping     12
+ struct xen_machphys_mapping {
+-    unsigned long v_start, v_end; /* Start and end virtual addresses.   */
+-    unsigned long max_mfn;        /* Maximum MFN that can be looked up. */
 +    xen_ulong_t v_start, v_end; /* Start and end virtual addresses.   */
 +    xen_ulong_t max_mfn;        /* Maximum MFN that can be looked up. */
-+};
+ };
+-DEFINE_GUEST_HANDLE_STRUCT(xen_machphys_mapping_t);
 +typedef struct xen_machphys_mapping xen_machphys_mapping_t;
 +DEFINE_XEN_GUEST_HANDLE(xen_machphys_mapping_t);
  
  /*
   * Sets the GPFN at which a particular page appears in the specified guest's
-@@ -109,37 +208,84 @@ struct xen_add_to_physmap {
+@@ -166,38 +211,22 @@ struct xen_add_to_physmap {
      /* Source mapping space. */
  #define XENMAPSPACE_shared_info 0 /* shared info page */
  #define XENMAPSPACE_grant_table 1 /* grant table page */
@@ -4560,17 +5316,11 @@ Acked-by: jbeulich@novell.com
 -DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap);
 +typedef struct xen_add_to_physmap xen_add_to_physmap_t;
 +DEFINE_XEN_GUEST_HANDLE(xen_add_to_physmap_t);
-+
-+/*** REMOVED ***/
-+/*#define XENMEM_translate_gpfn_list  8*/
  
- /*
+-/*
 - * Translates a list of domain-specific GPFNs into MFNs. Returns a -ve error
 - * code on failure. This call only works for auto-translated guests.
-+ * Returns the pseudo-physical memory map as it was when the domain
-+ * was started (specified by XENMEM_set_memory_map).
-+ * arg == addr of xen_memory_map_t.
-  */
+- */
 -#define XENMEM_translate_gpfn_list  8
 -struct xen_translate_gpfn_list {
 -    /* Which domain to translate for? */
@@ -4581,34 +5331,36 @@ Acked-by: jbeulich@novell.com
 -
 -    /* List of GPFNs to translate. */
 -    GUEST_HANDLE(ulong) gpfn_list;
-+#define XENMEM_memory_map           9
-+struct xen_memory_map {
-+    /*
-+     * On call the number of entries which can be stored in buffer. On
-+     * return the number of entries which have been stored in
-+     * buffer.
-+     */
-+    unsigned int nr_entries;
- 
-     /*
+-
+-    /*
 -     * Output list to contain MFN translations. May be the same as the input
 -     * list (in which case each input GPFN is overwritten with the output MFN).
-+     * Entries in the buffer are in the same format as returned by the
-+     * BIOS INT 0x15 EAX=0xE820 call.
-      */
+-     */
 -    GUEST_HANDLE(ulong) mfn_list;
+-};
+-DEFINE_GUEST_HANDLE_STRUCT(xen_translate_gpfn_list);
++/*** REMOVED ***/
++/*#define XENMEM_translate_gpfn_list  8*/
+ 
+ /*
+  * Returns the pseudo-physical memory map as it was when the domain
+@@ -217,9 +246,10 @@ struct xen_memory_map {
+      * Entries in the buffer are in the same format as returned by the
+      * BIOS INT 0x15 EAX=0xE820 call.
+      */
+-    GUEST_HANDLE(void) buffer;
 +    XEN_GUEST_HANDLE(void) buffer;
-+};
+ };
+-DEFINE_GUEST_HANDLE_STRUCT(xen_memory_map);
 +typedef struct xen_memory_map xen_memory_map_t;
 +DEFINE_XEN_GUEST_HANDLE(xen_memory_map_t);
-+
-+/*
-+ * Returns the real physical memory map. Passes the same structure as
-+ * XENMEM_memory_map.
-+ * arg == addr of xen_memory_map_t.
-+ */
-+#define XENMEM_machine_memory_map   10
-+
+ 
+ /*
+  * Returns the real physical memory map. Passes the same structure as
+@@ -228,10 +258,37 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_memory_ma
+  */
+ #define XENMEM_machine_memory_map   10
+ 
 +/*
 + * Set the pseudo-physical memory map of a domain, as returned by
 + * XENMEM_memory_map.
@@ -4618,8 +5370,7 @@ Acked-by: jbeulich@novell.com
 +struct xen_foreign_memory_map {
 +    domid_t domid;
 +    struct xen_memory_map map;
- };
--DEFINE_GUEST_HANDLE_STRUCT(xen_translate_gpfn_list);
++};
 +typedef struct xen_foreign_memory_map xen_foreign_memory_map_t;
 +DEFINE_XEN_GUEST_HANDLE(xen_foreign_memory_map_t);
 +
@@ -4636,17 +5387,20 @@ Acked-by: jbeulich@novell.com
 +    domid_t domid;
 +};
 +typedef struct xen_pod_target xen_pod_target_t;
-+
-+/*
+ 
+ /*
+- * Prevent the balloon driver from changing the memory reservation
+- * during a driver critical region.
 + * Get the number of MFNs saved through memory sharing.
 + * The call never fails.
-+ */
+  */
+-extern spinlock_t xen_reservation_lock;
 +#define XENMEM_get_sharing_freed_pages    18
- 
++
  #endif /* __XEN_PUBLIC_MEMORY_H__ */
---- head-2010-05-12.orig/include/xen/interface/physdev.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/physdev.h	2010-01-19 16:01:04.000000000 +0100
-@@ -21,10 +21,12 @@
+--- head-2011-03-17.orig/include/xen/interface/physdev.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/physdev.h	2011-03-17 13:50:24.000000000 +0100
+@@ -21,6 +21,8 @@
  #ifndef __XEN_PUBLIC_PHYSDEV_H__
  #define __XEN_PUBLIC_PHYSDEV_H__
  
@@ -4655,23 +5409,10 @@ Acked-by: jbeulich@novell.com
  /*
   * Prototype for this hypercall is:
   *  int physdev_op(int cmd, void *args)
-- * @cmd	 == PHYSDEVOP_??? (physdev operation).
-+ * @cmd  == PHYSDEVOP_??? (physdev operation).
-  * @args == Operation-specific extra arguments (NULL if none).
-  */
- 
-@@ -32,114 +34,231 @@
-  * Notify end-of-interrupt (EOI) for the specified IRQ.
-  * @arg == pointer to physdev_eoi structure.
-  */
--#define PHYSDEVOP_eoi			12
-+#define PHYSDEVOP_eoi                   12
- struct physdev_eoi {
--	/* IN */
--	uint32_t irq;
-+    /* IN */
-+    uint32_t irq;
-+};
+@@ -37,6 +39,23 @@ struct physdev_eoi {
+ 	/* IN */
+ 	uint32_t irq;
+ };
 +typedef struct physdev_eoi physdev_eoi_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_eoi_t);
 +
@@ -4686,164 +5427,86 @@ Acked-by: jbeulich@novell.com
 +struct physdev_pirq_eoi_gmfn {
 +    /* IN */
 +    xen_pfn_t gmfn;
- };
++};
 +typedef struct physdev_pirq_eoi_gmfn physdev_pirq_eoi_gmfn_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_pirq_eoi_gmfn_t);
  
  /*
   * Query the status of an IRQ line.
-  * @arg == pointer to physdev_irq_status_query structure.
-  */
--#define PHYSDEVOP_irq_status_query	 5
-+#define PHYSDEVOP_irq_status_query       5
- struct physdev_irq_status_query {
--	/* IN */
--	uint32_t irq;
--	/* OUT */
--	uint32_t flags; /* XENIRQSTAT_* */
-+    /* IN */
-+    uint32_t irq;
-+    /* OUT */
-+    uint32_t flags; /* XENIRQSTAT_* */
+@@ -49,6 +68,8 @@ struct physdev_irq_status_query {
+ 	/* OUT */
+ 	uint32_t flags; /* XENIRQSTAT_* */
  };
 +typedef struct physdev_irq_status_query physdev_irq_status_query_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_irq_status_query_t);
  
  /* Need to call PHYSDEVOP_eoi when the IRQ has been serviced? */
--#define _XENIRQSTAT_needs_eoi	(0)
--#define	 XENIRQSTAT_needs_eoi	(1U<<_XENIRQSTAT_needs_eoi)
-+#define _XENIRQSTAT_needs_eoi   (0)
-+#define  XENIRQSTAT_needs_eoi   (1U<<_XENIRQSTAT_needs_eoi)
- 
- /* IRQ shared by multiple guests? */
--#define _XENIRQSTAT_shared	(1)
--#define	 XENIRQSTAT_shared	(1U<<_XENIRQSTAT_shared)
-+#define _XENIRQSTAT_shared      (1)
-+#define  XENIRQSTAT_shared      (1U<<_XENIRQSTAT_shared)
- 
- /*
-  * Set the current VCPU's I/O privilege level.
-  * @arg == pointer to physdev_set_iopl structure.
-  */
--#define PHYSDEVOP_set_iopl		 6
-+#define PHYSDEVOP_set_iopl               6
- struct physdev_set_iopl {
--	/* IN */
--	uint32_t iopl;
-+    /* IN */
-+    uint32_t iopl;
+ #define _XENIRQSTAT_needs_eoi	(0)
+@@ -67,6 +88,8 @@ struct physdev_set_iopl {
+ 	/* IN */
+ 	uint32_t iopl;
  };
 +typedef struct physdev_set_iopl physdev_set_iopl_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_set_iopl_t);
  
  /*
   * Set the current VCPU's I/O-port permissions bitmap.
-  * @arg == pointer to physdev_set_iobitmap structure.
-  */
--#define PHYSDEVOP_set_iobitmap		 7
-+#define PHYSDEVOP_set_iobitmap           7
+@@ -75,9 +98,15 @@ struct physdev_set_iopl {
+ #define PHYSDEVOP_set_iobitmap		 7
  struct physdev_set_iobitmap {
--	/* IN */
--	uint8_t * bitmap;
--	uint32_t nr_ports;
-+    /* IN */
+ 	/* IN */
 +#if __XEN_INTERFACE_VERSION__ >= 0x00030205
-+    XEN_GUEST_HANDLE(uint8) bitmap;
++	XEN_GUEST_HANDLE(uint8) bitmap;
 +#else
-+    uint8_t *bitmap;
+ 	uint8_t * bitmap;
 +#endif
-+    uint32_t nr_ports;
+ 	uint32_t nr_ports;
  };
 +typedef struct physdev_set_iobitmap physdev_set_iobitmap_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_set_iobitmap_t);
  
  /*
   * Read or write an IO-APIC register.
-  * @arg == pointer to physdev_apic structure.
-  */
--#define PHYSDEVOP_apic_read		 8
--#define PHYSDEVOP_apic_write		 9
-+#define PHYSDEVOP_apic_read              8
-+#define PHYSDEVOP_apic_write             9
- struct physdev_apic {
--	/* IN */
--	unsigned long apic_physbase;
--	uint32_t reg;
--	/* IN or OUT */
--	uint32_t value;
-+    /* IN */
-+    unsigned long apic_physbase;
-+    uint32_t reg;
-+    /* IN or OUT */
-+    uint32_t value;
+@@ -92,6 +121,8 @@ struct physdev_apic {
+ 	/* IN or OUT */
+ 	uint32_t value;
  };
 +typedef struct physdev_apic physdev_apic_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_apic_t);
  
  /*
   * Allocate or free a physical upcall vector for the specified IRQ line.
-  * @arg == pointer to physdev_irq structure.
-  */
--#define PHYSDEVOP_alloc_irq_vector	10
--#define PHYSDEVOP_free_irq_vector	11
-+#define PHYSDEVOP_alloc_irq_vector      10
-+#define PHYSDEVOP_free_irq_vector       11
- struct physdev_irq {
--	/* IN */
--	uint32_t irq;
--	/* IN or OUT */
--	uint32_t vector;
-+    /* IN */
-+    uint32_t irq;
-+    /* IN or OUT */
-+    uint32_t vector;
-+};
+@@ -105,6 +136,8 @@ struct physdev_irq {
+ 	/* IN or OUT */
+ 	uint32_t vector;
+ };
 +typedef struct physdev_irq physdev_irq_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_irq_t);
-+
-+#define MAP_PIRQ_TYPE_MSI               0x0
-+#define MAP_PIRQ_TYPE_GSI               0x1
-+#define MAP_PIRQ_TYPE_UNKNOWN           0x2
-+
-+#define PHYSDEVOP_map_pirq               13
-+struct physdev_map_pirq {
-+    domid_t domid;
-+    /* IN */
-+    int type;
-+    /* IN */
-+    int index;
-+    /* IN or OUT */
-+    int pirq;
-+    /* IN */
-+    int bus;
-+    /* IN */
-+    int devfn;
-+    /* IN */
-+    int entry_nr;
-+    /* IN */
-+    uint64_t table_base;
-+};
+ 
+ #define MAP_PIRQ_TYPE_MSI		0x0
+ #define MAP_PIRQ_TYPE_GSI		0x1
+@@ -128,6 +161,8 @@ struct physdev_map_pirq {
+     /* IN */
+     uint64_t table_base;
+ };
 +typedef struct physdev_map_pirq physdev_map_pirq_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_map_pirq_t);
-+
-+#define PHYSDEVOP_unmap_pirq             14
-+struct physdev_unmap_pirq {
-+    domid_t domid;
-+    /* IN */
-+    int pirq;
-+};
-+
+ 
+ #define PHYSDEVOP_unmap_pirq		14
+ struct physdev_unmap_pirq {
+@@ -135,6 +170,8 @@ struct physdev_unmap_pirq {
+     /* IN */
+     int pirq;
+ };
 +typedef struct physdev_unmap_pirq physdev_unmap_pirq_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_unmap_pirq_t);
-+
-+#define PHYSDEVOP_manage_pci_add         15
-+#define PHYSDEVOP_manage_pci_remove      16
-+struct physdev_manage_pci {
-+    /* IN */
-+    uint8_t bus;
-+    uint8_t devfn;
-+};
-+
+ 
+ #define PHYSDEVOP_manage_pci_add	15
+ #define PHYSDEVOP_manage_pci_remove	16
+@@ -143,6 +180,17 @@ struct physdev_manage_pci {
+ 	uint8_t bus;
+ 	uint8_t devfn;
+ };
 +typedef struct physdev_manage_pci physdev_manage_pci_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_manage_pci_t);
 +
@@ -4855,95 +5518,55 @@ Acked-by: jbeulich@novell.com
 +};
 +typedef struct physdev_restore_msi physdev_restore_msi_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_restore_msi_t);
-+
-+#define PHYSDEVOP_manage_pci_add_ext     20
-+struct physdev_manage_pci_ext {
-+    /* IN */
-+    uint8_t bus;
-+    uint8_t devfn;
-+    unsigned is_extfn;
-+    unsigned is_virtfn;
-+    struct {
-+        uint8_t bus;
-+        uint8_t devfn;
-+    } physfn;
- };
  
+ #define PHYSDEVOP_manage_pci_add_ext	20
+ struct physdev_manage_pci_ext {
+@@ -156,6 +204,8 @@ struct physdev_manage_pci_ext {
+ 		uint8_t devfn;
+ 	} physfn;
+ };
 +typedef struct physdev_manage_pci_ext physdev_manage_pci_ext_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_manage_pci_ext_t);
-+
+ 
  /*
   * Argument to physdev_op_compat() hypercall. Superceded by new physdev_op()
-  * hypercall since 0x00030202.
-  */
- struct physdev_op {
--	uint32_t cmd;
--	union {
--		struct physdev_irq_status_query	     irq_status_query;
--		struct physdev_set_iopl		     set_iopl;
--		struct physdev_set_iobitmap	     set_iobitmap;
--		struct physdev_apic		     apic_op;
--		struct physdev_irq		     irq_op;
--	} u;
-+    uint32_t cmd;
-+    union {
-+        struct physdev_irq_status_query      irq_status_query;
-+        struct physdev_set_iopl              set_iopl;
-+        struct physdev_set_iobitmap          set_iobitmap;
-+        struct physdev_apic                  apic_op;
-+        struct physdev_irq                   irq_op;
-+    } u;
-+};
+@@ -171,6 +221,8 @@ struct physdev_op {
+ 		struct physdev_irq		     irq_op;
+ 	} u;
+ };
 +typedef struct physdev_op physdev_op_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_op_t);
-+
-+#define PHYSDEVOP_setup_gsi    21
-+struct physdev_setup_gsi {
-+    int gsi;
-+    /* IN */
-+    uint8_t triggering;
-+    /* IN */
-+    uint8_t polarity;
-+    /* IN */
- };
  
+ #define PHYSDEVOP_setup_gsi    21
+ struct physdev_setup_gsi {
+@@ -181,12 +233,10 @@ struct physdev_setup_gsi {
+     uint8_t polarity;
+     /* IN */
+ };
 +typedef struct physdev_setup_gsi physdev_setup_gsi_t;
 +DEFINE_XEN_GUEST_HANDLE(physdev_setup_gsi_t);
+ 
+-#define PHYSDEVOP_get_nr_pirqs    22
+-struct physdev_nr_pirqs {
+-    /* OUT */
+-    uint32_t nr_pirqs;
+-};
++/* leave PHYSDEVOP 22 free */
+ 
+ /* type is MAP_PIRQ_TYPE_GSI or MAP_PIRQ_TYPE_MSI
+  * the hypercall returns a free pirq */
+@@ -198,6 +248,9 @@ struct physdev_get_free_pirq {
+     uint32_t pirq;
+ };
+ 
++typedef struct physdev_get_free_pirq physdev_get_free_pirq_t;
++DEFINE_XEN_GUEST_HANDLE(physdev_get_free_pirq_t);
 +
  /*
   * Notify that some PIRQ-bound event channels have been unmasked.
   * ** This command is obsolete since interface version 0x00030202 and is **
-- * ** unsupported by newer versions of Xen.				 **
-+ * ** unsupported by newer versions of Xen.                              **
-  */
--#define PHYSDEVOP_IRQ_UNMASK_NOTIFY	 4
-+#define PHYSDEVOP_IRQ_UNMASK_NOTIFY      4
- 
- /*
-  * These all-capitals physdev operation names are superceded by the new names
-  * (defined above) since interface version 0x00030202.
-  */
--#define PHYSDEVOP_IRQ_STATUS_QUERY	 PHYSDEVOP_irq_status_query
--#define PHYSDEVOP_SET_IOPL		 PHYSDEVOP_set_iopl
--#define PHYSDEVOP_SET_IOBITMAP		 PHYSDEVOP_set_iobitmap
--#define PHYSDEVOP_APIC_READ		 PHYSDEVOP_apic_read
--#define PHYSDEVOP_APIC_WRITE		 PHYSDEVOP_apic_write
--#define PHYSDEVOP_ASSIGN_VECTOR		 PHYSDEVOP_alloc_irq_vector
--#define PHYSDEVOP_FREE_VECTOR		 PHYSDEVOP_free_irq_vector
-+#define PHYSDEVOP_IRQ_STATUS_QUERY       PHYSDEVOP_irq_status_query
-+#define PHYSDEVOP_SET_IOPL               PHYSDEVOP_set_iopl
-+#define PHYSDEVOP_SET_IOBITMAP           PHYSDEVOP_set_iobitmap
-+#define PHYSDEVOP_APIC_READ              PHYSDEVOP_apic_read
-+#define PHYSDEVOP_APIC_WRITE             PHYSDEVOP_apic_write
-+#define PHYSDEVOP_ASSIGN_VECTOR          PHYSDEVOP_alloc_irq_vector
-+#define PHYSDEVOP_FREE_VECTOR            PHYSDEVOP_free_irq_vector
- #define PHYSDEVOP_IRQ_NEEDS_UNMASK_NOTIFY XENIRQSTAT_needs_eoi
--#define PHYSDEVOP_IRQ_SHARED		 XENIRQSTAT_shared
-+#define PHYSDEVOP_IRQ_SHARED             XENIRQSTAT_shared
- 
- #endif /* __XEN_PUBLIC_PHYSDEV_H__ */
---- head-2010-05-12.orig/include/xen/interface/sched.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/sched.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/sched.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/sched.h	2011-01-31 15:14:12.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Scheduler state interactions
@@ -5000,7 +5623,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * Poll a set of event-channel ports. Return when one or more are pending. An
-@@ -58,11 +77,26 @@ DEFINE_GUEST_HANDLE_STRUCT(sched_shutdow
+@@ -58,11 +77,49 @@ DEFINE_GUEST_HANDLE_STRUCT(sched_shutdow
   */
  #define SCHEDOP_poll        3
  struct sched_poll {
@@ -5026,11 +5649,41 @@ Acked-by: jbeulich@novell.com
 +};
 +typedef struct sched_remote_shutdown sched_remote_shutdown_t;
 +DEFINE_XEN_GUEST_HANDLE(sched_remote_shutdown_t);
++
++/*
++ * Latch a shutdown code, so that when the domain later shuts down it
++ * reports this code to the control tools.
++ * @arg == as for SCHEDOP_shutdown.
++ */
++#define SCHEDOP_shutdown_code 5
++
++/*
++ * Setup, poke and destroy a domain watchdog timer.
++ * @arg == pointer to sched_watchdog structure.
++ * With id == 0, setup a domain watchdog timer to cause domain shutdown
++ *               after timeout, returns watchdog id.
++ * With id != 0 and timeout == 0, destroy domain watchdog timer.
++ * With id != 0 and timeout != 0, poke watchdog timer and set new timeout.
++ */
++#define SCHEDOP_watchdog    6
++struct sched_watchdog {
++    uint32_t id;                /* watchdog ID */
++    uint32_t timeout;           /* timeout */
++};
++typedef struct sched_watchdog sched_watchdog_t;
++DEFINE_XEN_GUEST_HANDLE(sched_watchdog_t);
  
  /*
   * Reason codes for SCHEDOP_shutdown. These may be interpreted by control
---- head-2010-05-12.orig/include/xen/interface/vcpu.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/vcpu.h	2010-01-19 16:01:04.000000000 +0100
+@@ -73,5 +130,6 @@ DEFINE_GUEST_HANDLE_STRUCT(sched_poll);
+ #define SHUTDOWN_reboot     1  /* Clean up, kill, and then restart.          */
+ #define SHUTDOWN_suspend    2  /* Clean up, save suspend info, kill.         */
+ #define SHUTDOWN_crash      3  /* Tell controller we've crashed.             */
++#define SHUTDOWN_watchdog   4  /* Restart because watchdog time expired.     */
+ 
+ #endif /* __XEN_PUBLIC_SCHED_H__ */
+--- head-2011-03-17.orig/include/xen/interface/vcpu.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/vcpu.h	2011-03-17 13:50:24.000000000 +0100
 @@ -27,11 +27,13 @@
  #ifndef __XEN_PUBLIC_VCPU_H__
  #define __XEN_PUBLIC_VCPU_H__
@@ -5201,7 +5854,7 @@ Acked-by: jbeulich@novell.com
  
  /* Flags to VCPUOP_set_singleshot_timer. */
   /* Require the timeout to be in the future (return -ETIME if it's passed). */
-@@ -161,13 +169,65 @@ DEFINE_GUEST_HANDLE_STRUCT(vcpu_set_sing
+@@ -161,13 +169,62 @@ DEFINE_GUEST_HANDLE_STRUCT(vcpu_set_sing
   * structure in a convenient place, such as in a per-cpu data area.
   * The pointer need not be page aligned, but the structure must not
   * cross a page boundary.
@@ -5225,8 +5878,7 @@ Acked-by: jbeulich@novell.com
 +/*
 + * Get the physical ID information for a pinned vcpu's underlying physical
 + * processor.  The physical ID informmation is architecture-specific.
-+ * On x86: id[31:0]=apic_id, id[63:32]=acpi_id, and all values 0xff and
-+ *         greater are reserved.
++ * On x86: id[31:0]=apic_id, id[63:32]=acpi_id.
 + * This command returns -EINVAL if it is not a valid operation for this VCPU.
 + */
 +#define VCPUOP_get_physid           12 /* arg == vcpu_get_physid_t */
@@ -5235,10 +5887,8 @@ Acked-by: jbeulich@novell.com
 +};
 +typedef struct vcpu_get_physid vcpu_get_physid_t;
 +DEFINE_XEN_GUEST_HANDLE(vcpu_get_physid_t);
-+#define xen_vcpu_physid_to_x86_apicid(physid) \
-+    ((((uint32_t)(physid)) >= 0xff) ? 0xff : ((uint8_t)(physid)))
-+#define xen_vcpu_physid_to_x86_acpiid(physid) \
-+    ((((uint32_t)((physid)>>32)) >= 0xff) ? 0xff : ((uint8_t)((physid)>>32)))
++#define xen_vcpu_physid_to_x86_apicid(physid) ((uint32_t)(physid))
++#define xen_vcpu_physid_to_x86_acpiid(physid) ((uint32_t)((physid) >> 32))
 +
 +/*
 + * Register a memory location to get a secondary copy of the vcpu time
@@ -5269,8 +5919,8 @@ Acked-by: jbeulich@novell.com
 +DEFINE_XEN_GUEST_HANDLE(vcpu_register_time_memory_area_t);
  
  #endif /* __XEN_PUBLIC_VCPU_H__ */
---- head-2010-05-12.orig/include/xen/interface/version.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/version.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/interface/version.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/version.h	2011-01-31 15:14:12.000000000 +0100
 @@ -3,6 +3,24 @@
   *
   * Xen version, type, and compile information.
@@ -5365,8 +6015,8 @@ Acked-by: jbeulich@novell.com
 +typedef char xen_commandline_t[1024];
 +
  #endif /* __XEN_PUBLIC_VERSION_H__ */
---- head-2010-05-12.orig/include/xen/interface/xen.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/interface/xen.h	2010-05-07 11:10:48.000000000 +0200
+--- head-2011-03-17.orig/include/xen/interface/xen.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/interface/xen.h	2011-03-17 13:50:24.000000000 +0100
 @@ -3,35 +3,69 @@
   *
   * Guest OS interface to Xen.
@@ -5588,7 +6238,7 @@ Acked-by: jbeulich@novell.com
  #define MMU_PT_UPDATE_PRESERVE_AD 2 /* atomically: *ptr = val | (*ptr&(A|D)) */
  
  /*
-@@ -163,9 +245,20 @@
+@@ -163,9 +245,23 @@
   * cmd: MMUEXT_FLUSH_CACHE
   * No additional arguments. Writes back and flushes cache contents.
   *
@@ -5606,16 +6256,21 @@ Acked-by: jbeulich@novell.com
 + * cmd: MMUEXT_COPY_PAGE
 + * mfn: Machine frame number of the destination page.
 + * src_mfn: Machine frame number of the source page.
++ *
++ * cmd: MMUEXT_[UN]MARK_SUPER
++ * mfn: Machine frame number of head of superpage to be [un]marked.
   */
  #define MMUEXT_PIN_L1_TABLE      0
  #define MMUEXT_PIN_L2_TABLE      1
-@@ -182,24 +275,35 @@
+@@ -182,24 +278,37 @@
  #define MMUEXT_FLUSH_CACHE      12
  #define MMUEXT_SET_LDT          13
  #define MMUEXT_NEW_USER_BASEPTR 15
 +#define MMUEXT_CLEAR_PAGE       16
 +#define MMUEXT_COPY_PAGE        17
 +#define MMUEXT_FLUSH_CACHE_GLOBAL 18
++#define MMUEXT_MARK_SUPER       19
++#define MMUEXT_UNMARK_SUPER     20
  
  #ifndef __ASSEMBLY__
  struct mmuext_op {
@@ -5635,7 +6290,7 @@ Acked-by: jbeulich@novell.com
 +    unsigned int cmd;
 +    union {
 +        /* [UN]PIN_TABLE, NEW_BASEPTR, NEW_USER_BASEPTR
-+         * CLEAR_PAGE, COPY_PAGE */
++         * CLEAR_PAGE, COPY_PAGE, [UN]MARK_SUPER */
 +        xen_pfn_t     mfn;
 +        /* INVLPG_LOCAL, INVLPG_ALL, SET_LDT */
 +        unsigned long linear_addr;
@@ -5659,7 +6314,7 @@ Acked-by: jbeulich@novell.com
  #endif
  
  /* These are passed as 'flags' to update_va_mapping. They can be ORed. */
-@@ -224,11 +328,24 @@ DEFINE_GUEST_HANDLE_STRUCT(mmuext_op);
+@@ -224,11 +333,24 @@ DEFINE_GUEST_HANDLE_STRUCT(mmuext_op);
   */
  #define VMASST_CMD_enable                0
  #define VMASST_CMD_disable               1
@@ -5685,21 +6340,24 @@ Acked-by: jbeulich@novell.com
  
  #ifndef __ASSEMBLY__
  
-@@ -260,6 +377,13 @@ typedef uint16_t domid_t;
+@@ -260,6 +382,16 @@ typedef uint16_t domid_t;
  #define DOMID_XEN  (0x7FF2U)
  
  /*
 + * DOMID_COW is used as the owner of sharable pages */
 +#define DOMID_COW  (0x7FF3U)
 +
-+/* DOMID_INVALID is used to identity invalid domid */
-+#define DOMID_INVALID (0x7FFFU)
++/* DOMID_INVALID is used to identify pages with unknown owner. */
++#define DOMID_INVALID (0x7FF4U)
++
++/* Idle domain. */
++#define DOMID_IDLE (0x7FFFU)
 +
 +/*
   * Send an array of these to HYPERVISOR_mmu_update().
   * NB. The fields are natural pointer/address size for this architecture.
   */
-@@ -267,18 +391,19 @@ struct mmu_update {
+@@ -267,18 +399,19 @@ struct mmu_update {
      uint64_t ptr;       /* Machine address of PTE. */
      uint64_t val;       /* New contents of PTE.    */
  };
@@ -5723,7 +6381,7 @@ Acked-by: jbeulich@novell.com
  
  /*
   * Event channel endpoints per domain:
-@@ -287,173 +412,271 @@ DEFINE_GUEST_HANDLE_STRUCT(multicall_ent
+@@ -287,173 +420,274 @@ DEFINE_GUEST_HANDLE_STRUCT(multicall_ent
  #define NR_EVENT_CHANNELS (sizeof(unsigned long) * sizeof(unsigned long) * 64)
  
  struct vcpu_time_info {
@@ -6033,7 +6691,9 @@ Acked-by: jbeulich@novell.com
 +    unsigned long pt_base;      /* VIRTUAL address of page directory.     */
 +    unsigned long nr_pt_frames; /* Number of bootstrap p.t. frames.       */
 +    unsigned long mfn_list;     /* VIRTUAL address of page-frame list.    */
-+    unsigned long mod_start;    /* VIRTUAL address of pre-loaded module.  */
++    unsigned long mod_start;    /* VIRTUAL address of pre-loaded module   */
++                                /* (PFN of pre-loaded module if           */
++                                /*  SIF_MOD_START_PFN set in flags).      */
 +    unsigned long mod_len;      /* Size (bytes) of pre-loaded module.     */
 +    int8_t cmd_line[MAX_GUEST_CMDLINE];
 +    /* The pfn range here covers both page table and p->m table frames.   */
@@ -6052,9 +6712,9 @@ Acked-by: jbeulich@novell.com
  #define SIF_PRIVILEGED    (1<<0)  /* Is the domain privileged? */
  #define SIF_INITDOMAIN    (1<<1)  /* Is this the initial control domain? */
 +#define SIF_MULTIBOOT_MOD (1<<2)  /* Is mod_start a multiboot module? */
++#define SIF_MOD_START_PFN (1<<3)  /* Is mod_start a PFN? */
 +#define SIF_PM_MASK       (0xFF<<8) /* reserve 1 byte for xen-pm options */
- 
--typedef uint64_t cpumap_t;
++
 +/*
 + * A multiboot module is a package containing modules very similar to a
 + * multiboot module array. The only differences are:
@@ -6080,7 +6740,8 @@ Acked-by: jbeulich@novell.com
 +    /* Unused, must be zero */
 +    uint32_t pad;
 +};
-+
+ 
+-typedef uint64_t cpumap_t;
 +typedef struct dom0_vga_console_info {
 +    uint8_t video_type; /* DOM0_VGA_CONSOLE_??? */
 +#define XEN_VGATYPE_TEXT_MODE_3 0x03
@@ -6125,7 +6786,7 @@ Acked-by: jbeulich@novell.com
  
  typedef uint8_t xen_domain_handle_t[16];
  
-@@ -461,6 +684,11 @@ typedef uint8_t xen_domain_handle_t[16];
+@@ -461,6 +695,11 @@ typedef uint8_t xen_domain_handle_t[16];
  #define __mk_unsigned_long(x) x ## UL
  #define mk_unsigned_long(x) __mk_unsigned_long(x)
  
@@ -6137,23 +6798,32 @@ Acked-by: jbeulich@novell.com
  #else /* __ASSEMBLY__ */
  
  /* In assembly code we cannot use C numeric constant suffixes. */
-@@ -468,4 +696,14 @@ typedef uint8_t xen_domain_handle_t[16];
+@@ -468,4 +707,23 @@ typedef uint8_t xen_domain_handle_t[16];
  
  #endif /* !__ASSEMBLY__ */
  
 +/* Default definitions for macros used by domctl/sysctl. */
 +#if defined(__XEN__) || defined(__XEN_TOOLS__)
++
 +#ifndef uint64_aligned_t
 +#define uint64_aligned_t uint64_t
 +#endif
 +#ifndef XEN_GUEST_HANDLE_64
 +#define XEN_GUEST_HANDLE_64(name) XEN_GUEST_HANDLE(name)
 +#endif
++
++#ifndef __ASSEMBLY__
++struct xenctl_cpumap {
++    XEN_GUEST_HANDLE_64(uint8) bitmap;
++    uint32_t nr_cpus;
++};
 +#endif
 +
++#endif /* defined(__XEN__) || defined(__XEN_TOOLS__) */
++
  #endif /* __XEN_PUBLIC_XEN_H__ */
---- head-2010-05-12.orig/include/xen/xenbus.h	2010-05-12 08:55:24.000000000 +0200
-+++ head-2010-05-12/include/xen/xenbus.h	2010-01-19 16:01:04.000000000 +0100
+--- head-2011-03-17.orig/include/xen/xenbus.h	2011-03-17 13:45:28.000000000 +0100
++++ head-2011-03-17/include/xen/xenbus.h	2011-01-31 17:53:45.000000000 +0100
 @@ -39,7 +39,7 @@
  #include <linux/mutex.h>
  #include <linux/completion.h>
@@ -6181,7 +6851,7 @@ Acked-by: jbeulich@novell.com
  
  /* A xenbus device. */
  struct xenbus_device {
-@@ -92,7 +101,8 @@ struct xenbus_driver {
+@@ -92,9 +101,10 @@ struct xenbus_driver {
  	void (*otherend_changed)(struct xenbus_device *dev,
  				 enum xenbus_state backend_state);
  	int (*remove)(struct xenbus_device *dev);
@@ -6189,8 +6859,11 @@ Acked-by: jbeulich@novell.com
 +	int (*suspend)(struct xenbus_device *dev);
 +	int (*suspend_cancel)(struct xenbus_device *dev);
  	int (*resume)(struct xenbus_device *dev);
- 	int (*uevent)(struct xenbus_device *, char **, int, char *, int);
+-	int (*uevent)(struct xenbus_device *, struct kobj_uevent_env *);
++	int (*uevent)(struct xenbus_device *, char **, int, char *, int);
  	struct device_driver driver;
+ 	int (*read_otherend_details)(struct xenbus_device *dev);
+ 	int (*is_ready)(struct xenbus_device *dev);
 @@ -105,27 +115,8 @@ static inline struct xenbus_driver *to_x
  	return container_of(drv, struct xenbus_driver, driver);
  }

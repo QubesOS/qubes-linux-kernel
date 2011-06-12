@@ -1,5 +1,5 @@
 Subject: xen3 xen-drivers
-From: http://xenbits.xensource.com/linux-2.6.18-xen.hg (tip 1017:948c933f8839)
+From: http://xenbits.xensource.com/linux-2.6.18-xen.hg (tip 1073:8fe973d8fb98)
 Patch-mainline: n/a
 Acked-by: jbeulich@novell.com
 
@@ -12,12 +12,12 @@ and in case upstream wants to take the forward porting patches:
 2.6.31/drivers/xen/evtchn/evtchn.c
 
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/balloon/Makefile	2007-06-12 13:13:44.000000000 +0200
++++ b/drivers/xen/balloon/Makefile	2007-06-12 13:13:44.000000000 +0200
 @@ -0,0 +1,2 @@
 +
 +obj-y := balloon.o sysfs.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/balloon/balloon.c	2010-03-31 09:56:02.000000000 +0200
++++ b/drivers/xen/balloon/balloon.c	2010-03-31 09:56:02.000000000 +0200
 @@ -0,0 +1,757 @@
 +/******************************************************************************
 + * balloon.c
@@ -777,7 +777,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/balloon/common.h	2009-06-09 15:01:37.000000000 +0200
++++ b/drivers/xen/balloon/common.h	2009-06-09 15:01:37.000000000 +0200
 @@ -0,0 +1,56 @@
 +/******************************************************************************
 + * balloon/common.h
@@ -836,7 +836,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __XEN_BALLOON_COMMON_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/balloon/sysfs.c	2009-06-09 15:01:37.000000000 +0200
++++ b/drivers/xen/balloon/sysfs.c	2009-06-09 15:01:37.000000000 +0200
 @@ -0,0 +1,167 @@
 +/******************************************************************************
 + * balloon/sysfs.c
@@ -1006,15 +1006,15 @@ and in case upstream wants to take the forward porting patches:
 +	unregister_balloon(&balloon_sysdev);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/Makefile	2009-06-09 15:01:37.000000000 +0200
++++ b/drivers/xen/blkback/Makefile	2009-06-09 15:01:37.000000000 +0200
 @@ -0,0 +1,4 @@
 +obj-$(CONFIG_XEN_BLKDEV_BACKEND) := blkbk.o
 +obj-$(CONFIG_XEN_BLKBACK_PAGEMAP) += blkback-pagemap.o
 +
 +blkbk-y	:= blkback.o xenbus.o interface.o vbd.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/blkback.c	2010-03-22 12:00:53.000000000 +0100
-@@ -0,0 +1,703 @@
++++ b/drivers/xen/blkback/blkback.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,672 @@
 +/******************************************************************************
 + * arch/xen/drivers/blkif/backend/main.c
 + * 
@@ -1124,7 +1124,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +
 +static int do_block_io_op(blkif_t *blkif);
-+static int dispatch_rw_block_io(blkif_t *blkif,
++static void dispatch_rw_block_io(blkif_t *blkif,
 +				 blkif_request_t *req,
 +				 pending_req_t *pending_req);
 +static void make_response(blkif_t *blkif, u64 id,
@@ -1329,13 +1329,13 @@ and in case upstream wants to take the forward porting patches:
 +	blkif_request_t req;
 +	pending_req_t *pending_req;
 +	RING_IDX rc, rp;
-+	int more_to_do = 0, ret;
++	int more_to_do = 0;
 +
 +	rc = blk_rings->common.req_cons;
 +	rp = blk_rings->common.sring->req_prod;
 +	rmb(); /* Ensure we see queued requests up to 'rp'. */
 +
-+	while ((rc != rp) || (blkif->is_suspended_req)) {
++	while ((rc != rp)) {
 +
 +		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
 +			break;
@@ -1351,14 +1351,6 @@ and in case upstream wants to take the forward porting patches:
 +			more_to_do = 1;
 +			break;
 +		}
-+
-+        /* Handle the suspended request first, if one exists */
-+        if(blkif->is_suspended_req)
-+        {
-+            memcpy(&req, &blkif->suspended_req, sizeof(req));
-+            blkif->is_suspended_req = 0;
-+            goto handle_request;
-+        }
 +
 +		switch (blkif->blk_protocol) {
 +		case BLKIF_PROTOCOL_NATIVE:
@@ -1378,19 +1370,17 @@ and in case upstream wants to take the forward porting patches:
 +		/* Apply all sanity checks to /private copy/ of request. */
 +		barrier();
 +
-+handle_request:
-+        ret = 0;
 +		switch (req.operation) {
 +		case BLKIF_OP_READ:
 +			blkif->st_rd_req++;
-+			ret = dispatch_rw_block_io(blkif, &req, pending_req); 
++			dispatch_rw_block_io(blkif, &req, pending_req);
 +			break;
 +		case BLKIF_OP_WRITE_BARRIER:
 +			blkif->st_br_req++;
 +			/* fall through */
 +		case BLKIF_OP_WRITE:
 +			blkif->st_wr_req++;
-+			ret = dispatch_rw_block_io(blkif, &req, pending_req);
++			dispatch_rw_block_io(blkif, &req, pending_req);
 +			break;
 +		default:
 +			/* A good sign something is wrong: sleep for a while to
@@ -1403,17 +1393,6 @@ and in case upstream wants to take the forward porting patches:
 +			free_req(pending_req);
 +			break;
 +		}
-+        BUG_ON(ret != 0 && ret != -EAGAIN);
-+        /* If we can't handle the request at the moment, save it, and break the
-+         * loop */ 
-+        if(ret == -EAGAIN)
-+        {
-+            memcpy(&blkif->suspended_req, &req, sizeof(req));
-+            blkif->is_suspended_req = 1;
-+            /* Return "no more work pending", restart will be handled 'out of
-+             * band' */
-+            return 0;
-+        }
 +
 +		/* Yield point for this unbounded loop. */
 +		cond_resched();
@@ -1422,7 +1401,7 @@ and in case upstream wants to take the forward porting patches:
 +	return more_to_do;
 +}
 +
-+static int dispatch_rw_block_io(blkif_t *blkif,
++static void dispatch_rw_block_io(blkif_t *blkif,
 +				 blkif_request_t *req,
 +				 pending_req_t *pending_req)
 +{
@@ -1491,15 +1470,13 @@ and in case upstream wants to take the forward porting patches:
 +	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map, nseg);
 +	BUG_ON(ret);
 +
-+#define GENERAL_ERR   (1<<0)
-+#define EAGAIN_ERR    (1<<1)
 +	for (i = 0; i < nseg; i++) {
-+		if (unlikely(map[i].status != 0)) {
++		if (unlikely(map[i].status == GNTST_eagain))
++			gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &map[i])
++		if (unlikely(map[i].status != GNTST_okay)) {
 +			DPRINTK("invalid buffer -- could not remap it\n");
 +			map[i].handle = BLKBACK_INVALID_HANDLE;
-+			ret |= GENERAL_ERR;
-+            if(map[i].status == GNTST_eagain)
-+			    ret |= EAGAIN_ERR;
++			ret = 1;
 +		} else {
 +			blkback_pagemap_set(vaddr_pagenr(pending_req, i),
 +					    pending_page(pending_req, i),
@@ -1518,14 +1495,6 @@ and in case upstream wants to take the forward porting patches:
 +		seg[i].buf  = map[i].dev_bus_addr | 
 +			(req->seg[i].first_sect << 9);
 +	}
-+
-+    /* If any of grant maps failed with GNTST_eagain, suspend and retry later */
-+    if(ret & EAGAIN_ERR)
-+    {
-+        fast_flush_area(pending_req);
-+        free_req(pending_req);
-+        return -EAGAIN;
-+    }
 +
 +	if (ret)
 +		goto fail_flush;
@@ -1592,7 +1561,7 @@ and in case upstream wants to take the forward porting patches:
 +	else if (operation == WRITE || operation == WRITE_BARRIER)
 +		blkif->st_wr_sect += preq.nr_sects;
 +
-+	return 0;
++	return;
 +
 + fail_flush:
 +	fast_flush_area(pending_req);
@@ -1600,7 +1569,7 @@ and in case upstream wants to take the forward porting patches:
 +	make_response(blkif, req->id, req->operation, BLKIF_RSP_ERROR);
 +	free_req(pending_req);
 +	msleep(1); /* back off a bit */
-+	return 0;
++	return;
 +
 + fail_put_bio:
 +	__end_block_io_op(pending_req, -EINVAL);
@@ -1608,7 +1577,7 @@ and in case upstream wants to take the forward porting patches:
 +		bio_put(bio);
 +	unplug_queue(blkif);
 +	msleep(1); /* back off a bit */
-+	return 0;
++	return;
 +}
 +
 +
@@ -1719,7 +1688,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/blkback-pagemap.c	2009-06-09 15:01:37.000000000 +0200
++++ b/drivers/xen/blkback/blkback-pagemap.c	2009-06-09 15:01:37.000000000 +0200
 @@ -0,0 +1,96 @@
 +#include <linux/module.h>
 +#include "blkback-pagemap.h"
@@ -1818,7 +1787,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/blkback-pagemap.h	2009-06-09 15:01:37.000000000 +0200
++++ b/drivers/xen/blkback/blkback-pagemap.h	2009-06-09 15:01:37.000000000 +0200
 @@ -0,0 +1,37 @@
 +#ifndef _BLKBACK_PAGEMAP_H_
 +#define _BLKBACK_PAGEMAP_H_
@@ -1858,8 +1827,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/common.h	2010-03-22 12:00:53.000000000 +0100
-@@ -0,0 +1,155 @@
++++ b/drivers/xen/blkback/common.h	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,153 @@
 +/* 
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License version 2
@@ -1945,8 +1914,6 @@ and in case upstream wants to take the forward porting patches:
 +	struct task_struct  *xenblkd;
 +	unsigned int        waiting_reqs;
 +	request_queue_t     *plug;
-+    int                 is_suspended_req;
-+    blkif_request_t     suspended_req;
 +
 +	/* statistics */
 +	unsigned long       st_print;
@@ -2016,8 +1983,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __BLKIF__BACKEND__COMMON_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/interface.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,185 @@
++++ b/drivers/xen/blkback/interface.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,183 @@
 +/******************************************************************************
 + * arch/xen/drivers/blkif/backend/interface.c
 + * 
@@ -2079,25 +2046,23 @@ and in case upstream wants to take the forward porting patches:
 +static int map_frontend_page(blkif_t *blkif, unsigned long shared_page)
 +{
 +	struct gnttab_map_grant_ref op;
++	int ret;
 +
 +	gnttab_set_map_op(&op, (unsigned long)blkif->blk_ring_area->addr,
 +			  GNTMAP_host_map, shared_page, blkif->domid);
 +
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(100);
-+    } while(op.status == GNTST_eagain);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+	if (op.status) {
-+		DPRINTK(" Grant table operation failure !\n");
-+		return op.status;
++	if (op.status == GNTST_okay) {
++		blkif->shmem_ref = shared_page;
++		blkif->shmem_handle = op.handle;
++		ret = 0;
++	} else {
++		DPRINTK(" Grant table operation failure %d!\n", (int)op.status);
++		ret = -EINVAL;
 +	}
 +
-+	blkif->shmem_ref = shared_page;
-+	blkif->shmem_handle = op.handle;
-+
-+	return 0;
++	return ret;
 +}
 +
 +static void unmap_frontend_page(blkif_t *blkif)
@@ -2204,7 +2169,7 @@ and in case upstream wants to take the forward porting patches:
 +					 0, 0, NULL, NULL);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/vbd.c	2010-03-22 12:00:53.000000000 +0100
++++ b/drivers/xen/blkback/vbd.c	2010-03-22 12:00:53.000000000 +0100
 @@ -0,0 +1,161 @@
 +/******************************************************************************
 + * blkback/vbd.c
@@ -2368,8 +2333,8 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_transaction_end(xbt, 1);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkback/xenbus.c	2010-03-22 12:00:53.000000000 +0100
-@@ -0,0 +1,551 @@
++++ b/drivers/xen/blkback/xenbus.c	2010-11-25 09:36:37.000000000 +0100
+@@ -0,0 +1,557 @@
 +/*  Xenbus code for blkif backend
 +    Copyright (C) 2005 Rusty Russell <rusty@rustcorp.com.au>
 +    Copyright (C) 2005 XenSource Ltd
@@ -2752,6 +2717,11 @@ and in case upstream wants to take the forward porting patches:
 +		if (dev->state == XenbusStateConnected)
 +			break;
 +
++		/* Enforce precondition before potential leak point.
++		 * blkif_disconnect() is idempotent.
++		 */
++		blkif_disconnect(be->blkif);
++
 +		err = connect_ring(be);
 +		if (err)
 +			break;
@@ -2769,6 +2739,7 @@ and in case upstream wants to take the forward porting patches:
 +			break;
 +		/* fall through if not online */
 +	case XenbusStateUnknown:
++		/* implies blkif_disconnect() via blkback_remove() */
 +		device_unregister(&dev->dev);
 +		break;
 +
@@ -2922,7 +2893,7 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_register_backend(&blkback);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkfront/Makefile	2007-06-12 13:13:44.000000000 +0200
++++ b/drivers/xen/blkfront/Makefile	2007-06-12 13:13:44.000000000 +0200
 @@ -0,0 +1,5 @@
 +
 +obj-$(CONFIG_XEN_BLKDEV_FRONTEND)	:= xenblk.o
@@ -2930,8 +2901,8 @@ and in case upstream wants to take the forward porting patches:
 +xenblk-objs := blkfront.o vbd.o
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkfront/blkfront.c	2010-03-22 12:00:53.000000000 +0100
-@@ -0,0 +1,957 @@
++++ b/drivers/xen/blkfront/blkfront.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,967 @@
 +/******************************************************************************
 + * blkfront.c
 + * 
@@ -3466,6 +3437,7 @@ and in case upstream wants to take the forward porting patches:
 +int blkif_ioctl(struct inode *inode, struct file *filep,
 +		unsigned command, unsigned long argument)
 +{
++	struct blkfront_info *info = inode->i_bdev->bd_disk->private_data;
 +	int i;
 +
 +	DPRINTK_IOCTL("command: 0x%x, argument: 0x%lx, dev: 0x%04x\n",
@@ -3501,14 +3473,23 @@ and in case upstream wants to take the forward porting patches:
 +		return 0;
 +
 +	case CDROM_GET_CAPABILITY: {
-+		struct blkfront_info *info =
-+			inode->i_bdev->bd_disk->private_data;
 +		struct gendisk *gd = info->gd;
 +		if (gd->flags & GENHD_FL_CD)
 +			return 0;
 +		return -EINVAL;
 +	}
 +	default:
++		if (info->mi && info->gd) {
++			switch (info->mi->major) {
++			case SCSI_DISK0_MAJOR:
++			case SCSI_DISK1_MAJOR ... SCSI_DISK7_MAJOR:
++		        case SCSI_DISK8_MAJOR ... SCSI_DISK15_MAJOR:
++		        case SCSI_CDROM_MAJOR:
++				return scsi_cmd_ioctl(filep, info->gd, command,
++						      (void __user *)argument);
++			}
++		}
++
 +		/*printk(KERN_ALERT "ioctl %08x not supported by Xen blkdev\n",
 +		  command);*/
 +		return -EINVAL; /* same return as native Linux */
@@ -3890,7 +3871,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkfront/block.h	2010-02-24 13:13:46.000000000 +0100
++++ b/drivers/xen/blkfront/block.h	2010-02-24 13:13:46.000000000 +0100
 @@ -0,0 +1,160 @@
 +/******************************************************************************
 + * block.h
@@ -4053,7 +4034,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __XEN_DRIVERS_BLOCK_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blkfront/vbd.c	2010-01-18 15:23:12.000000000 +0100
++++ b/drivers/xen/blkfront/vbd.c	2010-01-18 15:23:12.000000000 +0100
 @@ -0,0 +1,553 @@
 +/******************************************************************************
 + * vbd.c
@@ -4609,7 +4590,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* CONFIG_SYSFS */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap/Makefile	2007-06-12 13:13:44.000000000 +0200
++++ b/drivers/xen/blktap/Makefile	2007-06-12 13:13:44.000000000 +0200
 @@ -0,0 +1,5 @@
 +LINUXINCLUDE += -I../xen/include/public/io
 +
@@ -4617,8 +4598,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +xenblktap-y := xenbus.o interface.o blktap.o 
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap/blktap.c	2010-04-29 09:34:47.000000000 +0200
-@@ -0,0 +1,1779 @@
++++ b/drivers/xen/blktap/blktap.c	2011-02-17 09:58:10.000000000 +0100
+@@ -0,0 +1,1761 @@
 +/******************************************************************************
 + * drivers/xen/blktap/blktap.c
 + * 
@@ -4699,7 +4680,6 @@ and in case upstream wants to take the forward porting patches:
 +        (_start +                                                       \
 +         ((_req) * BLKIF_MAX_SEGMENTS_PER_REQUEST * PAGE_SIZE) +        \
 +         ((_seg) * PAGE_SIZE))
-+static int blkif_reqs = MAX_PENDING_REQS;
 +static int mmap_pages = MMAP_PAGES;
 +
 +#define RING_PAGES 1 /* BLKTAP - immediately before the mmap area, we
@@ -4733,7 +4713,9 @@ and in case upstream wants to take the forward porting patches:
 +	pid_t pid;                    /*tapdisk process id                   */
 +	enum { RUNNING, CLEANSHUTDOWN } status; /*Detect a clean userspace 
 +						  shutdown                   */
-+	unsigned long *idx_map;       /*Record the user ring id to kern 
++	struct idx_map {
++		u16 mem, req;
++	} *idx_map;                   /*Record the user ring id to kern
 +					[req id, idx] tuple                  */
 +	blkif_t *blkif;               /*Associate blkif with tapdev          */
 +	struct domid_translate_ext trans; /*Translation from domid to bus.   */
@@ -4743,7 +4725,6 @@ and in case upstream wants to take the forward porting patches:
 +static struct tap_blkif *tapfds[MAX_TAP_DEV];
 +static int blktap_next_minor;
 +
-+module_param(blkif_reqs, int, 0);
 +/* Run-time switchable: /sys/module/blktap/parameters/ */
 +static unsigned int log_stats = 0;
 +static unsigned int debug_lvl = 0;
@@ -4773,12 +4754,6 @@ and in case upstream wants to take the forward porting patches:
 +static DEFINE_SPINLOCK(pending_free_lock);
 +static DECLARE_WAIT_QUEUE_HEAD (pending_free_wq);
 +static int alloc_pending_reqs;
-+
-+typedef unsigned int PEND_RING_IDX;
-+
-+static inline int MASK_PEND_IDX(int i) { 
-+	return (i & (MAX_PENDING_REQS-1));
-+}
 +
 +static inline unsigned int RTN_PEND_IDX(pending_req_t *req, int idx) {
 +	return (req - pending_reqs[idx]);
@@ -4869,40 +4844,26 @@ and in case upstream wants to take the forward porting patches:
 + * ring ID. 
 + */
 +
-+static inline unsigned long MAKE_ID(domid_t fe_dom, PEND_RING_IDX idx)
-+{
-+        return ((fe_dom << 16) | MASK_PEND_IDX(idx));
-+}
-+
-+extern inline PEND_RING_IDX ID_TO_IDX(unsigned long id)
-+{
-+        return (PEND_RING_IDX)(id & 0x0000ffff);
-+}
-+
-+extern inline int ID_TO_MIDX(unsigned long id)
-+{
-+        return (int)(id >> 16);
-+}
-+
-+#define INVALID_REQ 0xdead0000
++#define INVALID_MIDX 0xdead
 +
 +/*TODO: Convert to a free list*/
-+static inline int GET_NEXT_REQ(unsigned long *idx_map)
++static inline unsigned int GET_NEXT_REQ(const struct idx_map *idx_map)
 +{
-+	int i;
-+	for (i = 0; i < MAX_PENDING_REQS; i++)
-+		if (idx_map[i] == INVALID_REQ)
-+			return i;
++	unsigned int i;
 +
-+	return INVALID_REQ;
++	for (i = 0; i < MAX_PENDING_REQS; i++)
++		if (idx_map[i].mem == INVALID_MIDX)
++			break;
++
++	return i;
 +}
 +
-+static inline int OFFSET_TO_USR_IDX(int offset)
++static inline unsigned int OFFSET_TO_USR_IDX(unsigned long offset)
 +{
 +	return offset / BLKIF_MAX_SEGMENTS_PER_REQUEST;
 +}
 +
-+static inline int OFFSET_TO_SEG(int offset)
++static inline unsigned int OFFSET_TO_SEG(unsigned long offset)
 +{
 +	return offset % BLKIF_MAX_SEGMENTS_PER_REQUEST;
 +}
@@ -4939,13 +4900,11 @@ and in case upstream wants to take the forward porting patches:
 +{
 +	pte_t copy;
 +	tap_blkif_t *info = NULL;
-+	int offset, seg, usr_idx, pending_idx, mmap_idx;
-+	unsigned long uvstart = 0;
-+	unsigned long kvaddr;
++	unsigned int seg, usr_idx, pending_idx, mmap_idx, count = 0;
++	unsigned long offset, uvstart = 0;
 +	struct page *pg;
 +	struct grant_handle_pair *khandle;
 +	struct gnttab_unmap_grant_ref unmap[2];
-+	int count = 0;
 +
 +	/*
 +	 * If the address is before the start of the grant mapped region or
@@ -4963,14 +4922,13 @@ and in case upstream wants to take the forward porting patches:
 +	BUG_ON(!info);
 +	BUG_ON(!info->idx_map);
 +
-+	offset = (int) ((uvaddr - uvstart) >> PAGE_SHIFT);
++	offset = (uvaddr - uvstart) >> PAGE_SHIFT;
 +	usr_idx = OFFSET_TO_USR_IDX(offset);
 +	seg = OFFSET_TO_SEG(offset);
 +
-+	pending_idx = MASK_PEND_IDX(ID_TO_IDX(info->idx_map[usr_idx]));
-+	mmap_idx = ID_TO_MIDX(info->idx_map[usr_idx]);
++	pending_idx = info->idx_map[usr_idx].req;
++	mmap_idx = info->idx_map[usr_idx].mem;
 +
-+	kvaddr = idx_to_kaddr(mmap_idx, pending_idx, seg);
 +	pg = idx_to_page(mmap_idx, pending_idx, seg);
 +	ClearPageReserved(pg);
 +	info->foreign_map.map[offset + RING_PAGES] = NULL;
@@ -4978,12 +4936,14 @@ and in case upstream wants to take the forward porting patches:
 +	khandle = &pending_handle(mmap_idx, pending_idx, seg);
 +
 +	if (khandle->kernel != INVALID_GRANT_HANDLE) {
-+		gnttab_set_unmap_op(&unmap[count], kvaddr, 
++		unsigned long pfn = page_to_pfn(pg);
++
++		gnttab_set_unmap_op(&unmap[count],
++				    (unsigned long)pfn_to_kaddr(pfn),
 +				    GNTMAP_host_map, khandle->kernel);
 +		count++;
 +
-+		set_phys_to_machine(__pa(kvaddr) >> PAGE_SHIFT, 
-+				    INVALID_P2M_ENTRY);
++		set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
 +	}
 +
 +	if (khandle->user != INVALID_GRANT_HANDLE) {
@@ -5242,7 +5202,7 @@ and in case upstream wants to take the forward porting patches:
 +	filp->private_data = info;
 +	info->mm = NULL;
 +
-+	info->idx_map = kmalloc(sizeof(unsigned long) * MAX_PENDING_REQS, 
++	info->idx_map = kmalloc(sizeof(*info->idx_map) * MAX_PENDING_REQS,
 +				GFP_KERNEL);
 +	
 +	if (info->idx_map == NULL)
@@ -5250,8 +5210,10 @@ and in case upstream wants to take the forward porting patches:
 +
 +	if (idx > 0) {
 +		init_waitqueue_head(&info->wait);
-+		for (i = 0; i < MAX_PENDING_REQS; i++) 
-+			info->idx_map[i] = INVALID_REQ;
++		for (i = 0; i < MAX_PENDING_REQS; i++) {
++			info->idx_map[i].mem = INVALID_MIDX;
++			info->idx_map[i].req = ~0;
++		}
 +	}
 +
 +	DPRINTK("Tap open: device /dev/xen/blktap%d\n",idx);
@@ -5508,11 +5470,9 @@ and in case upstream wants to take the forward porting patches:
 +		return blktap_major;
 +
 +	case BLKTAP_QUERY_ALLOC_REQS:
-+	{
-+		WPRINTK("BLKTAP_QUERY_ALLOC_REQS ioctl: %d/%d\n",
-+		       alloc_pending_reqs, blkif_reqs);
-+		return (alloc_pending_reqs/blkif_reqs) * 100;
-+	}
++		WPRINTK("BLKTAP_QUERY_ALLOC_REQS ioctl: %d/%lu\n",
++			alloc_pending_reqs, MAX_PENDING_REQS);
++		return (alloc_pending_reqs/MAX_PENDING_REQS) * 100;
 +	}
 +	return -ENOIOCTLCMD;
 +}
@@ -5567,14 +5527,14 @@ and in case upstream wants to take the forward porting patches:
 +		return -EINVAL;
 +
 +	pending_reqs[mmap_alloc]  = kzalloc(sizeof(pending_req_t)
-+					    * blkif_reqs, GFP_KERNEL);
++					    * MAX_PENDING_REQS, GFP_KERNEL);
 +	foreign_pages[mmap_alloc] = alloc_empty_pages_and_pagevec(mmap_pages);
 +
 +	if (!pending_reqs[mmap_alloc] || !foreign_pages[mmap_alloc])
 +		goto out_of_memory;
 +
-+	DPRINTK("%s: reqs=%d, pages=%d\n",
-+		__FUNCTION__, blkif_reqs, mmap_pages);
++	DPRINTK("%s: reqs=%lu, pages=%d\n",
++		__FUNCTION__, MAX_PENDING_REQS, mmap_pages);
 +
 +	for (i = 0; i < MAX_PENDING_REQS; i++) {
 +		list_add_tail(&pending_reqs[mmap_alloc][i].free_list, 
@@ -5674,14 +5634,14 @@ and in case upstream wants to take the forward porting patches:
 +	}
 +}
 +
-+static void fast_flush_area(pending_req_t *req, int k_idx, int u_idx,
-+			    int tapidx)
++static void fast_flush_area(pending_req_t *req, unsigned int k_idx,
++			     unsigned int u_idx, int tapidx)
 +{
 +	struct gnttab_unmap_grant_ref unmap[BLKIF_MAX_SEGMENTS_PER_REQUEST*2];
-+	unsigned int i, invcount = 0, locked = 0;
++	unsigned int i, mmap_idx, invcount = 0, locked = 0;
 +	struct grant_handle_pair *khandle;
 +	uint64_t ptep;
-+	int ret, mmap_idx;
++	int ret;
 +	unsigned long uvaddr;
 +	tap_blkif_t *info;
 +	struct mm_struct *mm;
@@ -5836,7 +5796,7 @@ and in case upstream wants to take the forward porting patches:
 +	RING_IDX i, j, rp;
 +	blkif_response_t *resp;
 +	blkif_t *blkif=NULL;
-+	int pending_idx, usr_idx, mmap_idx;
++	unsigned int pending_idx, usr_idx, mmap_idx;
 +	pending_req_t *pending_req;
 +	
 +	if (!info)
@@ -5858,18 +5818,23 @@ and in case upstream wants to take the forward porting patches:
 +		++info->ufe_ring.rsp_cons;
 +
 +		/*retrieve [usr_idx] to [mmap_idx,pending_idx] mapping*/
-+		usr_idx = (int)res.id;
-+		pending_idx = MASK_PEND_IDX(ID_TO_IDX(info->idx_map[usr_idx]));
-+		mmap_idx = ID_TO_MIDX(info->idx_map[usr_idx]);
++		if (res.id >= MAX_PENDING_REQS) {
++			WPRINTK("incorrect req map [%llx]\n",
++				(unsigned long long)res.id);
++			continue;
++		}
 +
-+		if ( (mmap_idx >= mmap_alloc) || 
-+		   (ID_TO_IDX(info->idx_map[usr_idx]) >= MAX_PENDING_REQS) )
-+			WPRINTK("Incorrect req map"
-+			       "[%d], internal map [%d,%d (%d)]\n", 
-+			       usr_idx, mmap_idx, 
-+			       ID_TO_IDX(info->idx_map[usr_idx]),
-+			       MASK_PEND_IDX(
-+				       ID_TO_IDX(info->idx_map[usr_idx])));
++		usr_idx = (unsigned int)res.id;
++		pending_idx = info->idx_map[usr_idx].req;
++		mmap_idx = info->idx_map[usr_idx].mem;
++
++		if (mmap_idx >= mmap_alloc ||
++		    pending_idx >= MAX_PENDING_REQS) {
++			WPRINTK("incorrect req map [%d],"
++				" internal map [%d,%d]\n",
++				usr_idx, mmap_idx, pending_idx);
++			continue;
++		}
 +
 +		pending_req = &pending_reqs[mmap_idx][pending_idx];
 +		blkif = pending_req->blkif;
@@ -5888,7 +5853,7 @@ and in case upstream wants to take the forward porting patches:
 +			info->foreign_map.map[offset] = NULL;
 +		}
 +		fast_flush_area(pending_req, pending_idx, usr_idx, info->minor);
-+		info->idx_map[usr_idx] = INVALID_REQ;
++		info->idx_map[usr_idx].mem = INVALID_MIDX;
 +		make_response(blkif, pending_req->id, res.operation,
 +			      res.status);
 +		blkif_put(pending_req->blkif);
@@ -6044,9 +6009,9 @@ and in case upstream wants to take the forward porting patches:
 +	int ret, i, nr_sects = 0;
 +	tap_blkif_t *info;
 +	blkif_request_t *target;
-+	int pending_idx = RTN_PEND_IDX(pending_req,pending_req->mem_idx);
-+	int usr_idx;
-+	uint16_t mmap_idx = pending_req->mem_idx;
++	unsigned int mmap_idx = pending_req->mem_idx;
++	unsigned int pending_idx = RTN_PEND_IDX(pending_req, mmap_idx);
++	unsigned int usr_idx;
 +	struct mm_struct *mm;
 +	struct vm_area_struct *vma = NULL;
 +
@@ -6059,8 +6024,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +	/* Check we have space on user ring - should never fail. */
 +	usr_idx = GET_NEXT_REQ(info->idx_map);
-+	if (usr_idx == INVALID_REQ) {
-+		BUG();
++	if (usr_idx >= MAX_PENDING_REQS) {
++		WARN_ON(1);
 +		goto fail_response;
 +	}
 +
@@ -6147,19 +6112,17 @@ and in case upstream wants to take the forward porting patches:
 +
 +			uvaddr = MMAP_VADDR(info->user_vstart, usr_idx, i/2);
 +
-+			if (unlikely(map[i].status != 0)) {
-+				WPRINTK("invalid kernel buffer -- "
-+					"could not remap it\n");
-+                if(map[i].status == GNTST_eagain)
-+                    WPRINTK("grant GNTST_eagain: please use blktap2\n");
-+				ret |= 1;
++			gnttab_check_GNTST_eagain_while(GNTTABOP_map_grant_ref, &map[i]);
++
++			if (unlikely(map[i].status != GNTST_okay)) {
++				WPRINTK("invalid kernel buffer -- could not remap it\n");
++				ret = 1;
 +				map[i].handle = INVALID_GRANT_HANDLE;
 +			}
 +
-+			if (unlikely(map[i+1].status != 0)) {
-+				WPRINTK("invalid user buffer -- "
-+					"could not remap it\n");
-+				ret |= 1;
++			if (unlikely(map[i+1].status != GNTST_okay)) {
++				WPRINTK("invalid kernel buffer -- could not remap it\n");
++				ret = 1;
 +				map[i+1].handle = INVALID_GRANT_HANDLE;
 +			}
 +
@@ -6186,12 +6149,11 @@ and in case upstream wants to take the forward porting patches:
 +
 +			uvaddr = MMAP_VADDR(info->user_vstart, usr_idx, i);
 +
-+			if (unlikely(map[i].status != 0)) {
-+				WPRINTK("invalid kernel buffer -- "
-+					"could not remap it\n");
-+                if(map[i].status == GNTST_eagain)
-+                    WPRINTK("grant GNTST_eagain: please use blktap2\n");
-+				ret |= 1;
++			gnttab_check_GNTST_eagain_while(GNTTABOP_map_grant_ref, &map[i]);
++
++			if (unlikely(map[i].status != GNTST_okay)) {
++				WPRINTK("invalid kernel buffer -- could not remap it\n");
++				ret = 1;
 +				map[i].handle = INVALID_GRANT_HANDLE;
 +			}
 +
@@ -6246,7 +6208,8 @@ and in case upstream wants to take the forward porting patches:
 +		up_write(&mm->mmap_sem);
 +	
 +	/*record [mmap_idx,pending_idx] to [usr_idx] mapping*/
-+	info->idx_map[usr_idx] = MAKE_ID(mmap_idx, pending_idx);
++	info->idx_map[usr_idx].mem = mmap_idx;
++	info->idx_map[usr_idx].req = pending_idx;
 +
 +	blkif_get(blkif);
 +	/* Finally, write the request message to the user ring. */
@@ -6399,7 +6362,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap/common.h	2008-09-15 13:40:15.000000000 +0200
++++ b/drivers/xen/blktap/common.h	2008-09-15 13:40:15.000000000 +0200
 @@ -0,0 +1,122 @@
 +/* 
 + * This program is free software; you can redistribute it and/or
@@ -6524,8 +6487,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __BLKIF__BACKEND__COMMON_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap/interface.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,185 @@
++++ b/drivers/xen/blktap/interface.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,183 @@
 +/******************************************************************************
 + * drivers/xen/blktap/interface.c
 + * 
@@ -6587,25 +6550,23 @@ and in case upstream wants to take the forward porting patches:
 +static int map_frontend_page(blkif_t *blkif, unsigned long shared_page)
 +{
 +	struct gnttab_map_grant_ref op;
++	int ret;
 +
 +	gnttab_set_map_op(&op, (unsigned long)blkif->blk_ring_area->addr,
 +			  GNTMAP_host_map, shared_page, blkif->domid);
 +
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(10);
-+    } while(op.status == GNTST_eagain);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+	if (op.status) {
-+		DPRINTK(" Grant table operation failure !\n");
-+		return op.status;
++	if (op.status == GNTST_okay) {
++		blkif->shmem_ref = shared_page;
++		blkif->shmem_handle = op.handle;
++		ret = 0;
++	} else {
++		DPRINTK("Grant table operation failure %d!\n", (int)op.status);
++		ret = -EINVAL;
 +	}
 +
-+	blkif->shmem_ref = shared_page;
-+	blkif->shmem_handle = op.handle;
-+
-+	return 0;
++	return ret;
 +}
 +
 +static void unmap_frontend_page(blkif_t *blkif)
@@ -6712,8 +6673,8 @@ and in case upstream wants to take the forward porting patches:
 +					 0, 0, NULL, NULL);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap/xenbus.c	2010-04-29 09:34:47.000000000 +0200
-@@ -0,0 +1,492 @@
++++ b/drivers/xen/blktap/xenbus.c	2010-11-25 09:36:37.000000000 +0100
+@@ -0,0 +1,508 @@
 +/* drivers/xen/blktap/xenbus.c
 + *
 + * Xenbus code for blktap
@@ -7055,6 +7016,18 @@ and in case upstream wants to take the forward porting patches:
 +	tap_update_blkif_status(be->blkif);
 +}
 +
++
++static void blkif_disconnect(blkif_t *blkif)
++{
++	if (blkif->xenblkd) {
++		kthread_stop(blkif->xenblkd);
++		blkif->xenblkd = NULL;
++	}
++
++	/* idempotent */
++	tap_blkif_free(blkif);
++}
++
 +/**
 + * Callback received when the frontend's state changes.
 + */
@@ -7083,6 +7056,11 @@ and in case upstream wants to take the forward porting patches:
 +		if (dev->state == XenbusStateConnected)
 +			break;
 +
++		/* Enforce precondition before potential leak point.
++		 * blkif_disconnect() is idempotent.
++		 */
++		blkif_disconnect(be->blkif);
++
 +		err = connect_ring(be);
 +		if (err)
 +			break;
@@ -7090,11 +7068,7 @@ and in case upstream wants to take the forward porting patches:
 +		break;
 +
 +	case XenbusStateClosing:
-+		if (be->blkif->xenblkd) {
-+			kthread_stop(be->blkif->xenblkd);
-+			be->blkif->xenblkd = NULL;
-+		}
-+		tap_blkif_free(be->blkif);
++		blkif_disconnect(be->blkif);
 +		xenbus_switch_state(dev, XenbusStateClosing);
 +		break;
 +
@@ -7104,6 +7078,9 @@ and in case upstream wants to take the forward porting patches:
 +			break;
 +		/* fall through if not online */
 +	case XenbusStateUnknown:
++		/* Implies the effects of blkif_disconnect() via
++		 * blktap_remove().
++		 */
 +		device_unregister(&dev->dev);
 +		break;
 +
@@ -7207,13 +7184,13 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_register_backend(&blktap);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/Makefile	2009-05-29 10:25:53.000000000 +0200
++++ b/drivers/xen/blktap2/Makefile	2009-05-29 10:25:53.000000000 +0200
 @@ -0,0 +1,3 @@
 +obj-$(CONFIG_XEN_BLKDEV_TAP2) := blktap.o
 +
 +blktap-objs := control.o ring.o wait_queue.o device.o request.o sysfs.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/blktap.h	2010-02-24 13:13:46.000000000 +0100
++++ b/drivers/xen/blktap2/blktap.h	2010-02-24 13:13:46.000000000 +0100
 @@ -0,0 +1,254 @@
 +#ifndef _BLKTAP_H_
 +#define _BLKTAP_H_
@@ -7470,7 +7447,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/control.c	2010-04-29 09:34:47.000000000 +0200
++++ b/drivers/xen/blktap2/control.c	2010-04-29 09:34:47.000000000 +0200
 @@ -0,0 +1,277 @@
 +#include <linux/module.h>
 +#include <linux/miscdevice.h>
@@ -7750,8 +7727,8 @@ and in case upstream wants to take the forward porting patches:
 +module_exit(blktap_exit);
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/device.c	2010-03-02 09:56:10.000000000 +0100
-@@ -0,0 +1,1194 @@
++++ b/drivers/xen/blktap2/device.c	2010-11-25 09:36:37.000000000 +0100
+@@ -0,0 +1,1191 @@
 +#include <linux/fs.h>
 +#include <linux/blkdev.h>
 +#include <linux/cdrom.h>
@@ -8035,7 +8012,6 @@ and in case upstream wants to take the forward porting patches:
 +
 +		page = map[offset];
 +		if (page) {
-+			ClearPageReserved(map[offset]);
 +			if (PageBlkback(page)) {
 +				ClearPageBlkback(page);
 +				set_page_private(page, 0);
@@ -8260,10 +8236,10 @@ and in case upstream wants to take the forward porting patches:
 +
 +		uvaddr = MMAP_VADDR(ring->user_vstart, usr_idx, i);
 +
-+		if (unlikely(table->grants[grant].status)) {
++		if (unlikely(table->grants[grant].status != GNTST_okay)) {
 +			BTERR("invalid kernel buffer: could not remap it\n");
-+            /* This should never happen: blkback should handle eagain first */
-+            BUG_ON(table->grants[grant].status == GNTST_eagain);
++			/* This should never happen: blkback should handle eagain first */
++			BUG_ON(table->grants[grant].status == GNTST_eagain);
 +			err |= 1;
 +			table->grants[grant].handle = INVALID_GRANT_HANDLE;
 +		}
@@ -8272,19 +8248,18 @@ and in case upstream wants to take the forward porting patches:
 +		foreign_mfn = table->grants[grant].dev_bus_addr >> PAGE_SHIFT;
 +		grant++;
 +
-+		if (xen_feature(XENFEAT_auto_translated_physmap))
-+			goto done;
-+
-+		if (unlikely(table->grants[grant].status)) {
-+			BTERR("invalid user buffer: could not remap it\n");
-+			err |= 1;
-+			table->grants[grant].handle = INVALID_GRANT_HANDLE;
++		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
++			if (unlikely(table->grants[grant].status != GNTST_okay)) {
++				/* This should never happen: blkback should handle eagain first */
++				WARN_ON(table->grants[grant].status == GNTST_eagain);
++				BTERR("invalid user buffer: could not remap it\n");
++				err |= 1;
++				table->grants[grant].handle = INVALID_GRANT_HANDLE;
++			}
++			request->handles[i].user = table->grants[grant].handle;
++			grant++;
 +		}
 +
-+		request->handles[i].user = table->grants[grant].handle;
-+		grant++;
-+
-+	done:
 +		if (err)
 +			continue;
 +
@@ -8357,11 +8332,10 @@ and in case upstream wants to take the forward porting patches:
 +		set_page_private(tap_page, page_private(page));
 +		SetPageBlkback(tap_page);
 +
-+		err = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
-+						&map, 1);
-+		BUG_ON(err);
-+        /* We are not expecting the grant op to fail */
-+        BUG_ON(map.status != GNTST_okay);
++		gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &map);
++
++		/* We are not expecting the grant op to fail */
++		BUG_ON(map.status != GNTST_okay);
 +
 +		err = vm_insert_page(ring->vma, uvaddr, tap_page);
 +		if (err) {
@@ -8645,7 +8619,7 @@ and in case upstream wants to take the forward porting patches:
 +		blkdev_dequeue_request(req);
 +
 +		spin_unlock_irq(&dev->lock);
-+		down_read(&tap->tap_sem);
++		down_write(&tap->tap_sem);
 +
 +		err = blktap_device_process_request(tap, request, req);
 +		if (!err)
@@ -8655,7 +8629,7 @@ and in case upstream wants to take the forward porting patches:
 +			blktap_request_free(tap, request);
 +		}
 +
-+		up_read(&tap->tap_sem);
++		up_write(&tap->tap_sem);
 +		spin_lock_irq(&dev->lock);
 +	}
 +
@@ -8947,7 +8921,7 @@ and in case upstream wants to take the forward porting patches:
 +			BTERR("blktap device unregister failed\n");
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/request.c	2010-01-04 11:56:34.000000000 +0100
++++ b/drivers/xen/blktap2/request.c	2010-01-04 11:56:34.000000000 +0100
 @@ -0,0 +1,296 @@
 +#include <linux/spinlock.h>
 +#include <xen/balloon.h>
@@ -9246,8 +9220,8 @@ and in case upstream wants to take the forward porting patches:
 +	return err;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/ring.c	2010-04-29 09:34:47.000000000 +0200
-@@ -0,0 +1,613 @@
++++ b/drivers/xen/blktap2/ring.c	2010-08-31 09:24:21.000000000 +0200
+@@ -0,0 +1,610 @@
 +#include <linux/module.h>
 +#include <linux/signal.h>
 +
@@ -9362,12 +9336,9 @@ and in case upstream wants to take the forward porting patches:
 +
 +	offset  = (int)((uvaddr - vma->vm_start) >> PAGE_SHIFT);
 +	page    = map[offset];
-+	if (page) {
-+		ClearPageReserved(page);
-+		if (PageBlkback(page)) {
-+			ClearPageBlkback(page);
-+			set_page_private(page, 0);
-+		}
++	if (page && PageBlkback(page)) {
++		ClearPageBlkback(page);
++		set_page_private(page, 0);
 +	}
 +	map[offset] = NULL;
 +
@@ -9613,7 +9584,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	down_read(&tap->tap_sem);
 +	if (ring->ring.sring)
-+		ring->ring.sring->pad[0] = msg;
++		ring->ring.sring->private.tapif_user.msg = msg;
 +	up_read(&tap->tap_sem);
 +}
 +
@@ -9723,7 +9694,7 @@ and in case upstream wants to take the forward porting patches:
 +	struct blktap_ring *ring = &tap->ring;
 +
 +	poll_wait(filp, &ring->poll_wait, wait);
-+	if (ring->ring.sring->pad[0] != 0 ||
++	if (ring->ring.sring->private.tapif_user.msg ||
 +	    ring->ring.req_prod_pvt != ring->ring.sring->req_prod) {
 +		RING_PUSH_REQUESTS(&ring->ring);
 +		return POLLIN | POLLRDNORM;
@@ -9862,7 +9833,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/sysfs.c	2009-12-16 11:43:21.000000000 +0100
++++ b/drivers/xen/blktap2/sysfs.c	2011-03-02 12:00:16.000000000 +0100
 @@ -0,0 +1,425 @@
 +#include <linux/types.h>
 +#include <linux/device.h>
@@ -9903,9 +9874,9 @@ and in case upstream wants to take the forward porting patches:
 +}
 +
 +static ssize_t blktap_sysfs_pause_device(struct class_device *, const char *, size_t);
-+CLASS_DEVICE_ATTR(pause, S_IWUSR, NULL, blktap_sysfs_pause_device);
++static CLASS_DEVICE_ATTR(pause, S_IWUSR, NULL, blktap_sysfs_pause_device);
 +static ssize_t blktap_sysfs_resume_device(struct class_device *, const char *, size_t);
-+CLASS_DEVICE_ATTR(resume, S_IWUSR, NULL, blktap_sysfs_resume_device);
++static CLASS_DEVICE_ATTR(resume, S_IWUSR, NULL, blktap_sysfs_resume_device);
 +
 +static ssize_t
 +blktap_sysfs_set_name(struct class_device *dev, const char *buf, size_t size)
@@ -9963,8 +9934,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return size;
 +}
-+CLASS_DEVICE_ATTR(name, S_IRUSR | S_IWUSR,
-+		  blktap_sysfs_get_name, blktap_sysfs_set_name);
++static CLASS_DEVICE_ATTR(name, S_IRUSR | S_IWUSR,
++			 blktap_sysfs_get_name, blktap_sysfs_set_name);
 +
 +static ssize_t
 +blktap_sysfs_remove_device(struct class_device *dev,
@@ -9983,7 +9954,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return (err ? : size);
 +}
-+CLASS_DEVICE_ATTR(remove, S_IWUSR, NULL, blktap_sysfs_remove_device);
++static CLASS_DEVICE_ATTR(remove, S_IWUSR, NULL, blktap_sysfs_remove_device);
 +
 +static ssize_t
 +blktap_sysfs_pause_device(struct class_device *dev,
@@ -10151,7 +10122,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return ret;
 +}
-+CLASS_DEVICE_ATTR(debug, S_IRUSR, blktap_sysfs_debug_device, NULL);
++static CLASS_DEVICE_ATTR(debug, S_IRUSR, blktap_sysfs_debug_device, NULL);
 +
 +int
 +blktap_sysfs_create(struct blktap *tap)
@@ -10231,8 +10202,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return -EINVAL;
 +}
-+CLASS_ATTR(verbosity, S_IRUSR | S_IWUSR,
-+	   blktap_sysfs_show_verbosity, blktap_sysfs_set_verbosity);
++static CLASS_ATTR(verbosity, S_IRUSR | S_IWUSR,
++		  blktap_sysfs_show_verbosity, blktap_sysfs_set_verbosity);
 +
 +static ssize_t
 +blktap_sysfs_show_devices(struct class *class, char *buf)
@@ -10257,7 +10228,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return ret;
 +}
-+CLASS_ATTR(devices, S_IRUSR, blktap_sysfs_show_devices, NULL);
++static CLASS_ATTR(devices, S_IRUSR, blktap_sysfs_show_devices, NULL);
 +
 +void
 +blktap_sysfs_free(void)
@@ -10290,7 +10261,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/blktap2/wait_queue.c	2009-05-29 10:25:53.000000000 +0200
++++ b/drivers/xen/blktap2/wait_queue.c	2009-05-29 10:25:53.000000000 +0200
 @@ -0,0 +1,40 @@
 +#include <linux/list.h>
 +#include <linux/spinlock.h>
@@ -10333,11 +10304,11 @@ and in case upstream wants to take the forward porting patches:
 +	spin_unlock_irqrestore(&deferred_work_lock, flags);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/char/Makefile	2007-07-10 09:42:30.000000000 +0200
++++ b/drivers/xen/char/Makefile	2007-07-10 09:42:30.000000000 +0200
 @@ -0,0 +1 @@
 +obj-$(CONFIG_XEN_DEVMEM)	:= mem.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/char/mem.c	2007-08-06 15:10:49.000000000 +0200
++++ b/drivers/xen/char/mem.c	2007-08-06 15:10:49.000000000 +0200
 @@ -0,0 +1,190 @@
 +/*
 + *  Originally from linux/drivers/char/mem.c
@@ -10530,12 +10501,12 @@ and in case upstream wants to take the forward porting patches:
 +	.open		= open_mem,
 +};
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/console/Makefile	2007-06-12 13:13:44.000000000 +0200
++++ b/drivers/xen/console/Makefile	2007-06-12 13:13:44.000000000 +0200
 @@ -0,0 +1,2 @@
 +
 +obj-y	:= console.o xencons_ring.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/console/console.c	2009-03-18 10:39:31.000000000 +0100
++++ b/drivers/xen/console/console.c	2009-03-18 10:39:31.000000000 +0100
 @@ -0,0 +1,753 @@
 +/******************************************************************************
 + * console.c
@@ -11291,7 +11262,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/console/xencons_ring.c	2007-06-12 13:13:44.000000000 +0200
++++ b/drivers/xen/console/xencons_ring.c	2007-06-12 13:13:44.000000000 +0200
 @@ -0,0 +1,143 @@
 +/* 
 + * This program is free software; you can redistribute it and/or
@@ -11437,7 +11408,7 @@ and in case upstream wants to take the forward porting patches:
 +	(void)xencons_ring_init();
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/Makefile	2008-07-21 11:00:33.000000000 +0200
++++ b/drivers/xen/core/Makefile	2008-07-21 11:00:33.000000000 +0200
 @@ -0,0 +1,14 @@
 +#
 +# Makefile for the linux kernel.
@@ -11454,11 +11425,12 @@ and in case upstream wants to take the forward porting patches:
 +obj-$(CONFIG_KEXEC)		+= machine_kexec.o
 +obj-$(CONFIG_XEN_XENCOMM)	+= xencomm.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/cpu_hotplug.c	2009-04-07 13:58:48.000000000 +0200
-@@ -0,0 +1,176 @@
++++ b/drivers/xen/core/cpu_hotplug.c	2011-01-24 12:06:05.000000000 +0100
+@@ -0,0 +1,179 @@
 +#include <linux/init.h>
 +#include <linux/kernel.h>
 +#include <linux/sched.h>
++#include <linux/kobject.h>
 +#include <linux/notifier.h>
 +#include <linux/cpu.h>
 +#include <xen/cpu_hotplug.h>
@@ -11482,7 +11454,7 @@ and in case upstream wants to take the forward porting patches:
 +	return (current->mm != NULL);
 +}
 +
-+static void vcpu_hotplug(unsigned int cpu)
++static void vcpu_hotplug(unsigned int cpu, struct sys_device *dev)
 +{
 +	int err;
 +	char dir[32], state[32];
@@ -11499,10 +11471,12 @@ and in case upstream wants to take the forward porting patches:
 +
 +	if (strcmp(state, "online") == 0) {
 +		cpu_set(cpu, xenbus_allowed_cpumask);
-+		(void)cpu_up(cpu);
++		if (!cpu_up(cpu) && dev)
++			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
 +	} else if (strcmp(state, "offline") == 0) {
 +		cpu_clear(cpu, xenbus_allowed_cpumask);
-+		(void)cpu_down(cpu);
++		if (!cpu_down(cpu) && dev)
++			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
 +	} else {
 +		printk(KERN_ERR "XENBUS: unknown state(%s) on CPU%d\n",
 +		       state, cpu);
@@ -11518,7 +11492,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	if ((cpustr = strstr(node, "cpu/")) != NULL) {
 +		sscanf(cpustr, "cpu/%u", &cpu);
-+		vcpu_hotplug(cpu);
++		vcpu_hotplug(cpu, get_cpu_sysdev(cpu));
 +	}
 +}
 +
@@ -11551,7 +11525,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	if (!is_initial_xendomain()) {
 +		for_each_possible_cpu(i)
-+			vcpu_hotplug(i);
++			vcpu_hotplug(i, get_cpu_sysdev(i));
 +		printk(KERN_INFO "Brought up %ld CPUs\n",
 +		       (long)num_online_cpus());
 +	}
@@ -11590,7 +11564,7 @@ and in case upstream wants to take the forward porting patches:
 +			printk(KERN_CRIT "Failed to take all CPUs "
 +			       "down: %d.\n", err);
 +			for_each_possible_cpu(cpu)
-+				vcpu_hotplug(cpu);
++				vcpu_hotplug(cpu, NULL);
 +			return err;
 +		}
 +	}
@@ -11605,7 +11579,7 @@ and in case upstream wants to take the forward porting patches:
 +	for_each_possible_cpu(cpu) {
 +		if (cpu == 0)
 +			continue;
-+		vcpu_hotplug(cpu);
++		vcpu_hotplug(cpu, NULL);
 +	}
 +}
 +
@@ -11633,8 +11607,8 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_allowed_cpumask = cpu_present_map;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/evtchn.c	2010-02-24 11:50:47.000000000 +0100
-@@ -0,0 +1,1187 @@
++++ b/drivers/xen/core/evtchn.c	2010-11-25 09:36:37.000000000 +0100
+@@ -0,0 +1,1204 @@
 +/******************************************************************************
 + * evtchn.c
 + * 
@@ -11798,7 +11772,10 @@ and in case upstream wants to take the forward porting patches:
 +		set_native_irq_info(i, cpumask_of_cpu(0));
 +
 +	memset(cpu_evtchn, 0, sizeof(cpu_evtchn));
-+	memset(cpu_evtchn_mask[0], ~0, sizeof(cpu_evtchn_mask[0]));
++	for_each_possible_cpu(i)
++		memset(cpu_evtchn_mask[i],
++		       (i == 0) ? ~0 : 0,
++		       sizeof(cpu_evtchn_mask[i]));
 +}
 +
 +static inline unsigned int cpu_from_evtchn(unsigned int evtchn)
@@ -11896,6 +11873,20 @@ and in case upstream wants to take the forward porting patches:
 +		/* Clear master flag /before/ clearing selector flag. */
 +		wmb();
 +#endif
++
++		/*
++		 * Handle timer interrupts before all others, so that all
++		 * hardirq handlers see an up-to-date system time even if we
++		 * have just woken from a long idle period.
++		 */
++		if ((irq = __get_cpu_var(virq_to_irq)[VIRQ_TIMER]) != -1) {
++			port = evtchn_from_irq(irq);
++			l1i = port / BITS_PER_LONG;
++			l2i = port % BITS_PER_LONG;
++			if (active_evtchns(cpu, s, l1i) & (1ul<<l2i))
++				do_IRQ(irq, regs);
++		}
++
 +		l1 = xchg(&vcpu_info->evtchn_pending_sel, 0);
 +
 +		start_l1i = l1i = per_cpu(current_l1i, cpu);
@@ -12823,7 +12814,7 @@ and in case upstream wants to take the forward porting patches:
 +	}
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/firmware.c	2007-06-22 09:08:06.000000000 +0200
++++ b/drivers/xen/core/firmware.c	2007-06-22 09:08:06.000000000 +0200
 @@ -0,0 +1,74 @@
 +#include <linux/kernel.h>
 +#include <linux/errno.h>
@@ -12900,7 +12891,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/gnttab.c	2009-03-18 10:39:31.000000000 +0100
++++ b/drivers/xen/core/gnttab.c	2010-09-23 15:39:04.000000000 +0200
 @@ -0,0 +1,773 @@
 +/******************************************************************************
 + * gnttab.c
@@ -13391,7 +13382,7 @@ and in case upstream wants to take the forward porting patches:
 +		return -ENOSYS;
 +	}
 +
-+	BUG_ON(rc || setup.status);
++	BUG_ON(rc || setup.status != GNTST_okay);
 +
 +	if (shared == NULL)
 +		shared = arch_gnttab_alloc_shared(frames);
@@ -13475,7 +13466,7 @@ and in case upstream wants to take the forward porting patches:
 +	err = HYPERVISOR_grant_table_op(GNTTABOP_unmap_and_replace,
 +					&unmap, 1);
 +	BUG_ON(err);
-+	BUG_ON(unmap.status);
++	BUG_ON(unmap.status != GNTST_okay);
 +
 +	write_sequnlock(&gnttab_dma_lock);
 +
@@ -13676,7 +13667,7 @@ and in case upstream wants to take the forward porting patches:
 +core_initcall(gnttab_init);
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/hypervisor_sysfs.c	2007-07-10 09:42:30.000000000 +0200
++++ b/drivers/xen/core/hypervisor_sysfs.c	2007-07-10 09:42:30.000000000 +0200
 @@ -0,0 +1,57 @@
 +/*
 + *  copyright (c) 2006 IBM Corporation
@@ -13736,7 +13727,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +device_initcall(hypervisor_subsys_init);
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/machine_kexec.c	2009-07-13 14:25:35.000000000 +0200
++++ b/drivers/xen/core/machine_kexec.c	2009-07-13 14:25:35.000000000 +0200
 @@ -0,0 +1,230 @@
 +/*
 + * drivers/xen/core/machine_kexec.c 
@@ -13969,8 +13960,8 @@ and in case upstream wants to take the forward porting patches:
 + * End:
 + */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/machine_reboot.c	2008-09-01 12:07:31.000000000 +0200
-@@ -0,0 +1,247 @@
++++ b/drivers/xen/core/machine_reboot.c	2011-01-24 12:06:05.000000000 +0100
+@@ -0,0 +1,242 @@
 +#include <linux/version.h>
 +#include <linux/kernel.h>
 +#include <linux/mm.h>
@@ -14024,11 +14015,6 @@ and in case upstream wants to take the forward porting patches:
 +		pm_power_off();
 +	HYPERVISOR_shutdown(SHUTDOWN_poweroff);
 +}
-+
-+int reboot_thru_bios = 0;	/* for dmi_scan.c */
-+EXPORT_SYMBOL(machine_restart);
-+EXPORT_SYMBOL(machine_halt);
-+EXPORT_SYMBOL(machine_power_off);
 +
 +static void pre_suspend(void)
 +{
@@ -14219,7 +14205,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/pci.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/core/pci.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,83 @@
 +/*
 + * vim:shiftwidth=8:noexpandtab
@@ -14305,8 +14291,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +core_initcall(hook_pci_bus);
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/reboot.c	2008-08-07 12:44:36.000000000 +0200
-@@ -0,0 +1,335 @@
++++ b/drivers/xen/core/reboot.c	2010-11-25 09:36:37.000000000 +0100
+@@ -0,0 +1,338 @@
 +#define __KERNEL_SYSCALLS__
 +#include <linux/version.h>
 +#include <linux/kernel.h>
@@ -14586,6 +14572,15 @@ and in case upstream wants to take the forward porting patches:
 +{
 +	int err;
 +
++	err = register_xenbus_watch(&sysrq_watch);
++	if (err) {
++		printk(KERN_ERR "Failed to set sysrq watcher\n");
++		return err;
++	}
++
++	if (is_initial_xendomain())
++		return 0;
++
 +	xenbus_scanf(XBT_NIL, "control",
 +		     "platform-feature-multiprocessor-suspend",
 +		     "%d", &fast_suspend);
@@ -14593,12 +14588,6 @@ and in case upstream wants to take the forward porting patches:
 +	err = register_xenbus_watch(&shutdown_watch);
 +	if (err) {
 +		printk(KERN_ERR "Failed to set shutdown watcher\n");
-+		return err;
-+	}
-+
-+	err = register_xenbus_watch(&sysrq_watch);
-+	if (err) {
-+		printk(KERN_ERR "Failed to set sysrq watcher\n");
 +		return err;
 +	}
 +
@@ -14643,8 +14632,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* !defined(CONFIG_XEN) */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/smpboot.c	2009-05-19 09:16:41.000000000 +0200
-@@ -0,0 +1,460 @@
++++ b/drivers/xen/core/smpboot.c	2010-11-08 17:27:03.000000000 +0100
+@@ -0,0 +1,456 @@
 +/*
 + *	Xen SMP booting functions
 + *
@@ -14699,8 +14688,6 @@ and in case upstream wants to take the forward porting patches:
 +static DEFINE_PER_CPU(int, callfunc_irq);
 +static char resched_name[NR_CPUS][15];
 +static char callfunc_name[NR_CPUS][15];
-+
-+u8 cpu_2_logical_apicid[NR_CPUS] = { [0 ... NR_CPUS-1] = BAD_APICID };
 +
 +cpumask_t cpu_sibling_map[NR_CPUS] __cacheline_aligned;
 +cpumask_t cpu_core_map[NR_CPUS] __cacheline_aligned;
@@ -14921,7 +14908,6 @@ and in case upstream wants to take the forward porting patches:
 +	boot_cpu_data.apicid = apicid;
 +	cpu_data[0] = boot_cpu_data;
 +
-+	cpu_2_logical_apicid[0] = apicid;
 +	x86_cpu_to_apicid[0] = apicid;
 +
 +	current_thread_info()->cpu = 0;
@@ -14978,7 +14964,6 @@ and in case upstream wants to take the forward porting patches:
 +		cpu_data[cpu] = boot_cpu_data;
 +		cpu_data[cpu].apicid = apicid;
 +
-+		cpu_2_logical_apicid[cpu] = apicid;
 +		x86_cpu_to_apicid[cpu] = apicid;
 +
 +		idle = fork_idle(cpu);
@@ -15106,7 +15091,7 @@ and in case upstream wants to take the forward porting patches:
 +}
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/xen_proc.c	2007-06-12 13:13:44.000000000 +0200
++++ b/drivers/xen/core/xen_proc.c	2007-06-12 13:13:44.000000000 +0200
 @@ -0,0 +1,23 @@
 +
 +#include <linux/module.h>
@@ -15132,7 +15117,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +EXPORT_SYMBOL_GPL(remove_xen_proc_entry); 
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/core/xen_sysfs.c	2009-05-29 10:25:53.000000000 +0200
++++ b/drivers/xen/core/xen_sysfs.c	2009-05-29 10:25:53.000000000 +0200
 @@ -0,0 +1,427 @@
 +/*
 + *  copyright (c) 2006 IBM Corporation
@@ -15562,13 +15547,13 @@ and in case upstream wants to take the forward porting patches:
 +module_init(hyper_sysfs_init);
 +module_exit(hyper_sysfs_exit);
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/fbfront/Makefile	2007-06-12 13:13:45.000000000 +0200
++++ b/drivers/xen/fbfront/Makefile	2007-06-12 13:13:45.000000000 +0200
 @@ -0,0 +1,2 @@
 +obj-$(CONFIG_XEN_FRAMEBUFFER)	:= xenfb.o
 +obj-$(CONFIG_XEN_KEYBOARD)	+= xenkbd.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/fbfront/xenfb.c	2009-12-04 08:45:56.000000000 +0100
-@@ -0,0 +1,888 @@
++++ b/drivers/xen/fbfront/xenfb.c	2011-03-02 12:00:16.000000000 +0100
+@@ -0,0 +1,890 @@
 +/*
 + * linux/drivers/video/xenfb.c -- Xen para-virtual frame buffer device
 + *
@@ -16306,30 +16291,29 @@ and in case upstream wants to take the forward porting patches:
 +static int xenfb_connect_backend(struct xenbus_device *dev,
 +				 struct xenfb_info *info)
 +{
-+	int ret;
++	int ret, irq;
 +	struct xenbus_transaction xbt;
 +
-+	ret = bind_listening_port_to_irqhandler(
++	irq = bind_listening_port_to_irqhandler(
 +		dev->otherend_id, xenfb_event_handler, 0, "xenfb", info);
-+	if (ret < 0) {
-+		xenbus_dev_fatal(dev, ret,
++	if (irq < 0) {
++		xenbus_dev_fatal(dev, irq,
 +				 "bind_listening_port_to_irqhandler");
-+		return ret;
++		return irq;
 +	}
-+	info->irq = ret;
 +
 + again:
 +	ret = xenbus_transaction_start(&xbt);
 +	if (ret) {
 +		xenbus_dev_fatal(dev, ret, "starting transaction");
-+		return ret;
++		goto unbind_irq;
 +	}
 +	ret = xenbus_printf(xbt, dev->nodename, "page-ref", "%lu",
 +			    virt_to_mfn(info->page));
 +	if (ret)
 +		goto error_xenbus;
 +	ret = xenbus_printf(xbt, dev->nodename, "event-channel", "%u",
-+			    irq_to_evtchn_port(info->irq));
++			    irq_to_evtchn_port(irq));
 +	if (ret)
 +		goto error_xenbus;
 +	ret = xenbus_printf(xbt, dev->nodename, "protocol", "%s",
@@ -16344,15 +16328,18 @@ and in case upstream wants to take the forward porting patches:
 +		if (ret == -EAGAIN)
 +			goto again;
 +		xenbus_dev_fatal(dev, ret, "completing transaction");
-+		return ret;
++		goto unbind_irq;
 +	}
 +
++	info->irq = irq;
 +	xenbus_switch_state(dev, XenbusStateInitialised);
 +	return 0;
 +
 + error_xenbus:
 +	xenbus_transaction_end(xbt, 1);
 +	xenbus_dev_fatal(dev, ret, "writing xenstore");
++ unbind_irq:
++	unbind_from_irqhandler(irq, info);
 +	return ret;
 +}
 +
@@ -16458,7 +16445,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/fbfront/xenkbd.c	2008-04-02 12:34:02.000000000 +0200
++++ b/drivers/xen/fbfront/xenkbd.c	2008-04-02 12:34:02.000000000 +0200
 @@ -0,0 +1,354 @@
 +/*
 + * linux/drivers/input/keyboard/xenkbd.c -- Xen para-virtual input device
@@ -16815,12 +16802,12 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/gntdev/Makefile	2008-01-07 13:19:18.000000000 +0100
++++ b/drivers/xen/gntdev/Makefile	2008-01-07 13:19:18.000000000 +0100
 @@ -0,0 +1 @@
 +obj-$(CONFIG_XEN_GRANT_DEV) := gntdev.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/gntdev/gntdev.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,1083 @@
++++ b/drivers/xen/gntdev/gntdev.c	2011-01-03 12:43:21.000000000 +0100
+@@ -0,0 +1,1038 @@
 +/******************************************************************************
 + * gntdev.c
 + * 
@@ -17026,18 +17013,11 @@ and in case upstream wants to take the forward porting patches:
 + * value of *offset to the offset that should be mmap()-ed in order to map the
 + * grant reference.
 + */
-+static int add_grant_reference(struct file *flip,
++static int add_grant_reference(gntdev_file_private_data_t *private_data,
 +			       struct ioctl_gntdev_grant_ref *op,
 +			       uint64_t *offset)
 +{
-+	gntdev_file_private_data_t *private_data 
-+		= (gntdev_file_private_data_t *) flip->private_data;
-+
 +	uint32_t slot_index;
-+
-+	if (unlikely(private_data->free_list_size == 0)) {
-+		return -ENOMEM;
-+	}
 +
 +	slot_index = private_data->free_list[--private_data->free_list_size];
 +	private_data->free_list[private_data->free_list_size]
@@ -17062,19 +17042,17 @@ and in case upstream wants to take the forward porting patches:
 + * previous invocation of find_contiguous_free_range(), during the same
 + * invocation of the driver.
 + */
-+static int add_grant_references(struct file *flip,
-+				int count,
++static int add_grant_references(gntdev_file_private_data_t *private_data,
++				uint32_t count,
 +				struct ioctl_gntdev_grant_ref *ops,
 +				uint32_t first_slot)
 +{
-+	gntdev_file_private_data_t *private_data 
-+		= (gntdev_file_private_data_t *) flip->private_data;
-+	int i;
++	uint32_t i;
 +	
 +	for (i = 0; i < count; ++i) {
 +
 +		/* First, mark the slot's entry in the free list as invalid. */
-+		int free_list_index = 
++		uint32_t free_list_index =
 +			private_data->grants[first_slot+i].u.free_list_index;
 +		private_data->free_list[free_list_index] = 
 +			GNTDEV_FREE_LIST_INVALID;
@@ -17094,16 +17072,16 @@ and in case upstream wants to take the forward porting patches:
 + * GNTDEV_SLOT_INVALID. This will reduce the recorded size of the free list to
 + * the number of valid entries.
 + */
-+static void compress_free_list(struct file *flip) 
++static void compress_free_list(gntdev_file_private_data_t *private_data)
 +{
-+	gntdev_file_private_data_t *private_data 
-+		= (gntdev_file_private_data_t *) flip->private_data;
-+	int i, j = 0, old_size, slot_index;
++	uint32_t i, j = 0, old_size;
 +	
 +	old_size = private_data->free_list_size;
 +	for (i = 0; i < old_size; ++i) {
 +		if (private_data->free_list[i] != GNTDEV_FREE_LIST_INVALID) {
 +			if (i > j) {
++				int32_t slot_index;
++
 +				slot_index = private_data->free_list[i];
 +				private_data->free_list[j] = slot_index;
 +				private_data->grants[slot_index].u
@@ -17123,19 +17101,11 @@ and in case upstream wants to take the forward porting patches:
 + *
 + * Returns the index of the first slot if a range is found, otherwise -ENOMEM.
 + */
-+static int find_contiguous_free_range(struct file *flip,
++static int find_contiguous_free_range(gntdev_file_private_data_t *private_data,
 +				      uint32_t num_slots) 
 +{
-+	gntdev_file_private_data_t *private_data 
-+		= (gntdev_file_private_data_t *) flip->private_data;
-+	
-+	int i;
-+	int start_index = private_data->next_fit_index;
-+	int range_start = 0, range_length;
-+
-+	if (private_data->free_list_size < num_slots) {
-+		return -ENOMEM;
-+	}
++	uint32_t i, start_index = private_data->next_fit_index;
++	uint32_t range_start = 0, range_length;
 +
 +	/* First search from the start_index to the end of the array. */
 +	range_length = 0;
@@ -17401,7 +17371,7 @@ and in case upstream wants to take the forward porting patches:
 +	vma->vm_mm->context.has_foreign_mappings = 1;
 +#endif
 +
-+    exit_ret = -ENOMEM;
++	exit_ret = -ENOMEM;
 +	for (i = 0; i < size; ++i) {
 +
 +		flags = GNTMAP_host_map;
@@ -17422,8 +17392,8 @@ and in case upstream wants to take the forward porting patches:
 +		ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, 
 +						&op, 1);
 +		BUG_ON(ret);
-+		if (op.status) {
-+            if(op.status != GNTST_eagain)
++		if (op.status != GNTST_okay) {
++			if (op.status != GNTST_eagain)
 +				printk(KERN_ERR "Error mapping the grant reference "
 +				       "into the kernel (%d). domid = %d; ref = %d\n",
 +				       op.status,
@@ -17431,9 +17401,9 @@ and in case upstream wants to take the forward porting patches:
 +				       .u.valid.domid,
 +				       private_data->grants[slot_index+i]
 +				       .u.valid.ref);
-+            else 
-+                /* Propagate eagain instead of trying to fix it up */
-+                exit_ret = -EAGAIN;
++			else
++				/* Propagate eagain instead of trying to fix it up */
++				exit_ret = -EAGAIN;
 +			goto undo_map_out;
 +		}
 +
@@ -17502,7 +17472,7 @@ and in case upstream wants to take the forward porting patches:
 +			ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
 +							&op, 1);
 +			BUG_ON(ret);
-+			if (op.status) {
++			if (op.status != GNTST_okay) {
 +				printk(KERN_ERR "Error mapping the grant "
 +				       "reference into user space (%d). domid "
 +				       "= %d; ref = %d\n", op.status,
@@ -17510,9 +17480,9 @@ and in case upstream wants to take the forward porting patches:
 +				       .valid.domid,
 +				       private_data->grants[slot_index+i].u
 +				       .valid.ref);
-+                /* This should never happen after we've mapped into 
-+                 * the kernel space. */
-+                BUG_ON(op.status == GNTST_eagain);
++				/* This should never happen after we've mapped into
++				* the kernel space. */
++				BUG_ON(op.status == GNTST_eagain);
 +				goto undo_map_out;
 +			}
 +			
@@ -17536,7 +17506,7 @@ and in case upstream wants to take the forward porting patches:
 +		}
 +
 +	}
-+    exit_ret = 0;
++	exit_ret = 0;
 +
 +	up_write(&private_data->grants_sem);
 +	return exit_ret;
@@ -17608,7 +17578,7 @@ and in case upstream wants to take the forward porting patches:
 +			ret = HYPERVISOR_grant_table_op(
 +				GNTTABOP_unmap_grant_ref, &op, 1);
 +			BUG_ON(ret);
-+			if (op.status)
++			if (op.status != GNTST_okay)
 +				printk("User unmap grant status = %d\n", 
 +				       op.status);
 +		} else {
@@ -17625,7 +17595,7 @@ and in case upstream wants to take the forward porting patches:
 +		ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, 
 +						&op, 1);
 +		BUG_ON(ret);
-+		if (op.status)
++		if (op.status != GNTST_okay)
 +			printk("Kernel unmap grant status = %d\n", op.status);
 +
 +
@@ -17695,89 +17665,82 @@ and in case upstream wants to take the forward porting patches:
 +	case IOCTL_GNTDEV_MAP_GRANT_REF:
 +	{
 +		struct ioctl_gntdev_map_grant_ref op;
++		struct ioctl_gntdev_grant_ref *refs = NULL;
++
++		if (copy_from_user(&op, (void __user *)arg, sizeof(op)))
++			return -EFAULT;
++		if (unlikely(op.count <= 0))
++			return -EINVAL;
++
++		if (op.count > 1 && op.count <= private_data->grants_size) {
++			struct ioctl_gntdev_grant_ref *u;
++
++			refs = kmalloc(op.count * sizeof(*refs), GFP_KERNEL);
++			if (!refs)
++				return -ENOMEM;
++			u = ((struct ioctl_gntdev_map_grant_ref *)arg)->refs;
++			if (copy_from_user(refs, (void __user *)u,
++					   sizeof(*refs) * op.count)) {
++				kfree(refs);
++				return -EFAULT;
++			}
++		}
++
 +		down_write(&private_data->grants_sem);
 +		down_write(&private_data->free_list_sem);
 +
-+		if ((rc = copy_from_user(&op, (void __user *) arg, 
-+					 sizeof(op)))) {
-+			rc = -EFAULT;
-+			goto map_out;
-+		}
-+		if (unlikely(op.count <= 0)) {
-+			rc = -EINVAL;
++		if (unlikely(op.count > private_data->free_list_size)) {
++			rc = -ENOMEM;
 +			goto map_out;
 +		}
 +
 +		if (op.count == 1) {
-+			if ((rc = add_grant_reference(flip, &op.refs[0],
++			if ((rc = add_grant_reference(private_data, op.refs,
 +						      &op.index)) < 0) {
 +				printk(KERN_ERR "Adding grant reference "
 +				       "failed (%d).\n", rc);
 +				goto map_out;
 +			}
 +		} else {
-+			struct ioctl_gntdev_grant_ref *refs, *u;
-+			refs = kmalloc(op.count * sizeof(*refs), GFP_KERNEL);
-+			if (!refs) {
-+				rc = -ENOMEM;
-+				goto map_out;
-+			}
-+			u = ((struct ioctl_gntdev_map_grant_ref *)arg)->refs;
-+			if ((rc = copy_from_user(refs,
-+						 (void __user *)u,
-+						 sizeof(*refs) * op.count))) {
-+				printk(KERN_ERR "Copying refs from user failed"
-+				       " (%d).\n", rc);
-+				rc = -EINVAL;
-+				goto map_out;
-+			}
-+			if ((rc = find_contiguous_free_range(flip, op.count))
-+			    < 0) {
++			if ((rc = find_contiguous_free_range(private_data,
++							     op.count)) < 0) {
 +				printk(KERN_ERR "Finding contiguous range "
 +				       "failed (%d).\n", rc);
-+				kfree(refs);
 +				goto map_out;
 +			}
 +			op.index = rc << PAGE_SHIFT;
-+			if ((rc = add_grant_references(flip, op.count,
++			if ((rc = add_grant_references(private_data, op.count,
 +						       refs, rc))) {
 +				printk(KERN_ERR "Adding grant references "
 +				       "failed (%d).\n", rc);
-+				kfree(refs);
 +				goto map_out;
 +			}
-+			compress_free_list(flip);
-+			kfree(refs);
++			compress_free_list(private_data);
 +		}
-+		if ((rc = copy_to_user((void __user *) arg, 
-+				       &op, 
-+				       sizeof(op)))) {
-+			printk(KERN_ERR "Copying result back to user failed "
-+			       "(%d)\n", rc);
-+			rc = -EFAULT;
-+			goto map_out;
-+		}
++
 +	map_out:
-+		up_write(&private_data->grants_sem);
 +		up_write(&private_data->free_list_sem);
++		up_write(&private_data->grants_sem);
++
++		kfree(refs);
++
++		if (!rc && copy_to_user((void __user *)arg, &op, sizeof(op)))
++			rc = -EFAULT;
 +		return rc;
 +	}
 +	case IOCTL_GNTDEV_UNMAP_GRANT_REF:
 +	{
 +		struct ioctl_gntdev_unmap_grant_ref op;
-+		int i, start_index;
++		uint32_t i, start_index;
 +
-+		down_write(&private_data->grants_sem);
-+		down_write(&private_data->free_list_sem);
-+
-+		if ((rc = copy_from_user(&op, 
-+					 (void __user *) arg, 
-+					 sizeof(op)))) {
-+			rc = -EFAULT;
-+			goto unmap_out;
-+		}
++		if (copy_from_user(&op, (void __user *)arg, sizeof(op)))
++			return -EFAULT;
 +
 +		start_index = op.index >> PAGE_SHIFT;
++		if (start_index + op.count > private_data->grants_size)
++			return -EINVAL;
++
++		down_write(&private_data->grants_sem);
 +
 +		/* First, check that all pages are in the NOT_YET_MAPPED
 +		 * state.
@@ -17807,6 +17770,8 @@ and in case upstream wants to take the forward porting patches:
 +			}
 +		}
 +
++		down_write(&private_data->free_list_sem);
++
 +		/* Unmap pages and add them to the free list.
 +		 */
 +		for (i = 0; i < op.count; ++i) {
@@ -17819,9 +17784,9 @@ and in case upstream wants to take the forward porting patches:
 +			++private_data->free_list_size;
 +		}
 +
++		up_write(&private_data->free_list_sem);
 +	unmap_out:
 +		up_write(&private_data->grants_sem);
-+		up_write(&private_data->free_list_sem);
 +		return rc;
 +	}
 +	case IOCTL_GNTDEV_GET_OFFSET_FOR_VADDR:
@@ -17830,25 +17795,16 @@ and in case upstream wants to take the forward porting patches:
 +		struct vm_area_struct *vma;
 +		unsigned long vaddr;
 +
-+		if ((rc = copy_from_user(&op, 
-+					 (void __user *) arg, 
-+					 sizeof(op)))) {
-+			rc = -EFAULT;
-+			goto get_offset_out;
-+		}
++		if (copy_from_user(&op, (void __user *)arg, sizeof(op)))
++			return -EFAULT;
++
 +		vaddr = (unsigned long)op.vaddr;
 +
 +		down_read(&current->mm->mmap_sem);		
 +		vma = find_vma(current->mm, vaddr);
-+		if (vma == NULL) {
++		if (!vma || vma->vm_ops != &gntdev_vmops) {
 +			rc = -EFAULT;
-+			goto get_offset_unlock_out;
-+		}
-+		if ((!vma->vm_ops) || (vma->vm_ops != &gntdev_vmops)) {
-+			printk(KERN_ERR "The vaddr specified does not belong "
-+			       "to a gntdev instance: %#lx\n", vaddr);
-+			rc = -EFAULT;
-+			goto get_offset_unlock_out;
++			goto get_offset_out;
 +		}
 +		if (vma->vm_start != vaddr) {
 +			printk(KERN_ERR "The vaddr specified in an "
@@ -17857,45 +17813,31 @@ and in case upstream wants to take the forward porting patches:
 +			       "%#lx; vaddr = %#lx\n",
 +			       vma->vm_start, vaddr);
 +			rc = -EFAULT;
-+			goto get_offset_unlock_out;
++			goto get_offset_out;
 +		}
 +		op.offset = vma->vm_pgoff << PAGE_SHIFT;
 +		op.count = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
-+		up_read(&current->mm->mmap_sem);
-+		if ((rc = copy_to_user((void __user *) arg, 
-+				       &op, 
-+				       sizeof(op)))) {
-+			rc = -EFAULT;
-+			goto get_offset_out;
-+		}
-+		goto get_offset_out;
-+	get_offset_unlock_out:
-+		up_read(&current->mm->mmap_sem);
 +	get_offset_out:
++		up_read(&current->mm->mmap_sem);
++		if (!rc && copy_to_user((void __user *)arg, &op, sizeof(op)))
++			rc = -EFAULT;
 +		return rc;
 +	}
 +	case IOCTL_GNTDEV_SET_MAX_GRANTS:
 +	{
 +		struct ioctl_gntdev_set_max_grants op;
-+		if ((rc = copy_from_user(&op, 
-+					 (void __user *) arg, 
-+					 sizeof(op)))) {
-+			rc = -EFAULT;
-+			goto set_max_out;
-+		}
++
++		if (copy_from_user(&op, (void __user *)arg, sizeof(op)))
++			return -EFAULT;
++		if (op.count > MAX_GRANTS_LIMIT)
++			return -EINVAL;
++
 +		down_write(&private_data->grants_sem);
-+		if (private_data->grants) {
++		if (unlikely(private_data->grants))
 +			rc = -EBUSY;
-+			goto set_max_unlock_out;
-+		}
-+		if (op.count > MAX_GRANTS_LIMIT) {
-+			rc = -EINVAL;
-+			goto set_max_unlock_out;
-+		}						 
-+		rc = init_private_data(private_data, op.count);
-+	set_max_unlock_out:
++		else
++			rc = init_private_data(private_data, op.count);
 +		up_write(&private_data->grants_sem);
-+	set_max_out:
 +		return rc;
 +	}
 +	default:
@@ -17905,7 +17847,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netback/Makefile	2007-07-12 08:54:23.000000000 +0200
++++ b/drivers/xen/netback/Makefile	2007-07-12 08:54:23.000000000 +0200
 @@ -0,0 +1,5 @@
 +obj-$(CONFIG_XEN_NETDEV_BACKEND) := netbk.o
 +obj-$(CONFIG_XEN_NETDEV_LOOPBACK) += netloop.o
@@ -17913,7 +17855,7 @@ and in case upstream wants to take the forward porting patches:
 +netbk-y   := netback.o xenbus.o interface.o accel.o
 +netloop-y := loopback.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netback/accel.c	2008-01-07 13:19:18.000000000 +0100
++++ b/drivers/xen/netback/accel.c	2008-01-07 13:19:18.000000000 +0100
 @@ -0,0 +1,269 @@
 +/******************************************************************************
 + * drivers/xen/netback/accel.c
@@ -18185,8 +18127,8 @@ and in case upstream wants to take the forward porting patches:
 +	INIT_LIST_HEAD(&accelerators_list);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netback/common.h	2010-02-24 13:13:46.000000000 +0100
-@@ -0,0 +1,220 @@
++++ b/drivers/xen/netback/common.h	2011-02-17 09:58:10.000000000 +0100
+@@ -0,0 +1,226 @@
 +/******************************************************************************
 + * arch/xen/drivers/netif/backend/common.h
 + * 
@@ -18264,8 +18206,13 @@ and in case upstream wants to take the forward porting patches:
 +	struct vm_struct *tx_comms_area;
 +	struct vm_struct *rx_comms_area;
 +
-+	/* Set of features that can be turned on in dev->features. */
-+	int features;
++	/* Flags that must not be set in dev->features */
++	int features_disabled;
++
++	/* Frontend feature information. */
++	u8 can_sg:1;
++	u8 gso:1;
++	u8 csum:1;
 +
 +	/* Internal feature information. */
 +	u8 can_queue:1;	/* can queue packets for receiver? */
@@ -18371,6 +18318,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +void netif_disconnect(netif_t *netif);
 +
++void netif_set_features(netif_t *netif);
 +netif_t *netif_alloc(struct device *parent, domid_t domid, unsigned int handle);
 +int netif_map(netif_t *netif, unsigned long tx_ring_ref,
 +	      unsigned long rx_ring_ref, unsigned int evtchn);
@@ -18403,13 +18351,13 @@ and in case upstream wants to take the forward porting patches:
 +static inline int netbk_can_sg(struct net_device *dev)
 +{
 +	netif_t *netif = netdev_priv(dev);
-+	return netif->features & NETIF_F_SG;
++	return netif->can_sg;
 +}
 +
 +#endif /* __NETIF__BACKEND__COMMON_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netback/interface.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,398 @@
++++ b/drivers/xen/netback/interface.c	2011-02-17 09:58:10.000000000 +0100
+@@ -0,0 +1,434 @@
 +/******************************************************************************
 + * arch/xen/drivers/netif/backend/interface.c
 + * 
@@ -18505,28 +18453,69 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 +
-+static int netbk_set_sg(struct net_device *dev, u32 data)
++void netif_set_features(netif_t *netif)
 +{
-+	if (data) {
-+		netif_t *netif = netdev_priv(dev);
++	struct net_device *dev = netif->dev;
++	int features = dev->features;
 +
-+		if (!(netif->features & NETIF_F_SG))
++	if (netif->can_sg)
++		features |= NETIF_F_SG;
++	if (netif->gso)
++		features |= NETIF_F_TSO;
++	if (netif->csum)
++		features |= NETIF_F_IP_CSUM;
++
++	features &= ~(netif->features_disabled);
++
++	if (!(features & NETIF_F_SG) && dev->mtu > ETH_DATA_LEN)
++		dev->mtu = ETH_DATA_LEN;
++
++	dev->features = features;
++}
++
++static int netbk_set_tx_csum(struct net_device *dev, u32 data)
++{
++	netif_t *netif = netdev_priv(dev);
++	if (data) {
++		if (!netif->csum)
 +			return -ENOSYS;
++		netif->features_disabled &= ~NETIF_F_IP_CSUM;
++	} else {
++		netif->features_disabled |= NETIF_F_IP_CSUM;
 +	}
 +
-+	return ethtool_op_set_sg(dev, data);
++	netif_set_features(netif);
++	return 0;
++}
++
++static int netbk_set_sg(struct net_device *dev, u32 data)
++{
++	netif_t *netif = netdev_priv(dev);
++	if (data) {
++		if (!netif->can_sg)
++			return -ENOSYS;
++		netif->features_disabled &= ~NETIF_F_SG;
++	} else {
++		netif->features_disabled |= NETIF_F_SG;
++	}
++
++	netif_set_features(netif);
++	return 0;
 +}
 +
 +static int netbk_set_tso(struct net_device *dev, u32 data)
 +{
++	netif_t *netif = netdev_priv(dev);
 +	if (data) {
-+		netif_t *netif = netdev_priv(dev);
-+
-+		if (!(netif->features & NETIF_F_TSO))
++		if (!netif->gso)
 +			return -ENOSYS;
++		netif->features_disabled &= ~NETIF_F_TSO;
++	} else {
++		netif->features_disabled |= NETIF_F_TSO;
 +	}
 +
-+	return ethtool_op_set_tso(dev, data);
++	netif_set_features(netif);
++	return 0;
 +}
 +
 +static void netbk_get_drvinfo(struct net_device *dev,
@@ -18576,7 +18565,7 @@ and in case upstream wants to take the forward porting patches:
 +	.get_drvinfo = netbk_get_drvinfo,
 +
 +	.get_tx_csum = ethtool_op_get_tx_csum,
-+	.set_tx_csum = ethtool_op_set_tx_csum,
++	.set_tx_csum = netbk_set_tx_csum,
 +	.get_sg = ethtool_op_get_sg,
 +	.set_sg = netbk_set_sg,
 +	.get_tso = ethtool_op_get_tso,
@@ -18608,6 +18597,8 @@ and in case upstream wants to take the forward porting patches:
 +	memset(netif, 0, sizeof(*netif));
 +	netif->domid  = domid;
 +	netif->handle = handle;
++	netif->can_sg = 1;
++	netif->csum = 1;
 +	atomic_set(&netif->refcnt, 1);
 +	init_waitqueue_head(&netif->waiting_to_free);
 +	netif->dev = dev;
@@ -18627,7 +18618,8 @@ and in case upstream wants to take the forward porting patches:
 +	dev->open            = net_open;
 +	dev->stop            = net_close;
 +	dev->change_mtu	     = netbk_change_mtu;
-+	dev->features        = NETIF_F_IP_CSUM;
++
++	netif_set_features(netif);
 +
 +	SET_ETHTOOL_OPS(dev, &network_ethtool_ops);
 +
@@ -18663,15 +18655,11 @@ and in case upstream wants to take the forward porting patches:
 +
 +	gnttab_set_map_op(&op, (unsigned long)netif->tx_comms_area->addr,
 +			  GNTMAP_host_map, tx_ring_ref, netif->domid);
-+    do {
-+		if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+			BUG();
-+        msleep(10);
-+    } while(op.status == GNTST_eagain);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+	if (op.status) { 
-+		DPRINTK(" Gnttab failure mapping tx_ring_ref!\n");
-+		return op.status;
++	if (op.status != GNTST_okay) {
++		DPRINTK(" Gnttab failure mapping tx_ring_ref %d!\n", (int)op.status);
++		return -EINVAL;
 +	}
 +
 +	netif->tx_shmem_ref    = tx_ring_ref;
@@ -18679,13 +18667,9 @@ and in case upstream wants to take the forward porting patches:
 +
 +	gnttab_set_map_op(&op, (unsigned long)netif->rx_comms_area->addr,
 +			  GNTMAP_host_map, rx_ring_ref, netif->domid);
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(10);
-+    } while(op.status == GNTST_eagain);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+	if (op.status) {
++	if (op.status != GNTST_okay) {
 +		struct gnttab_unmap_grant_ref unop;
 +
 +		gnttab_set_unmap_op(&unop,
@@ -18693,8 +18677,8 @@ and in case upstream wants to take the forward porting patches:
 +				    GNTMAP_host_map, netif->tx_shmem_handle);
 +		VOID(HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref,
 +					       &unop, 1));
-+		DPRINTK(" Gnttab failure mapping rx_ring_ref!\n");
-+		return op.status;
++		DPRINTK(" Gnttab failure mapping rx_ring_ref %d!\n", (int)op.status);
++		return -EINVAL;
 +	}
 +
 +	netif->rx_shmem_ref    = rx_ring_ref;
@@ -18809,8 +18793,8 @@ and in case upstream wants to take the forward porting patches:
 +	free_netdev(netif->dev);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netback/loopback.c	2007-08-06 15:10:49.000000000 +0200
-@@ -0,0 +1,324 @@
++++ b/drivers/xen/netback/loopback.c	2011-01-03 12:43:21.000000000 +0100
+@@ -0,0 +1,309 @@
 +/******************************************************************************
 + * netback/loopback.c
 + * 
@@ -18875,6 +18859,7 @@ and in case upstream wants to take the forward porting patches:
 +struct net_private {
 +	struct net_device *loopback_dev;
 +	struct net_device_stats stats;
++	int loop_idx;
 +};
 +
 +static int loopback_open(struct net_device *dev)
@@ -18994,8 +18979,17 @@ and in case upstream wants to take the forward porting patches:
 +	return &np->stats;
 +}
 +
++static void get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
++{
++	strcpy(info->driver, "netloop");
++	snprintf(info->bus_info, ETHTOOL_BUSINFO_LEN, "vif-0-%d",
++		 ((struct net_private *)netdev_priv(dev))->loop_idx);
++}
++
 +static struct ethtool_ops network_ethtool_ops =
 +{
++	.get_drvinfo = get_drvinfo,
++
 +	.get_tx_csum = ethtool_op_get_tx_csum,
 +	.set_tx_csum = ethtool_op_set_tx_csum,
 +	.get_sg = ethtool_op_get_sg,
@@ -19013,11 +19007,13 @@ and in case upstream wants to take the forward porting patches:
 +{
 +}
 +
-+static void loopback_construct(struct net_device *dev, struct net_device *lo)
++static void loopback_construct(struct net_device *dev, struct net_device *lo,
++			       int loop_idx)
 +{
 +	struct net_private *np = netdev_priv(dev);
 +
 +	np->loopback_dev     = lo;
++	np->loop_idx         = loop_idx;
 +
 +	dev->open            = loopback_open;
 +	dev->stop            = loopback_close;
@@ -19063,8 +19059,8 @@ and in case upstream wants to take the forward porting patches:
 +	if (!dev2)
 +		goto fail_netdev2;
 +
-+	loopback_construct(dev1, dev2);
-+	loopback_construct(dev2, dev1);
++	loopback_construct(dev1, dev2, i);
++	loopback_construct(dev2, dev1, i);
 +
 +	/*
 +	 * Initialise a dummy MAC address for the 'dummy backend' interface. We
@@ -19091,23 +19087,6 @@ and in case upstream wants to take the forward porting patches:
 +	return err;
 +}
 +
-+static void __exit clean_loopback(int i)
-+{
-+	struct net_device *dev1, *dev2;
-+	char dev_name[IFNAMSIZ];
-+
-+	sprintf(dev_name, "vif0.%d", i);
-+	dev1 = dev_get_by_name(dev_name);
-+	sprintf(dev_name, "veth%d", i);
-+	dev2 = dev_get_by_name(dev_name);
-+	if (dev1 && dev2) {
-+		unregister_netdev(dev2);
-+		unregister_netdev(dev1);
-+		free_netdev(dev2);
-+		free_netdev(dev1);
-+	}
-+}
-+
 +static int __init loopback_init(void)
 +{
 +	int i, err = 0;
@@ -19124,20 +19103,10 @@ and in case upstream wants to take the forward porting patches:
 +
 +module_init(loopback_init);
 +
-+static void __exit loopback_exit(void)
-+{
-+	int i;
-+
-+	for (i = nloopbacks; i-- > 0; )
-+		clean_loopback(i);
-+}
-+
-+module_exit(loopback_exit);
-+
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netback/netback.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,1691 @@
++++ b/drivers/xen/netback/netback.c	2011-02-17 09:58:10.000000000 +0100
+@@ -0,0 +1,1700 @@
 +/******************************************************************************
 + * drivers/xen/netback/netback.c
 + * 
@@ -19175,6 +19144,8 @@ and in case upstream wants to take the forward porting patches:
 + */
 +
 +#include "common.h"
++#include <linux/if_vlan.h>
++#include <linux/tcp.h>
 +#include <xen/balloon.h>
 +#include <xen/interface/memory.h>
 +
@@ -19245,7 +19216,14 @@ and in case upstream wants to take the forward porting patches:
 +	return idx;
 +}
 +
-+#define PKT_PROT_LEN 64
++/*
++ * This is the amount of packet we copy rather than map, so that the
++ * guest can't fiddle with the contents of the headers while we do
++ * packet processing on them (netfilter, routing, etc).
++ */
++#define PKT_PROT_LEN    (ETH_HLEN + VLAN_HLEN + \
++			 sizeof(struct iphdr) + MAX_IPOPTLEN + \
++			 sizeof(struct tcphdr) + 40 /* MAX_TCP_OPTION_SPACE */)
 +
 +static struct pending_tx_info {
 +	netif_tx_request_t req;
@@ -19400,7 +19378,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +static inline int netbk_max_required_rx_slots(netif_t *netif)
 +{
-+	if (netif->features & (NETIF_F_SG|NETIF_F_TSO))
++	if (netif->can_sg || netif->gso)
 +		return MAX_SKB_FRAGS + 2; /* header + extra_info + frags */
 +	return 1; /* all in one */
 +}
@@ -19634,8 +19612,7 @@ and in case upstream wants to take the forward porting patches:
 +   used to set up the operations on the top of
 +   netrx_pending_operations, which have since been done.  Check that
 +   they didn't give any errors and advance over them. */
-+static int netbk_check_gop(int nr_frags, domid_t domid,
-+			   struct netrx_pending_operations *npo, int *eagain)
++static int netbk_check_gop(int nr_frags, domid_t domid, struct netrx_pending_operations *npo)
 +{
 +	multicall_entry_t *mcl;
 +	gnttab_transfer_t *gop;
@@ -19643,17 +19620,15 @@ and in case upstream wants to take the forward porting patches:
 +	int status = NETIF_RSP_OKAY;
 +	int i;
 +
-+    *eagain = 0;
-+
 +	for (i = 0; i <= nr_frags; i++) {
 +		if (npo->meta[npo->meta_cons + i].copy) {
 +			copy_op = npo->copy + npo->copy_cons++;
-+			if (copy_op->status != GNTST_okay) {
++			if (unlikely(copy_op->status == GNTST_eagain))
++				gnttab_check_GNTST_eagain_while(GNTTABOP_copy, copy_op);
++			if (unlikely(copy_op->status != GNTST_okay)) {
 +				DPRINTK("Bad status %d from copy to DOM%d.\n",
 +					copy_op->status, domid);
 +				status = NETIF_RSP_ERROR;
-+                if(copy_op->status == GNTST_eagain)
-+                    *eagain = 1;
 +			}
 +		} else {
 +			if (!xen_feature(XENFEAT_auto_translated_physmap)) {
@@ -19664,7 +19639,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +			gop = npo->trans + npo->trans_cons++;
 +			/* Check the reassignment error code. */
-+			if (gop->status != 0) {
++			if (unlikely(gop->status != GNTST_okay)) {
 +				DPRINTK("Bad status %d from grant transfer to DOM%u\n",
 +					gop->status, domid);
 +				/*
@@ -19673,8 +19648,6 @@ and in case upstream wants to take the forward porting patches:
 +				 * a fatal error anyway.
 +				 */
 +				BUG_ON(gop->status == GNTST_bad_page);
-+                if(gop->status == GNTST_eagain)
-+                    *eagain = 1;
 +				status = NETIF_RSP_ERROR;
 +			}
 +		}
@@ -19716,7 +19689,6 @@ and in case upstream wants to take the forward porting patches:
 +	int nr_frags;
 +	int count;
 +	unsigned long offset;
-+    int eagain;
 +
 +	/*
 +	 * Putting hundreds of bytes on the stack is considered rude.
@@ -19820,7 +19792,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +		netif = netdev_priv(skb->dev);
 +
-+		status = netbk_check_gop(nr_frags, netif->domid, &npo, &eagain);
++		status = netbk_check_gop(nr_frags, netif->domid, &npo);
 +
 +		/* We can't rely on skb_release_data to release the
 +		   pages used by fragments for us, since it tries to
@@ -19831,22 +19803,14 @@ and in case upstream wants to take the forward porting patches:
 +		/* (Freeing the fragments is safe since we copy
 +		   non-linear skbs destined for flipping interfaces) */
 +		if (!netif->copying_receiver) {
-+            /* 
-+             * Cannot handle failed grant transfers at the moment (because
-+             * mmu_updates likely completed)
-+             */
-+            BUG_ON(eagain);
 +			atomic_set(&(skb_shinfo(skb)->dataref), 1);
 +			skb_shinfo(skb)->frag_list = NULL;
 +			skb_shinfo(skb)->nr_frags = 0;
 +			netbk_free_pages(nr_frags, meta + npo.meta_cons + 1);
 +		}
 +
-+        if(!eagain)
-+        {
-+		    netif->stats.tx_bytes += skb->len;
-+		    netif->stats.tx_packets++;
-+        }
++		netif->stats.tx_bytes += skb->len;
++		netif->stats.tx_packets++;
 +
 +		id = meta[npo.meta_cons].id;
 +		flags = nr_frags ? NETRXF_more_data : 0;
@@ -19896,18 +19860,8 @@ and in case upstream wants to take the forward porting patches:
 +		    !netbk_queue_full(netif))
 +			netif_wake_queue(netif->dev);
 +
-+        if(!eagain || netbk_queue_full(netif))
-+        {
-+		    netif_put(netif);
-+		    dev_kfree_skb(skb);
-+		    netif->stats.tx_dropped += !!eagain;
-+        } 
-+        else
-+        {
-+	        netif->rx_req_cons_peek += skb_shinfo(skb)->nr_frags + 1 +
-+				   !!skb_shinfo(skb)->gso_size;
-+            skb_queue_head(&rx_queue, skb);
-+        }
++		netif_put(netif);
++		dev_kfree_skb(skb);
 +
 +		npo.meta_cons += nr_frags + 1;
 +	}
@@ -19948,29 +19902,44 @@ and in case upstream wants to take the forward porting patches:
 +	return netif->list.next != NULL;
 +}
 +
++/* Must be called with net_schedule_list_lock held. */
 +static void remove_from_net_schedule_list(netif_t *netif)
 +{
-+	spin_lock_irq(&net_schedule_list_lock);
 +	if (likely(__on_net_schedule_list(netif))) {
 +		list_del(&netif->list);
 +		netif->list.next = NULL;
 +		netif_put(netif);
 +	}
++}
++
++static netif_t *poll_net_schedule_list(void)
++{
++	netif_t *netif = NULL;
++
++	spin_lock_irq(&net_schedule_list_lock);
++	if (!list_empty(&net_schedule_list)) {
++		netif = list_first_entry(&net_schedule_list, netif_t, list);
++		netif_get(netif);
++		remove_from_net_schedule_list(netif);
++	}
 +	spin_unlock_irq(&net_schedule_list_lock);
++	return netif;
 +}
 +
 +static void add_to_net_schedule_list_tail(netif_t *netif)
 +{
++	unsigned long flags;
++
 +	if (__on_net_schedule_list(netif))
 +		return;
 +
-+	spin_lock_irq(&net_schedule_list_lock);
++	spin_lock_irqsave(&net_schedule_list_lock, flags);
 +	if (!__on_net_schedule_list(netif) &&
 +	    likely(netif_schedulable(netif))) {
 +		list_add_tail(&netif->list, &net_schedule_list);
 +		netif_get(netif);
 +	}
-+	spin_unlock_irq(&net_schedule_list_lock);
++	spin_unlock_irqrestore(&net_schedule_list_lock, flags);
 +}
 +
 +/*
@@ -19999,7 +19968,9 @@ and in case upstream wants to take the forward porting patches:
 +
 +void netif_deschedule_work(netif_t *netif)
 +{
++	spin_lock_irq(&net_schedule_list_lock);
 +	remove_from_net_schedule_list(netif);
++	spin_unlock_irq(&net_schedule_list_lock);
 +}
 +
 +
@@ -20062,7 +20033,6 @@ and in case upstream wants to take the forward porting patches:
 +	u16 pending_idx;
 +	PEND_RING_IDX dc, dp;
 +	netif_t *netif;
-+	int ret;
 +	LIST_HEAD(list);
 +
 +	dc = dealloc_cons;
@@ -20097,11 +20067,17 @@ and in case upstream wants to take the forward porting patches:
 +			gop++;
 +		}
 +
-+		if (netbk_copy_skb_mode != NETBK_DELAYED_COPY_SKB ||
-+		    list_empty(&pending_inuse_head))
-+			break;
++	} while (dp != dealloc_prod);
 +
-+		/* Copy any entries that have been pending for too long. */
++	dealloc_cons = dc;
++
++	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref,
++				      tx_unmap_ops, gop - tx_unmap_ops))
++		BUG();
++
++	/* Copy any entries that have been pending for too long. */
++	if (netbk_copy_skb_mode == NETBK_DELAYED_COPY_SKB &&
++	    !list_empty(&pending_inuse_head)) {
 +		list_for_each_entry_safe(inuse, n, &pending_inuse_head, list) {
 +			if (time_after(inuse->alloc_time + HZ / 2, jiffies))
 +				break;
@@ -20123,13 +20099,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +			break;
 +		}
-+	} while (dp != dealloc_prod);
-+
-+	dealloc_cons = dc;
-+
-+	ret = HYPERVISOR_grant_table_op(
-+		GNTTABOP_unmap_grant_ref, tx_unmap_ops, gop - tx_unmap_ops);
-+	BUG_ON(ret);
++	}
 +
 +	list_for_each_entry_safe(inuse, n, &list, list) {
 +		pending_idx = inuse - pending_inuse;
@@ -20247,7 +20217,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	/* Check status of header. */
 +	err = mop->status;
-+	if (unlikely(err)) {
++	if (unlikely(err != GNTST_okay)) {
 +		txp = &pending_tx_info[pending_idx].req;
 +		make_tx_response(netif, txp, NETIF_RSP_ERROR);
 +		pending_ring[MASK_PEND_IDX(pending_prod++)] = pending_idx;
@@ -20268,12 +20238,12 @@ and in case upstream wants to take the forward porting patches:
 +
 +		/* Check error status: if okay then remember grant handle. */
 +		newerr = (++mop)->status;
-+		if (likely(!newerr)) {
++		if (likely(newerr == GNTST_okay)) {
 +			set_phys_to_machine(idx_to_pfn(pending_idx),
 +				FOREIGN_FRAME(mop->dev_bus_addr>>PAGE_SHIFT));
 +			grant_tx_handle[pending_idx] = mop->handle;
 +			/* Had a previous error? Invalidate this fragment. */
-+			if (unlikely(err))
++			if (unlikely(err != GNTST_okay))
 +				netif_idx_release(pending_idx);
 +			continue;
 +		}
@@ -20285,7 +20255,7 @@ and in case upstream wants to take the forward porting patches:
 +		netif_put(netif);
 +
 +		/* Not the first error? Preceding frags already invalidated. */
-+		if (err)
++		if (err != GNTST_okay)
 +			continue;
 +
 +		/* First error: invalidate header and preceding fragments. */
@@ -20386,7 +20356,6 @@ and in case upstream wants to take the forward porting patches:
 +/* Called after netfront has transmitted */
 +static void net_tx_action(unsigned long unused)
 +{
-+	struct list_head *ent;
 +	struct sk_buff *skb;
 +	netif_t *netif;
 +	netif_tx_request_t txreq;
@@ -20404,10 +20373,9 @@ and in case upstream wants to take the forward porting patches:
 +	while (((NR_PENDING_REQS + MAX_SKB_FRAGS) < MAX_PENDING_REQS) &&
 +		!list_empty(&net_schedule_list)) {
 +		/* Get a netif from the list with work to do. */
-+		ent = net_schedule_list.next;
-+		netif = list_entry(ent, netif_t, list);
-+		netif_get(netif);
-+		remove_from_net_schedule_list(netif);
++		netif = poll_net_schedule_list();
++		if (!netif)
++			continue;
 +
 +		RING_FINAL_CHECK_FOR_REQUESTS(&netif->tx, work_to_do);
 +		if (!work_to_do) {
@@ -20606,6 +20574,16 @@ and in case upstream wants to take the forward porting patches:
 +		skb->proto_csum_blank = !!(txp->flags & NETTXF_csum_blank);
 +
 +		netbk_fill_frags(skb);
++
++		/*
++		 * If the initial fragment was < PKT_PROT_LEN then
++		 * pull through some bytes from the other fragments to
++		 * increase the linear region to PKT_PROT_LEN bytes.
++		 */
++		if (skb_headlen(skb) < PKT_PROT_LEN && skb_is_nonlinear(skb)) {
++			int target = min_t(int, skb->len, PKT_PROT_LEN);
++			__pskb_pull_tail(skb, target - skb_headlen(skb));
++		}
 +
 +		skb->dev      = netif->dev;
 +		skb->protocol = eth_type_trans(skb, skb->dev);
@@ -20830,8 +20808,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netback/xenbus.c	2009-03-18 10:39:32.000000000 +0100
-@@ -0,0 +1,454 @@
++++ b/drivers/xen/netback/xenbus.c	2011-02-17 09:58:10.000000000 +0100
+@@ -0,0 +1,455 @@
 +/*  Xenbus code for netif backend
 +    Copyright (C) 2005 Rusty Russell <rusty@rustcorp.com.au>
 +    Copyright (C) 2005 XenSource Ltd
@@ -20866,6 +20844,7 @@ and in case upstream wants to take the forward porting patches:
 +static int connect_rings(struct backend_info *);
 +static void connect(struct backend_info *);
 +static void backend_create_netif(struct backend_info *be);
++static void netback_disconnect(struct device *);
 +
 +static int netback_remove(struct xenbus_device *dev)
 +{
@@ -20873,16 +20852,22 @@ and in case upstream wants to take the forward porting patches:
 +
 +	netback_remove_accelerators(be, dev);
 +
-+	if (be->netif) {
-+		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
-+		netif_disconnect(be->netif);
-+		be->netif = NULL;
-+	}
++	netback_disconnect(&dev->dev);
 +	kfree(be);
 +	dev->dev.driver_data = NULL;
 +	return 0;
 +}
 +
++static void netback_disconnect(struct device *xbdev_dev)
++{
++	struct backend_info *be = xbdev_dev->driver_data;
++
++	if (be->netif) {
++		kobject_uevent(&xbdev_dev->kobj, KOBJ_OFFLINE);
++		netif_disconnect(be->netif);
++		be->netif = NULL;
++	}
++}
 +
 +/**
 + * Entry point to this code when a new device is created.  Allocate the basic
@@ -21068,17 +21053,15 @@ and in case upstream wants to take the forward porting patches:
 +	case XenbusStateConnected:
 +		if (dev->state == XenbusStateConnected)
 +			break;
++
++		/* backend_create_netif() is idempotent */
 +		backend_create_netif(be);
 +		if (be->netif)
 +			connect(be);
 +		break;
 +
 +	case XenbusStateClosing:
-+		if (be->netif) {
-+			kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
-+			netif_disconnect(be->netif);
-+			be->netif = NULL;
-+		}
++		netback_disconnect(&dev->dev);
 +		xenbus_switch_state(dev, XenbusStateClosing);
 +		break;
 +
@@ -21088,6 +21071,7 @@ and in case upstream wants to take the forward porting patches:
 +			break;
 +		/* fall through if not online */
 +	case XenbusStateUnknown:
++		/* implies netback_disconnect() via netback_remove() */
 +		device_unregister(&dev->dev);
 +		break;
 +
@@ -21184,6 +21168,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +static int connect_rings(struct backend_info *be)
 +{
++	netif_t *netif = be->netif;
 +	struct xenbus_device *dev = be->dev;
 +	unsigned long tx_ring_ref, rx_ring_ref;
 +	unsigned int evtchn, rx_copy;
@@ -21214,44 +21199,38 @@ and in case upstream wants to take the forward porting patches:
 +				 dev->otherend);
 +		return err;
 +	}
-+	be->netif->copying_receiver = !!rx_copy;
++	netif->copying_receiver = !!rx_copy;
 +
-+	if (be->netif->dev->tx_queue_len != 0) {
++	if (netif->dev->tx_queue_len != 0) {
 +		if (xenbus_scanf(XBT_NIL, dev->otherend,
 +				 "feature-rx-notify", "%d", &val) < 0)
 +			val = 0;
 +		if (val)
-+			be->netif->can_queue = 1;
++			netif->can_queue = 1;
 +		else
 +			/* Must be non-zero for pfifo_fast to work. */
-+			be->netif->dev->tx_queue_len = 1;
++			netif->dev->tx_queue_len = 1;
 +	}
 +
 +	if (xenbus_scanf(XBT_NIL, dev->otherend, "feature-sg", "%d", &val) < 0)
 +		val = 0;
-+	if (val) {
-+		be->netif->features |= NETIF_F_SG;
-+		be->netif->dev->features |= NETIF_F_SG;
-+	}
++	netif->can_sg = !!val;
 +
 +	if (xenbus_scanf(XBT_NIL, dev->otherend, "feature-gso-tcpv4", "%d",
 +			 &val) < 0)
 +		val = 0;
-+	if (val) {
-+		be->netif->features |= NETIF_F_TSO;
-+		be->netif->dev->features |= NETIF_F_TSO;
-+	}
++	netif->gso = !!val;
 +
 +	if (xenbus_scanf(XBT_NIL, dev->otherend, "feature-no-csum-offload",
 +			 "%d", &val) < 0)
 +		val = 0;
-+	if (val) {
-+		be->netif->features &= ~NETIF_F_IP_CSUM;
-+		be->netif->dev->features &= ~NETIF_F_IP_CSUM;
-+	}
++	netif->csum = !val;
++
++	/* Set dev->features */
++	netif_set_features(netif);
 +
 +	/* Map the shared frame, irq etc. */
-+	err = netif_map(be->netif, tx_ring_ref, rx_ring_ref, evtchn);
++	err = netif_map(netif, tx_ring_ref, rx_ring_ref, evtchn);
 +	if (err) {
 +		xenbus_dev_fatal(dev, err,
 +				 "mapping shared-frames %lu/%lu port %u",
@@ -21287,14 +21266,14 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_register_backend(&netback);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netfront/Makefile	2007-07-12 08:54:23.000000000 +0200
++++ b/drivers/xen/netfront/Makefile	2007-07-12 08:54:23.000000000 +0200
 @@ -0,0 +1,4 @@
 +
 +obj-$(CONFIG_XEN_NETDEV_FRONTEND)	:= xennet.o
 +
 +xennet-objs := netfront.o accel.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netfront/accel.c	2009-05-04 10:01:03.000000000 +0200
++++ b/drivers/xen/netfront/accel.c	2009-05-04 10:01:03.000000000 +0200
 @@ -0,0 +1,827 @@
 +/******************************************************************************
 + * Virtual network driver for conversing with remote driver backends.
@@ -22124,8 +22103,8 @@ and in case upstream wants to take the forward porting patches:
 +}
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netfront/netfront.c	2009-04-07 13:58:48.000000000 +0200
-@@ -0,0 +1,2247 @@
++++ b/drivers/xen/netfront/netfront.c	2010-11-25 09:36:37.000000000 +0100
+@@ -0,0 +1,2255 @@
 +/******************************************************************************
 + * Virtual network driver for conversing with remote driver backends.
 + *
@@ -23900,6 +23879,13 @@ and in case upstream wants to take the forward porting patches:
 +		xennet_set_tso(dev, 1);
 +}
 +
++static void netfront_get_drvinfo(struct net_device *dev,
++				 struct ethtool_drvinfo *info)
++{
++	strcpy(info->driver, "netfront");
++	strcpy(info->bus_info, dev->class_dev.dev->bus_id);
++}
++
 +static int network_connect(struct net_device *dev)
 +{
 +	struct netfront_info *np = netdev_priv(dev);
@@ -24008,6 +23994,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +static struct ethtool_ops network_ethtool_ops =
 +{
++	.get_drvinfo = netfront_get_drvinfo,
 +	.get_tx_csum = ethtool_op_get_tx_csum,
 +	.set_tx_csum = ethtool_op_set_tx_csum,
 +	.get_sg = ethtool_op_get_sg,
@@ -24339,7 +24326,7 @@ and in case upstream wants to take the forward porting patches:
 +	}
 +
 +	if (!MODPARM_rx_flip && !MODPARM_rx_copy)
-+		MODPARM_rx_flip = 1; /* Default is to flip. */
++		MODPARM_rx_copy = 1; /* Default is to copy. */
 +#endif
 +
 +	netif_init_accel();
@@ -24374,7 +24361,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/netfront/netfront.h	2010-02-24 13:13:46.000000000 +0100
++++ b/drivers/xen/netfront/netfront.h	2010-02-24 13:13:46.000000000 +0100
 @@ -0,0 +1,274 @@
 +/******************************************************************************
 + * Virtual network driver for conversing with remote driver backends.
@@ -24651,7 +24638,7 @@ and in case upstream wants to take the forward porting patches:
 +			  struct xenbus_device *dev);
 +#endif /* NETFRONT_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/Makefile	2008-07-21 11:00:33.000000000 +0200
++++ b/drivers/xen/pciback/Makefile	2008-07-21 11:00:33.000000000 +0200
 @@ -0,0 +1,17 @@
 +obj-$(CONFIG_XEN_PCIDEV_BACKEND) += pciback.o
 +
@@ -24671,7 +24658,7 @@ and in case upstream wants to take the forward porting patches:
 +EXTRA_CFLAGS += -DDEBUG
 +endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space.c	2009-05-04 10:01:03.000000000 +0200
++++ b/drivers/xen/pciback/conf_space.c	2009-05-04 10:01:03.000000000 +0200
 @@ -0,0 +1,435 @@
 +/*
 + * PCI Backend - Functions for creating a virtual configuration space for
@@ -25109,7 +25096,7 @@ and in case upstream wants to take the forward porting patches:
 +	return pciback_config_capability_init();
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space.h	2008-10-29 09:55:56.000000000 +0100
++++ b/drivers/xen/pciback/conf_space.h	2008-10-29 09:55:56.000000000 +0100
 @@ -0,0 +1,126 @@
 +/*
 + * PCI Backend - Common data structures for overriding the configuration space
@@ -25238,7 +25225,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif				/* __XEN_PCIBACK_CONF_SPACE_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_capability.c	2008-10-29 09:55:56.000000000 +0100
++++ b/drivers/xen/pciback/conf_space_capability.c	2008-10-29 09:55:56.000000000 +0100
 @@ -0,0 +1,69 @@
 +/*
 + * PCI Backend - Handles the virtual fields found on the capability lists
@@ -25310,7 +25297,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_capability.h	2008-10-29 09:55:56.000000000 +0100
++++ b/drivers/xen/pciback/conf_space_capability.h	2008-10-29 09:55:56.000000000 +0100
 @@ -0,0 +1,23 @@
 +/*
 + * PCI Backend - Data structures for special overlays for structures on
@@ -25336,7 +25323,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_capability_msi.c	2008-09-15 13:40:15.000000000 +0200
++++ b/drivers/xen/pciback/conf_space_capability_msi.c	2008-09-15 13:40:15.000000000 +0200
 @@ -0,0 +1,79 @@
 +/*
 + * PCI Backend -- Configuration overlay for MSI capability
@@ -25418,7 +25405,7 @@ and in case upstream wants to take the forward porting patches:
 +}
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_capability_pm.c	2008-10-29 09:55:56.000000000 +0100
++++ b/drivers/xen/pciback/conf_space_capability_pm.c	2008-10-29 09:55:56.000000000 +0100
 @@ -0,0 +1,126 @@
 +/*
 + * PCI Backend - Configuration space overlay for power management
@@ -25547,7 +25534,7 @@ and in case upstream wants to take the forward porting patches:
 +	.fields = caplist_pm,
 +};
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_capability_vpd.c	2008-10-29 09:55:56.000000000 +0100
++++ b/drivers/xen/pciback/conf_space_capability_vpd.c	2008-10-29 09:55:56.000000000 +0100
 @@ -0,0 +1,40 @@
 +/*
 + * PCI Backend - Configuration space overlay for Vital Product Data
@@ -25590,7 +25577,7 @@ and in case upstream wants to take the forward porting patches:
 +	.fields = caplist_vpd,
 +};
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_header.c	2010-03-02 09:56:10.000000000 +0100
++++ b/drivers/xen/pciback/conf_space_header.c	2010-03-02 09:56:10.000000000 +0100
 @@ -0,0 +1,378 @@
 +/*
 + * PCI Backend - Handles the virtual fields in the configuration space headers.
@@ -25971,7 +25958,7 @@ and in case upstream wants to take the forward porting patches:
 +	return err;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_quirks.c	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/pciback/conf_space_quirks.c	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,138 @@
 +/*
 + * PCI Backend - Handle special overlays for broken devices.
@@ -26112,7 +26099,7 @@ and in case upstream wants to take the forward porting patches:
 +	return ret;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/conf_space_quirks.h	2007-06-12 13:13:45.000000000 +0200
++++ b/drivers/xen/pciback/conf_space_quirks.h	2007-06-12 13:13:45.000000000 +0200
 @@ -0,0 +1,35 @@
 +/*
 + * PCI Backend - Data structures for special overlays for broken devices.
@@ -26150,7 +26137,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/controller.c	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/pciback/controller.c	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,443 @@
 +/*
 + * Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
@@ -26596,7 +26583,7 @@ and in case upstream wants to take the forward porting patches:
 +}
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/passthrough.c	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/pciback/passthrough.c	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,176 @@
 +/*
 + * PCI Backend - Provides restricted access to the real PCI bus topology
@@ -26775,8 +26762,8 @@ and in case upstream wants to take the forward porting patches:
 +	return 1;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/pci_stub.c	2009-06-09 15:01:37.000000000 +0200
-@@ -0,0 +1,1316 @@
++++ b/drivers/xen/pciback/pci_stub.c	2011-03-02 12:00:16.000000000 +0100
+@@ -0,0 +1,1311 @@
 +/*
 + * PCI Stub Driver - Grabs devices in backend to be exported later
 + *
@@ -27774,8 +27761,7 @@ and in case upstream wants to take the forward porting patches:
 +		err = count;
 +	return err;
 +}
-+
-+DRIVER_ATTR(new_slot, S_IWUSR, NULL, pcistub_slot_add);
++static DRIVER_ATTR(new_slot, S_IWUSR, NULL, pcistub_slot_add);
 +
 +static ssize_t pcistub_slot_remove(struct device_driver *drv, const char *buf,
 +				   size_t count)
@@ -27794,8 +27780,7 @@ and in case upstream wants to take the forward porting patches:
 +		err = count;
 +	return err;
 +}
-+
-+DRIVER_ATTR(remove_slot, S_IWUSR, NULL, pcistub_slot_remove);
++static DRIVER_ATTR(remove_slot, S_IWUSR, NULL, pcistub_slot_remove);
 +
 +static ssize_t pcistub_slot_show(struct device_driver *drv, char *buf)
 +{
@@ -27818,8 +27803,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return count;
 +}
-+
-+DRIVER_ATTR(slots, S_IRUSR, pcistub_slot_show, NULL);
++static DRIVER_ATTR(slots, S_IRUSR, pcistub_slot_show, NULL);
 +
 +static ssize_t pcistub_quirk_add(struct device_driver *drv, const char *buf,
 +				 size_t count)
@@ -27883,8 +27867,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return count;
 +}
-+
-+DRIVER_ATTR(quirks, S_IRUSR | S_IWUSR, pcistub_quirk_show, pcistub_quirk_add);
++static DRIVER_ATTR(quirks, S_IRUSR | S_IWUSR, pcistub_quirk_show, pcistub_quirk_add);
 +
 +static ssize_t permissive_add(struct device_driver *drv, const char *buf,
 +			      size_t count)
@@ -27949,8 +27932,7 @@ and in case upstream wants to take the forward porting patches:
 +	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
 +	return count;
 +}
-+
-+DRIVER_ATTR(permissive, S_IRUSR | S_IWUSR, permissive_show, permissive_add);
++static DRIVER_ATTR(permissive, S_IRUSR | S_IWUSR, permissive_show, permissive_add);
 +
 +#ifdef CONFIG_PCI_MSI
 +
@@ -28094,7 +28076,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/pciback.h	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/pciback/pciback.h	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,126 @@
 +/*
 + * PCI Backend Common Data Structures & Function Declarations
@@ -28223,8 +28205,8 @@ and in case upstream wants to take the forward porting patches:
 +#endif
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/pciback_ops.c	2009-03-18 10:39:32.000000000 +0100
-@@ -0,0 +1,134 @@
++++ b/drivers/xen/pciback/pciback_ops.c	2011-02-17 09:58:10.000000000 +0100
+@@ -0,0 +1,142 @@
 +/*
 + * PCI Backend Operations - respond to PCI requests from Frontend
 + *
@@ -28249,6 +28231,14 @@ and in case upstream wants to take the forward porting patches:
 +
 +	/* Disable devices (but not bridges) */
 +	if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL) {
++#ifdef CONFIG_PCI_MSI
++		/* The guest could have been abruptly killed without
++		 * disabling MSI/MSI-X interrupts.*/
++		if (dev->msix_enabled)
++			pci_disable_msix(dev);
++		if (dev->msi_enabled)
++			pci_disable_msi(dev);
++#endif
 +		pci_disable_device(dev);
 +
 +		pci_write_config_word(dev, PCI_COMMAND, 0);
@@ -28360,7 +28350,7 @@ and in case upstream wants to take the forward porting patches:
 +	return IRQ_HANDLED;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/slot.c	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/pciback/slot.c	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,187 @@
 +/*
 + * PCI Backend - Provides a Virtual PCI bus (with real devices)
@@ -28550,7 +28540,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/vpci.c	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/pciback/vpci.c	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,242 @@
 +/*
 + * PCI Backend - Provides a Virtual PCI bus (with real devices)
@@ -28795,7 +28785,7 @@ and in case upstream wants to take the forward porting patches:
 +	return found;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pciback/xenbus.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/pciback/xenbus.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,710 @@
 +/*
 + * PCI Backend Xenbus Setup - handles setup with frontend and xend
@@ -29508,7 +29498,7 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_unregister_driver(&xenbus_pciback_driver);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pcifront/Makefile	2007-06-12 13:13:45.000000000 +0200
++++ b/drivers/xen/pcifront/Makefile	2007-06-12 13:13:45.000000000 +0200
 @@ -0,0 +1,7 @@
 +obj-y += pcifront.o
 +
@@ -29518,7 +29508,7 @@ and in case upstream wants to take the forward porting patches:
 +EXTRA_CFLAGS += -DDEBUG
 +endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pcifront/pci.c	2007-06-12 13:13:45.000000000 +0200
++++ b/drivers/xen/pcifront/pci.c	2007-06-12 13:13:45.000000000 +0200
 @@ -0,0 +1,46 @@
 +/*
 + * PCI Frontend Operations - ensure only one PCI frontend runs at a time
@@ -29567,8 +29557,8 @@ and in case upstream wants to take the forward porting patches:
 +	spin_unlock(&pcifront_dev_lock);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pcifront/pci_op.c	2009-03-18 10:39:32.000000000 +0100
-@@ -0,0 +1,666 @@
++++ b/drivers/xen/pcifront/pci_op.c	2010-11-25 09:36:37.000000000 +0100
+@@ -0,0 +1,670 @@
 +/*
 + * PCI Frontend Operations - Communicates with frontend
 + *
@@ -30100,13 +30090,17 @@ and in case upstream wants to take the forward porting patches:
 +		}
 +
 +		d = pci_scan_single_device(b, devfn);
-+		if (d) {
++		if (d)
 +			dev_info(&pdev->xdev->dev, "New device on "
 +				 "%04x:%02x:%02x.%02x found.\n", domain, bus,
 +				 PCI_SLOT(devfn), PCI_FUNC(devfn));
-+			pci_bus_add_device(d);
-+		}
 +	}
++
++	/* Claim resources before going "live" with our devices */
++	pci_walk_bus(b, pcifront_claim_resource, pdev);
++
++	/* Create SysFS and notify udev of the devices. Aka: "going live" */
++	pci_bus_add_devices(b);
 +
 +	return 0;
 +}
@@ -30159,9 +30153,9 @@ and in case upstream wants to take the forward porting patches:
 +	result = PCI_ERS_RESULT_NONE;
 +
 +	pcidev = pci_get_bus_and_slot(bus, devfn);
-+	if (!pcidev || !pcidev->driver){
-+		dev_err(&pcidev->dev, 
-+			"device or driver is NULL\n");
++	if (!pcidev || !pcidev->driver) {
++		pci_dev_put(pcidev);
++		dev_err(&pdev->xdev->dev, "AER device or driver is NULL\n");
 +		return result;
 +	}
 +	pdrv = pcidev->driver;
@@ -30236,8 +30230,8 @@ and in case upstream wants to take the forward porting patches:
 +	return IRQ_HANDLED;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pcifront/pcifront.h	2009-03-18 10:39:32.000000000 +0100
-@@ -0,0 +1,55 @@
++++ b/drivers/xen/pcifront/pcifront.h	2010-10-05 09:58:12.000000000 +0200
+@@ -0,0 +1,56 @@
 +/*
 + * PCI Frontend - Common data structures & function declarations
 + *
@@ -30270,6 +30264,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	int evtchn;
 +	int gnt_ref;
++	int irq;
 +
 +	/* Lock this when doing any operations in sh_info */
 +	spinlock_t sh_info_lock;
@@ -30294,8 +30289,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif	/* __XEN_PCIFRONT_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/pcifront/xenbus.c	2009-04-07 13:58:48.000000000 +0200
-@@ -0,0 +1,468 @@
++++ b/drivers/xen/pcifront/xenbus.c	2010-10-05 09:58:12.000000000 +0200
+@@ -0,0 +1,483 @@
 +/*
 + * PCI Frontend Xenbus Setup - handles setup with backend (imports page/evtchn)
 + *
@@ -30346,6 +30341,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	pdev->evtchn = INVALID_EVTCHN;
 +	pdev->gnt_ref = INVALID_GRANT_REF;
++	pdev->irq = -1;
 +
 +	INIT_WORK(&pdev->op_work, pcifront_do_aer, pdev);
 +
@@ -30363,7 +30359,9 @@ and in case upstream wants to take the forward porting patches:
 +
 +	/*For PCIE_AER error handling job*/
 +	flush_scheduled_work();
-+	unbind_from_irqhandler(pdev->evtchn, pdev);
++
++	if (pdev->irq > 0)
++		unbind_from_irqhandler(pdev->irq, pdev);
 +
 +	if (pdev->evtchn != INVALID_EVTCHN)
 +		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
@@ -30371,6 +30369,8 @@ and in case upstream wants to take the forward porting patches:
 +	if (pdev->gnt_ref != INVALID_GRANT_REF)
 +		gnttab_end_foreign_access(pdev->gnt_ref,
 +					  (unsigned long)pdev->sh_info);
++	else
++		free_page((unsigned long)pdev->sh_info);
 +
 +	pdev->xdev->dev.driver_data = NULL;
 +
@@ -30392,8 +30392,16 @@ and in case upstream wants to take the forward porting patches:
 +	if (err)
 +		goto out;
 +
-+	bind_caller_port_to_irqhandler(pdev->evtchn, pcifront_handler_aer, 
-+		SA_SAMPLE_RANDOM, "pcifront", pdev); 
++	err = bind_caller_port_to_irqhandler(pdev->evtchn,
++					     pcifront_handler_aer,
++					     SA_SAMPLE_RANDOM,
++					     "pcifront", pdev);
++	if (err < 0) {
++		xenbus_dev_fatal(pdev->xdev, err,
++				 "Failed to bind event channel");
++		goto out;
++	}
++	pdev->irq = err;
 +
 +      do_publish:
 +	err = xenbus_transaction_start(&trans);
@@ -30726,6 +30734,8 @@ and in case upstream wants to take the forward porting patches:
 +	}
 +
 +	err = pcifront_publish_info(pdev);
++	if (err)
++		free_pdev(pdev);
 +
 +      out:
 +	return err;
@@ -30765,13 +30775,13 @@ and in case upstream wants to take the forward porting patches:
 +/* Initialize after the Xen PCI Frontend Stub is initialized */
 +subsys_initcall(pcifront_init);
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/privcmd/Makefile	2007-07-10 09:42:30.000000000 +0200
++++ b/drivers/xen/privcmd/Makefile	2007-07-10 09:42:30.000000000 +0200
 @@ -0,0 +1,3 @@
 +
 +obj-y	+= privcmd.o
 +obj-$(CONFIG_COMPAT)	+= compat_privcmd.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/privcmd/compat_privcmd.c	2010-01-27 14:01:48.000000000 +0100
++++ b/drivers/xen/privcmd/compat_privcmd.c	2010-01-27 14:01:48.000000000 +0100
 @@ -0,0 +1,144 @@
 +/*
 + * This program is free software; you can redistribute it and/or modify
@@ -30918,7 +30928,7 @@ and in case upstream wants to take the forward porting patches:
 +	return ret;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/privcmd/privcmd.c	2010-01-27 14:01:48.000000000 +0100
++++ b/drivers/xen/privcmd/privcmd.c	2010-01-27 14:01:48.000000000 +0100
 @@ -0,0 +1,491 @@
 +/******************************************************************************
 + * privcmd.c
@@ -31412,14 +31422,14 @@ and in case upstream wants to take the forward porting patches:
 +
 +__initcall(privcmd_init);
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsiback/Makefile	2008-07-21 11:00:33.000000000 +0200
++++ b/drivers/xen/scsiback/Makefile	2008-07-21 11:00:33.000000000 +0200
 @@ -0,0 +1,4 @@
 +obj-$(CONFIG_XEN_SCSI_BACKEND) := xen-scsibk.o
 +
 +xen-scsibk-y	:= interface.o scsiback.o xenbus.o translate.o emulate.o
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsiback/common.h	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/scsiback/common.h	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,186 @@
 +/*
 + * Copyright (c) 2008, FUJITSU Limited
@@ -31608,8 +31618,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __SCSIIF__BACKEND__COMMON_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsiback/emulate.c	2009-03-18 10:39:32.000000000 +0100
-@@ -0,0 +1,474 @@
++++ b/drivers/xen/scsiback/emulate.c	2011-02-02 12:19:11.000000000 +0100
+@@ -0,0 +1,484 @@
 +/*
 + * Xen SCSI backend driver
 + *
@@ -31639,6 +31649,11 @@ and in case upstream wants to take the forward porting patches:
 + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 + * IN THE SOFTWARE.
 + */
++
++/*
++* Patched to support >2TB drives + allow tape & autoloader operations
++* 2010, Samuel Kvasnica, IMS Nanofabrication AG
++*/
 +
 +#include <scsi/scsi.h>
 +#include <scsi/scsi_cmnd.h>
@@ -31996,85 +32011,90 @@ and in case upstream wants to take the forward porting patches:
 +	/*
 +	  Following commands do not require emulation.
 +	*/
-+	NO_EMULATE(TEST_UNIT_READY);       /*0x00*/
-+	NO_EMULATE(REZERO_UNIT);           /*0x01*/
++	NO_EMULATE(TEST_UNIT_READY);       /*0x00*/ /* sd,st */
++	NO_EMULATE(REZERO_UNIT);           /*0x01*/ /* st */
 +	NO_EMULATE(REQUEST_SENSE);         /*0x03*/
 +	NO_EMULATE(FORMAT_UNIT);           /*0x04*/
-+	NO_EMULATE(READ_BLOCK_LIMITS);     /*0x05*/
++	NO_EMULATE(READ_BLOCK_LIMITS);     /*0x05*/ /* st */
 +	/*NO_EMULATE(REASSIGN_BLOCKS);       *//*0x07*/
-+	/*NO_EMULATE(INITIALIZE_ELEMENT_STATUS); *//*0x07*/
-+	NO_EMULATE(READ_6);                /*0x08*/
-+	NO_EMULATE(WRITE_6);               /*0x0a*/
-+	/*NO_EMULATE(SEEK_6);                *//*0x0b*/
++	NO_EMULATE(INITIALIZE_ELEMENT_STATUS); /*0x07*/ /* ch */
++	NO_EMULATE(READ_6);                /*0x08*/ /* sd,st */
++	NO_EMULATE(WRITE_6);               /*0x0a*/ /* sd,st */
++	NO_EMULATE(SEEK_6);                /*0x0b*/
 +	/*NO_EMULATE(READ_REVERSE);          *//*0x0f*/
-+	NO_EMULATE(WRITE_FILEMARKS);       /*0x10*/
-+	NO_EMULATE(SPACE);                 /*0x11*/
++	NO_EMULATE(WRITE_FILEMARKS);       /*0x10*/ /* st */
++	NO_EMULATE(SPACE);                 /*0x11*/ /* st */
 +	NO_EMULATE(INQUIRY);               /*0x12*/
 +	/*NO_EMULATE(RECOVER_BUFFERED_DATA); *//*0x14*/
-+	/*NO_EMULATE(MODE_SELECT);           *//*0x15*/
++	NO_EMULATE(MODE_SELECT);           /*0x15*/ /* st */
 +	/*NO_EMULATE(RESERVE);               *//*0x16*/
 +	/*NO_EMULATE(RELEASE);               *//*0x17*/
 +	/*NO_EMULATE(COPY);                  *//*0x18*/
-+	NO_EMULATE(ERASE);                 /*0x19*/
-+	NO_EMULATE(MODE_SENSE);            /*0x1a*/
-+	/*NO_EMULATE(START_STOP);            *//*0x1b*/
-+	/*NO_EMULATE(RECEIVE_DIAGNOSTIC);    *//*0x1c*/
++	NO_EMULATE(ERASE);                 /*0x19*/ /* st */
++	NO_EMULATE(MODE_SENSE);            /*0x1a*/ /* st */
++	NO_EMULATE(START_STOP);            /*0x1b*/ /* sd,st */
++	NO_EMULATE(RECEIVE_DIAGNOSTIC);    /*0x1c*/
 +	NO_EMULATE(SEND_DIAGNOSTIC);       /*0x1d*/
-+	/*NO_EMULATE(ALLOW_MEDIUM_REMOVAL);  *//*0x1e*/
++	NO_EMULATE(ALLOW_MEDIUM_REMOVAL);  /*0x1e*/
 +
 +	/*NO_EMULATE(SET_WINDOW);            *//*0x24*/
-+	NO_EMULATE(READ_CAPACITY);         /*0x25*/
-+	NO_EMULATE(READ_10);               /*0x28*/
-+	NO_EMULATE(WRITE_10);              /*0x2a*/
-+	/*NO_EMULATE(SEEK_10);               *//*0x2b*/
-+	/*NO_EMULATE(POSITION_TO_ELEMENT);   *//*0x2b*/
++	NO_EMULATE(READ_CAPACITY);         /*0x25*/ /* sd */
++	NO_EMULATE(READ_10);               /*0x28*/ /* sd */
++	NO_EMULATE(WRITE_10);              /*0x2a*/ /* sd */
++	NO_EMULATE(SEEK_10);               /*0x2b*/ /* st */
++	NO_EMULATE(POSITION_TO_ELEMENT);   /*0x2b*/ /* ch */
 +	/*NO_EMULATE(WRITE_VERIFY);          *//*0x2e*/
 +	/*NO_EMULATE(VERIFY);                *//*0x2f*/
 +	/*NO_EMULATE(SEARCH_HIGH);           *//*0x30*/
 +	/*NO_EMULATE(SEARCH_EQUAL);          *//*0x31*/
 +	/*NO_EMULATE(SEARCH_LOW);            *//*0x32*/
-+	/*NO_EMULATE(SET_LIMITS);            *//*0x33*/
-+	/*NO_EMULATE(PRE_FETCH);             *//*0x34*/
-+	/*NO_EMULATE(READ_POSITION);         *//*0x34*/
-+	/*NO_EMULATE(SYNCHRONIZE_CACHE);     *//*0x35*/
-+	/*NO_EMULATE(LOCK_UNLOCK_CACHE);     *//*0x36*/
-+	/*NO_EMULATE(READ_DEFECT_DATA);      *//*0x37*/
-+	/*NO_EMULATE(MEDIUM_SCAN);           *//*0x38*/
++	NO_EMULATE(SET_LIMITS);            /*0x33*/
++	NO_EMULATE(PRE_FETCH);             /*0x34*/ /* st! */
++	NO_EMULATE(READ_POSITION);          /*0x34*/ /* st */
++	NO_EMULATE(SYNCHRONIZE_CACHE);      /*0x35*/ /* sd */
++	NO_EMULATE(LOCK_UNLOCK_CACHE);     /*0x36*/
++	NO_EMULATE(READ_DEFECT_DATA);      /*0x37*/
++	NO_EMULATE(MEDIUM_SCAN);           /*0x38*/
 +	/*NO_EMULATE(COMPARE);               *//*0x39*/
 +	/*NO_EMULATE(COPY_VERIFY);           *//*0x3a*/
-+	/*NO_EMULATE(WRITE_BUFFER);          *//*0x3b*/
-+	/*NO_EMULATE(READ_BUFFER);           *//*0x3c*/
++	NO_EMULATE(WRITE_BUFFER);          /*0x3b*/
++	NO_EMULATE(READ_BUFFER);           /*0x3c*/ /* osst */
 +	/*NO_EMULATE(UPDATE_BLOCK);          *//*0x3d*/
 +	/*NO_EMULATE(READ_LONG);             *//*0x3e*/
 +	/*NO_EMULATE(WRITE_LONG);            *//*0x3f*/
 +	/*NO_EMULATE(CHANGE_DEFINITION);     *//*0x40*/
 +	/*NO_EMULATE(WRITE_SAME);            *//*0x41*/
-+	/*NO_EMULATE(READ_TOC);              *//*0x43*/
-+	/*NO_EMULATE(LOG_SELECT);            *//*0x4c*/
-+	/*NO_EMULATE(LOG_SENSE);             *//*0x4d*/
++	NO_EMULATE(READ_TOC);              /*0x43*/ /* sr */
++	NO_EMULATE(LOG_SELECT);            /*0x4c*/
++	NO_EMULATE(LOG_SENSE);             /*0x4d*/ /* st! */
 +	/*NO_EMULATE(MODE_SELECT_10);        *//*0x55*/
 +	/*NO_EMULATE(RESERVE_10);            *//*0x56*/
 +	/*NO_EMULATE(RELEASE_10);            *//*0x57*/
-+	/*NO_EMULATE(MODE_SENSE_10);         *//*0x5a*/
++	NO_EMULATE(MODE_SENSE_10);         /*0x5a*/ /* scsi_lib */
 +	/*NO_EMULATE(PERSISTENT_RESERVE_IN); *//*0x5e*/
 +	/*NO_EMULATE(PERSISTENT_RESERVE_OUT); *//*0x5f*/
 +	/*           REPORT_LUNS             *//*0xa0*//*Full emulaiton*/
-+	/*NO_EMULATE(MOVE_MEDIUM);           *//*0xa5*/
-+	/*NO_EMULATE(EXCHANGE_MEDIUM);       *//*0xa6*/
++#ifdef MAINTENANCE_IN
++	NO_EMULATE(MAINTENANCE_IN);           /*0xa3*/ /* IFT alua */
++	NO_EMULATE(MAINTENANCE_OUT);       /*0xa4*/ /* IFT alua */
++#endif
++	NO_EMULATE(MOVE_MEDIUM);           /*0xa5*/ /* ch */
++	NO_EMULATE(EXCHANGE_MEDIUM);       /*0xa6*/ /* ch */
 +	/*NO_EMULATE(READ_12);               *//*0xa8*/
 +	/*NO_EMULATE(WRITE_12);              *//*0xaa*/
 +	/*NO_EMULATE(WRITE_VERIFY_12);       *//*0xae*/
 +	/*NO_EMULATE(SEARCH_HIGH_12);        *//*0xb0*/
 +	/*NO_EMULATE(SEARCH_EQUAL_12);       *//*0xb1*/
 +	/*NO_EMULATE(SEARCH_LOW_12);         *//*0xb2*/
-+	/*NO_EMULATE(READ_ELEMENT_STATUS);   *//*0xb8*/
-+	/*NO_EMULATE(SEND_VOLUME_TAG);       *//*0xb6*/
++	NO_EMULATE(READ_ELEMENT_STATUS);   /*0xb8*/ /* ch */
++	NO_EMULATE(SEND_VOLUME_TAG);       /*0xb6*/ /* ch */
 +	/*NO_EMULATE(WRITE_LONG_2);          *//*0xea*/
-+	/*NO_EMULATE(READ_16);               *//*0x88*/
-+	/*NO_EMULATE(WRITE_16);              *//*0x8a*/
-+	/*NO_EMULATE(VERIFY_16);	      *//*0x8f*/
-+	/*NO_EMULATE(SERVICE_ACTION_IN);     *//*0x9e*/
++	NO_EMULATE(READ_16);               /*0x88*/ /* sd >2TB */
++	NO_EMULATE(WRITE_16);              /*0x8a*/ /* sd >2TB */
++	NO_EMULATE(VERIFY_16);	           /*0x8f*/
++	NO_EMULATE(SERVICE_ACTION_IN);     /*0x9e*/ /* sd >2TB */
 +
++/* st: QFA_REQUEST_BLOCK, QFA_SEEK_BLOCK might be needed ? */
 +	/*
 +	  Following commands require emulation.
 +	*/
@@ -32085,8 +32105,8 @@ and in case upstream wants to take the forward porting patches:
 +	return;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsiback/interface.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,186 @@
++++ b/drivers/xen/scsiback/interface.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,182 @@
 +/*
 + * interface management.
 + *
@@ -32153,27 +32173,23 @@ and in case upstream wants to take the forward porting patches:
 +				unsigned long ring_ref)
 +{
 +	struct gnttab_map_grant_ref op;
-+	int err;
++	int ret;
 +
 +	gnttab_set_map_op(&op, (unsigned long)info->ring_area->addr,
 +				GNTMAP_host_map, ring_ref,
 +				info->domid);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+    do {
-+	    err = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1);
-+	    BUG_ON(err);
-+        msleep(10);
-+    } while(op.status == GNTST_eagain);
-+
-+	if (op.status) {
-+		printk(KERN_ERR "scsiback: Grant table operation failure !\n");
-+		return op.status;
++	if (op.status != GNTST_okay) {
++		printk(KERN_ERR "scsiback: Grant table operation failure %d!\n", (int)op.status);
++		ret = -EINVAL;
++	} else {
++		info->shmem_ref    = ring_ref;
++		info->shmem_handle = op.handle;
++		ret = 0;
 +	}
 +
-+	info->shmem_ref    = ring_ref;
-+	info->shmem_handle = op.handle;
-+
-+	return (GNTST_okay);
++	return ret;
 +}
 +
 +static void unmap_frontend_page(struct vscsibk_info *info)
@@ -32274,8 +32290,8 @@ and in case upstream wants to take the forward porting patches:
 +	kmem_cache_destroy(scsiback_cachep);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsiback/scsiback.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,755 @@
++++ b/drivers/xen/scsiback/scsiback.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,747 @@
 +/*
 + * Xen SCSI backend driver
 + *
@@ -32557,22 +32573,14 @@ and in case upstream wants to take the forward porting patches:
 +
 +		err = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map, nr_segments);
 +		BUG_ON(err);
-+        /* Retry maps with GNTST_eagain */
-+        for(i=0; i < nr_segments; i++) {
-+            while(unlikely(map[i].status == GNTST_eagain))
-+            {
-+                msleep(10);
-+		        err = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, 
-+                                                &map[i], 
-+                                                1);
-+		        BUG_ON(err);
-+            }
-+        }
 +
 +		for (i = 0; i < nr_segments; i++) {
 +			struct page *pg;
 +
-+			if (unlikely(map[i].status != 0)) {
++			/* Retry maps with GNTST_eagain */
++			if (unlikely(map[i].status == GNTST_eagain))
++				gnttab_check_GNTST_eagain_while(GNTTABOP_map_grant_ref, &map[i]);
++			if (unlikely(map[i].status != GNTST_okay)) {
 +				printk(KERN_ERR "scsiback: invalid buffer -- could not remap it\n");
 +				map[i].handle = SCSIBACK_INVALID_HANDLE;
 +				err |= 1;
@@ -33032,7 +33040,7 @@ and in case upstream wants to take the forward porting patches:
 +MODULE_DESCRIPTION("Xen SCSI backend driver");
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsiback/translate.c	2008-07-21 11:00:33.000000000 +0200
++++ b/drivers/xen/scsiback/translate.c	2008-07-21 11:00:33.000000000 +0200
 @@ -0,0 +1,168 @@
 +/*
 + * Xen SCSI backend driver
@@ -33203,7 +33211,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsiback/xenbus.c	2009-03-18 10:39:32.000000000 +0100
++++ b/drivers/xen/scsiback/xenbus.c	2009-03-18 10:39:32.000000000 +0100
 @@ -0,0 +1,378 @@
 +/*
 + * Xen SCSI backend driver
@@ -33584,13 +33592,13 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_unregister_driver(&scsiback);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsifront/Makefile	2008-07-21 11:00:33.000000000 +0200
++++ b/drivers/xen/scsifront/Makefile	2008-07-21 11:00:33.000000000 +0200
 @@ -0,0 +1,3 @@
 +
 +obj-$(CONFIG_XEN_SCSI_FRONTEND)	:= xenscsi.o
 +xenscsi-objs := scsifront.o xenbus.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsifront/common.h	2010-02-24 13:13:46.000000000 +0100
++++ b/drivers/xen/scsifront/common.h	2010-02-24 13:13:46.000000000 +0100
 @@ -0,0 +1,135 @@
 +/*
 + * Xen SCSI frontend driver
@@ -33728,8 +33736,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __XEN_DRIVERS_SCSIFRONT_H__  */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsifront/scsifront.c	2008-07-21 11:00:33.000000000 +0200
-@@ -0,0 +1,511 @@
++++ b/drivers/xen/scsifront/scsifront.c	2011-02-02 12:19:11.000000000 +0100
+@@ -0,0 +1,516 @@
 +/*
 + * Xen SCSI frontend driver
 + *
@@ -34089,6 +34097,11 @@ and in case upstream wants to take the forward porting patches:
 +	int ref_cnt;
 +	uint16_t rqid;
 +
++/* debug printk to identify more missing scsi commands
++	printk(KERN_INFO "scsicmd: len=%i, 0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x",sc->cmd_len,
++		sc->cmnd[0],sc->cmnd[1],sc->cmnd[2],sc->cmnd[3],sc->cmnd[4],
++		sc->cmnd[5],sc->cmnd[6],sc->cmnd[7],sc->cmnd[8],sc->cmnd[9]);
++*/
 +	if (RING_FULL(&info->ring)) {
 +		goto out_host_busy;
 +	}
@@ -34242,8 +34255,8 @@ and in case upstream wants to take the forward porting patches:
 +MODULE_DESCRIPTION("Xen SCSI frontend driver");
 +MODULE_LICENSE("GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/scsifront/xenbus.c	2010-03-31 09:56:02.000000000 +0200
-@@ -0,0 +1,421 @@
++++ b/drivers/xen/scsifront/xenbus.c	2011-02-02 12:19:11.000000000 +0100
+@@ -0,0 +1,426 @@
 +/*
 + * Xen SCSI frontend driver
 + *
@@ -34273,7 +34286,11 @@ and in case upstream wants to take the forward porting patches:
 + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 + * IN THE SOFTWARE.
 + */
-+ 
++
++/*
++* Patched to support >2TB drives
++* 2010, Samuel Kvasnica, IMS Nanofabrication AG
++*/
 +
 +#include <linux/version.h>
 +#include "common.h"
@@ -34465,6 +34482,7 @@ and in case upstream wants to take the forward porting patches:
 +	host->max_channel = 0;
 +	host->max_lun     = VSCSIIF_MAX_LUN;
 +	host->max_sectors = (VSCSIIF_SG_TABLESIZE - 1) * PAGE_SIZE / 512;
++	host->max_cmd_len = VSCSIIF_MAX_COMMAND_SIZE;
 +
 +	err = scsi_add_host(host, &dev->dev);
 +	if (err) {
@@ -34666,7 +34684,7 @@ and in case upstream wants to take the forward porting patches:
 +}
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/Makefile	2010-01-18 15:23:12.000000000 +0100
++++ b/drivers/xen/sfc_netback/Makefile	2010-01-18 15:23:12.000000000 +0100
 @@ -0,0 +1,12 @@
 +EXTRA_CFLAGS += -Idrivers/xen/sfc_netback -Idrivers/xen/sfc_netutil -Idrivers/xen/netback -Idrivers/net/sfc -Idrivers/net/sfc/sfc_resource
 +EXTRA_CFLAGS += -D__ci_driver__ 
@@ -34681,7 +34699,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +sfc_netback-objs   := accel.o accel_fwd.o accel_msg.o accel_solarflare.o accel_xenbus.o accel_debugfs.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netback/accel.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,147 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -34831,7 +34849,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel.h	2010-01-18 15:23:12.000000000 +0100
++++ b/drivers/xen/sfc_netback/accel.h	2010-01-18 15:23:12.000000000 +0100
 @@ -0,0 +1,391 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -35225,7 +35243,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel_debugfs.c	2008-02-26 10:54:11.000000000 +0100
++++ b/drivers/xen/sfc_netback/accel_debugfs.c	2008-02-26 10:54:11.000000000 +0100
 @@ -0,0 +1,148 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -35376,7 +35394,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel_fwd.c	2008-04-02 12:34:02.000000000 +0200
++++ b/drivers/xen/sfc_netback/accel_fwd.c	2008-04-02 12:34:02.000000000 +0200
 @@ -0,0 +1,420 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -35799,7 +35817,7 @@ and in case upstream wants to take the forward porting patches:
 +	return;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel_msg.c	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/accel_msg.c	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,392 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -36194,7 +36212,7 @@ and in case upstream wants to take the forward porting patches:
 +	return;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel_solarflare.c	2010-01-18 15:23:12.000000000 +0100
++++ b/drivers/xen/sfc_netback/accel_solarflare.c	2010-01-18 15:23:12.000000000 +0100
 @@ -0,0 +1,1293 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -37490,7 +37508,7 @@ and in case upstream wants to take the forward porting patches:
 +	spin_unlock_irqrestore(&accel_hw_priv->filter_lock, flags);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel_solarflare.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/accel_solarflare.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,88 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -37581,7 +37599,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* NETBACK_ACCEL_SOLARFLARE_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/accel_xenbus.c	2010-01-04 11:56:34.000000000 +0100
++++ b/drivers/xen/sfc_netback/accel_xenbus.c	2010-01-04 11:56:34.000000000 +0100
 @@ -0,0 +1,833 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -38417,7 +38435,7 @@ and in case upstream wants to take the forward porting patches:
 +			       XenbusStateClosing);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,53 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -38473,7 +38491,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat/gcc.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat/gcc.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,158 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -38634,7 +38652,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat/gcc_x86.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat/gcc_x86.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,115 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -38752,7 +38770,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat/primitive.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat/primitive.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,77 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -38832,7 +38850,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat/sysdep.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat/sysdep.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,166 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -39001,7 +39019,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat/utils.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat/utils.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,269 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -39273,7 +39291,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif  /* __CI_COMPAT_UTILS_H__ */
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat/x86.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat/x86.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,48 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -39324,7 +39342,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/compat/x86_64.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/compat/x86_64.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,54 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -39381,7 +39399,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif  /* __CI_COMPAT_X86_64_H__ */
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/tools/config.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/tools/config.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,49 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -39433,7 +39451,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif  /* __CI_TOOLS_CONFIG_H__ */
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/tools/debug.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/tools/debug.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,336 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -39772,7 +39790,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/tools/log.h	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netback/ci/tools/log.h	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,269 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -40044,7 +40062,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif  /* __CI_TOOLS_LOG_H__ */
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/tools/platform/gcc_x86.h	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netback/ci/tools/platform/gcc_x86.h	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,370 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -40417,7 +40435,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/tools/platform/linux_kernel.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/tools/platform/linux_kernel.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,362 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -40782,7 +40800,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif  /* __CI_TOOLS_LINUX_KERNEL_H__ */
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netback/ci/tools/sysdep.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netback/ci/tools/sysdep.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,132 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -40917,7 +40935,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/Makefile	2008-02-26 10:54:11.000000000 +0100
++++ b/drivers/xen/sfc_netfront/Makefile	2008-02-26 10:54:11.000000000 +0100
 @@ -0,0 +1,11 @@
 +EXTRA_CFLAGS += -Idrivers/xen/sfc_netfront -Idrivers/xen/sfc_netutil -Idrivers/xen/netfront
 +EXTRA_CFLAGS += -D__ci_driver__
@@ -40931,7 +40949,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +sfc_netfront-objs := accel_msg.o accel_bufs.o accel_netfront.o accel_vi.o accel_xenbus.o accel_tso.o accel_ssr.o accel_debugfs.o falcon_event.o falcon_vi.o pt_tx.o vi_init.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel.h	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/accel.h	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,495 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -41429,7 +41447,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* NETFRONT_ACCEL_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_bufs.c	2008-02-26 10:54:12.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_bufs.c	2008-02-26 10:54:12.000000000 +0100
 @@ -0,0 +1,393 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -41825,7 +41843,7 @@ and in case upstream wants to take the forward porting patches:
 +	return was_empty;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_bufs.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_bufs.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,181 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -42009,7 +42027,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif /* NETFRONT_ACCEL_BUFS_H */
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_debugfs.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/accel_debugfs.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,227 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -42239,7 +42257,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_msg.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/accel_msg.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,564 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -42806,7 +42824,7 @@ and in case upstream wants to take the forward porting patches:
 +					   &lock_state, vnic->msg_channel_irq);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_netfront.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/accel_netfront.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,328 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -43137,7 +43155,7 @@ and in case upstream wants to take the forward porting patches:
 +MODULE_LICENSE("GPL");
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_ssr.c	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_ssr.c	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,308 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -43448,7 +43466,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_ssr.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_ssr.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,88 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -43539,7 +43557,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* NETFRONT_ACCEL_SSR_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_tso.c	2008-02-26 10:54:12.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_tso.c	2008-02-26 10:54:12.000000000 +0100
 @@ -0,0 +1,511 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -44053,7 +44071,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_tso.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_tso.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,57 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -44113,7 +44131,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* NETFRONT_ACCEL_TSO_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_vi.c	2010-01-18 15:23:12.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_vi.c	2010-01-18 15:23:12.000000000 +0100
 @@ -0,0 +1,1202 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -45318,7 +45336,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 1;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/accel_xenbus.c	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/accel_xenbus.c	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,776 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -46097,7 +46115,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/ef_vi_falcon.h	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/ef_vi_falcon.h	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,172 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -46272,7 +46290,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif  /* __EF_VI_FALCON_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/ef_vi_falcon_core.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/ef_vi_falcon_core.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,1075 @@
 +
 +#define  EFVI_FALCON_EXTENDED_P_BAR 1
@@ -47350,7 +47368,7 @@ and in case upstream wants to take the forward porting patches:
 +  #define EE_VPD_CYC_DAT_LBN 0
 +  #define EE_VPD_CYC_DAT_WIDTH 32
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/ef_vi_falcon_desc.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/ef_vi_falcon_desc.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,43 @@
 +//////////////---- Descriptors C Headers ----//////////////
 +// Receive Kernel IP Descriptor
@@ -47396,7 +47414,7 @@ and in case upstream wants to take the forward porting patches:
 +  #define TX_USR_BYTE_OFS_LBN 0
 +  #define TX_USR_BYTE_OFS_WIDTH 13
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/ef_vi_falcon_event.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/ef_vi_falcon_event.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,123 @@
 +//////////////---- Events Format C Header ----//////////////
 +//////////////---- Event entry ----//////////////
@@ -47522,7 +47540,7 @@ and in case upstream wants to take the forward porting patches:
 +  #define DRV_GEN_EV_DATA_LBN 0
 +  #define DRV_GEN_EV_DATA_WIDTH 60
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/ef_vi_internal.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/ef_vi_internal.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,256 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -47781,7 +47799,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif  /* __CI_EF_VI_INTERNAL_H__ */
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/etherfabric/ef_vi.h	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/etherfabric/ef_vi.h	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,647 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -48431,7 +48449,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __EFAB_EF_VI_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/falcon_event.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/falcon_event.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,346 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -48780,7 +48798,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/falcon_vi.c	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/falcon_vi.c	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,473 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -49256,7 +49274,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/pt_tx.c	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/pt_tx.c	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,91 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -49350,7 +49368,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +/*! \cidoxg_end */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/sysdep.h	2009-04-07 13:58:48.000000000 +0200
++++ b/drivers/xen/sfc_netfront/sysdep.h	2009-04-07 13:58:48.000000000 +0200
 @@ -0,0 +1,185 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -49538,7 +49556,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif  /* __CI_CIUL_SYSDEP_LINUX_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netfront/vi_init.c	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netfront/vi_init.c	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,183 @@
 +/****************************************************************************
 + * Copyright 2002-2005: Level 5 Networks Inc.
@@ -49724,7 +49742,7 @@ and in case upstream wants to take the forward porting patches:
 +	vm->tx_bell       = (char*) io_mmap + (TX_DESC_UPD_REG_KER_OFST & 4095);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/Makefile	2008-02-26 10:54:12.000000000 +0100
++++ b/drivers/xen/sfc_netutil/Makefile	2008-02-26 10:54:12.000000000 +0100
 @@ -0,0 +1,11 @@
 +EXTRA_CFLAGS += -Idrivers/xen/sfc_netutil
 +EXTRA_CFLAGS += -Werror
@@ -49738,7 +49756,7 @@ and in case upstream wants to take the forward porting patches:
 +sfc_netutil-objs := accel_cuckoo_hash.o accel_msg_iface.o accel_util.o 
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/accel_cuckoo_hash.c	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netutil/accel_cuckoo_hash.c	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,651 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -50392,7 +50410,7 @@ and in case upstream wants to take the forward porting patches:
 +EXPORT_SYMBOL_GPL(cuckoo_hash_dump);
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/accel_cuckoo_hash.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netutil/accel_cuckoo_hash.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,227 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -50622,7 +50640,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* NET_ACCEL_CUCKOO_HASH_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/accel_msg_iface.c	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netutil/accel_msg_iface.c	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,301 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -50926,7 +50944,7 @@ and in case upstream wants to take the forward porting patches:
 +}
 +EXPORT_SYMBOL_GPL(net_accel_msg_complete_send_notify);
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/accel_msg_iface.h	2010-01-18 15:23:12.000000000 +0100
++++ b/drivers/xen/sfc_netutil/accel_msg_iface.h	2010-01-18 15:23:12.000000000 +0100
 @@ -0,0 +1,415 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -51344,7 +51362,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* NET_ACCEL_MSG_IFACE_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/accel_shared_fifo.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netutil/accel_shared_fifo.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,127 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -51474,8 +51492,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* NET_ACCEL_SHARED_FIFO_H */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/accel_util.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,355 @@
++++ b/drivers/xen/sfc_netutil/accel_util.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,336 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
 + *
@@ -51549,24 +51567,27 @@ and in case upstream wants to take the forward porting patches:
 +			       u64 *dev_bus_addr, unsigned flags)
 +{
 +	struct gnttab_map_grant_ref op;
++	int ret;
 +	
 +	gnttab_set_map_op(&op, (unsigned long)vaddr, flags,
 +			  gnt_ref, dev->otherend_id);
 +
-+	BUG_ON(HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1));
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
 +	if (op.status != GNTST_okay) {
 +		xenbus_dev_error
 +			(dev, op.status,
 +			 "failed mapping in shared page %d from domain %d\n",
 +			 gnt_ref, dev->otherend_id);
++		ret = -EINVAL;
 +	} else {
 +		*handle = op.handle;
 +		if (dev_bus_addr)
 +			*dev_bus_addr = op.dev_bus_addr;
++		ret = 0;
 +	}
 +
-+	return op.status;
++	return ret;
 +}
 +
 +
@@ -51590,7 +51611,7 @@ and in case upstream wants to take the forward porting patches:
 +				 "failed unmapping page at handle %d error %d\n",
 +				 handle, op.status);
 +
-+	return op.status;
++	return op.status == GNTST_okay ? 0 : -EINVAL;
 +}
 +
 +
@@ -51622,7 +51643,7 @@ and in case upstream wants to take the forward porting patches:
 +/* Map a series of grants into a contiguous virtual area */
 +static void *net_accel_map_grants_valloc(struct xenbus_device *dev, 
 +					 unsigned *grants, int npages, 
-+					 unsigned flags, void **priv, int *errno)
++					 unsigned flags, void **priv)
 +{
 +	struct net_accel_valloc_grant_mapping *map;
 +	struct vm_struct *vm;
@@ -51650,16 +51671,12 @@ and in case upstream wants to take the forward porting patches:
 +
 +	/* Do the actual mapping */
 +	addr = vm->addr;
-+    if(errno != NULL) *errno = 0;
++
 +	for (i = 0; i < npages; i++) {
 +		rc = net_accel_map_grant(dev, grants[i], map->grant_handles + i, 
 +					 addr, NULL, flags);
-+		if (rc != 0)
-+        {
-+            if(errno != NULL) 
-+                *errno = (rc == GNTST_eagain ? -EAGAIN : -EINVAL);
++		if (rc < 0)
 +			goto undo;
-+        }
 +		addr = (void*)((unsigned long)addr + PAGE_SIZE);
 +	}
 +
@@ -51708,16 +51725,7 @@ and in case upstream wants to take the forward porting patches:
 +				unsigned *grants, int npages, 
 +				void **priv)
 +{
-+    int errno;
-+    void *ret;
-+
-+    do {
-+	    ret = net_accel_map_grants_valloc(dev, grants, npages,
-+					   GNTMAP_host_map, priv, &errno);
-+        if(errno) msleep(10);
-+    } while(errno == -EAGAIN);
-+
-+    return ret;
++    return net_accel_map_grants_valloc(dev, grants, npages, GNTMAP_host_map, priv);
 +}
 +EXPORT_SYMBOL(net_accel_map_grants_contig);
 +
@@ -51733,16 +51741,7 @@ and in case upstream wants to take the forward porting patches:
 +void *net_accel_map_iomem_page(struct xenbus_device *dev, int gnt_ref,
 +			     void **priv)
 +{
-+    int errno;
-+    void *ret;
-+
-+	do {
-+        ret = net_accel_map_grants_valloc(dev, &gnt_ref, 1, 
-+					   GNTMAP_host_map, priv, &errno);
-+        if(errno) msleep(10);
-+    } while(errno == -EAGAIN);
-+
-+    return ret;
++	return net_accel_map_grants_valloc(dev, &gnt_ref, 1, GNTMAP_host_map, priv);
 +}
 +EXPORT_SYMBOL(net_accel_map_iomem_page);
 +
@@ -51832,7 +51831,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/sfc_netutil/accel_util.h	2008-02-20 09:32:49.000000000 +0100
++++ b/drivers/xen/sfc_netutil/accel_util.h	2008-02-20 09:32:49.000000000 +0100
 @@ -0,0 +1,127 @@
 +/****************************************************************************
 + * Solarflare driver for Xen network acceleration
@@ -51962,14 +51961,14 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/tpmback/Makefile	2007-06-12 13:13:45.000000000 +0200
++++ b/drivers/xen/tpmback/Makefile	2007-06-12 13:13:45.000000000 +0200
 @@ -0,0 +1,4 @@
 +
 +obj-$(CONFIG_XEN_TPMDEV_BACKEND)	+= tpmbk.o
 +
 +tpmbk-y += tpmback.o interface.o xenbus.o
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/tpmback/common.h	2007-06-12 13:13:45.000000000 +0200
++++ b/drivers/xen/tpmback/common.h	2007-06-12 13:13:45.000000000 +0200
 @@ -0,0 +1,85 @@
 +/******************************************************************************
 + * drivers/xen/tpmback/common.h
@@ -52057,8 +52056,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __TPMIF__BACKEND__COMMON_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/tpmback/interface.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,172 @@
++++ b/drivers/xen/tpmback/interface.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,170 @@
 + /*****************************************************************************
 + * drivers/xen/tpmback/interface.c
 + *
@@ -52142,25 +52141,23 @@ and in case upstream wants to take the forward porting patches:
 +static int map_frontend_page(tpmif_t *tpmif, unsigned long shared_page)
 +{
 +	struct gnttab_map_grant_ref op;
++	int ret;
 +
 +	gnttab_set_map_op(&op, (unsigned long)tpmif->tx_area->addr,
 +			  GNTMAP_host_map, shared_page, tpmif->domid);
 +
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(10);
-+    } while(op.status == GNTST_eagain);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+	if (op.status) {
-+		DPRINTK(" Grant table operation failure !\n");
-+		return op.status;
++	if (op.status != GNTST_okay) {
++		DPRINTK(" Grant table operation failure %d!\n", (int)op.status);
++		ret = -EINVAL;
++	} else {
++		tpmif->shmem_ref = shared_page;
++		tpmif->shmem_handle = op.handle;
++		ret = 0;
 +	}
 +
-+	tpmif->shmem_ref = shared_page;
-+	tpmif->shmem_handle = op.handle;
-+
-+	return 0;
++	return ret;
 +}
 +
 +static void unmap_frontend_page(tpmif_t *tpmif)
@@ -52232,8 +52229,8 @@ and in case upstream wants to take the forward porting patches:
 +	kmem_cache_destroy(tpmif_cachep);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/tpmback/tpmback.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,949 @@
++++ b/drivers/xen/tpmback/tpmback.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,939 @@
 +/******************************************************************************
 + * drivers/xen/tpmback/tpmback.c
 + *
@@ -52493,19 +52490,14 @@ and in case upstream wants to take the forward porting patches:
 +		gnttab_set_map_op(&map_op, idx_to_kaddr(tpmif, i),
 +				  GNTMAP_host_map, tx->ref, tpmif->domid);
 +
-+        do {
-+		    if (unlikely(HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
-+						       &map_op, 1)))
-+			    BUG();
-+            if(map_op.status) msleep(10);
-+		} while(map_op.status == GNTST_eagain);
++		gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &map_op);
 +
-+		handle = map_op.handle;
-+
-+		if (map_op.status) {
++		if (map_op.status != GNTST_okay) {
 +			DPRINTK(" Grant table operation failure !\n");
 +			return 0;
 +		}
++
++		handle = map_op.handle;
 +
 +		tocopy = min_t(size_t, size - offset, PAGE_SIZE);
 +
@@ -52633,14 +52625,9 @@ and in case upstream wants to take the forward porting patches:
 +		gnttab_set_map_op(&map_op, idx_to_kaddr(tpmif, i),
 +				  GNTMAP_host_map, tx->ref, tpmif->domid);
 +
-+        do {
-+		    if (unlikely(HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
-+						       &map_op, 1)))
-+			    BUG();
-+            if(map_op.status) msleep(10);
-+		} while(map_op.status == GNTST_eagain);
++		gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &map_op);
 +
-+		if (map_op.status) {
++		if (map_op.status != GNTST_okay) {
 +			DPRINTK(" Grant table operation failure !\n");
 +			return -EFAULT;
 +		}
@@ -53184,7 +53171,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/tpmback/xenbus.c	2008-03-06 08:54:32.000000000 +0100
++++ b/drivers/xen/tpmback/xenbus.c	2008-03-06 08:54:32.000000000 +0100
 @@ -0,0 +1,289 @@
 +/*  Xenbus code for tpmif backend
 +    Copyright (C) 2005 IBM Corporation
@@ -53476,15 +53463,15 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_unregister_driver(&tpmback);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbback/Makefile	2009-04-07 13:58:49.000000000 +0200
++++ b/drivers/xen/usbback/Makefile	2009-04-07 13:58:49.000000000 +0200
 @@ -0,0 +1,4 @@
 +obj-$(CONFIG_XEN_USB_BACKEND) := usbbk.o
 +
 +usbbk-y   := usbstub.o xenbus.o interface.o usbback.o
 +
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbback/interface.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,257 @@
++++ b/drivers/xen/usbback/interface.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,248 @@
 +/*
 + * interface.c
 + *
@@ -53597,16 +53584,11 @@ and in case upstream wants to take the forward porting patches:
 +	gnttab_set_map_op(&op, (unsigned long)usbif->urb_ring_area->addr,
 +			  GNTMAP_host_map, urb_ring_ref, usbif->domid);
 +
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(10);
-+    } while (op.status == GNTST_eagain);
-+
-+	if (op.status) {
-+		printk(KERN_ERR "grant table failure mapping urb_ring_ref\n");
-+		return op.status;
++	if (op.status != GNTST_okay) {
++		printk(KERN_ERR "grant table failure mapping urb_ring_ref %d\n", (int)op.status);
++		return -EINVAL;
 +	}
 +
 +	usbif->urb_shmem_ref = urb_ring_ref;
@@ -53615,21 +53597,17 @@ and in case upstream wants to take the forward porting patches:
 +	gnttab_set_map_op(&op, (unsigned long)usbif->conn_ring_area->addr,
 +			  GNTMAP_host_map, conn_ring_ref, usbif->domid);
 +
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(10);
-+    } while (op.status == GNTST_eagain);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
-+	if (op.status) {
++	if (op.status != GNTST_okay) {
 +		struct gnttab_unmap_grant_ref unop;
 +		gnttab_set_unmap_op(&unop,
 +				(unsigned long) usbif->urb_ring_area->addr,
 +				GNTMAP_host_map, usbif->urb_shmem_handle);
 +		VOID(HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &unop,
 +				1));
-+		printk(KERN_ERR "grant table failure mapping conn_ring_ref\n");
-+		return op.status;
++		printk(KERN_ERR "grant table failure mapping conn_ring_ref %d\n", (int)op.status);
++		return -EINVAL;
 +	}
 +
 +	usbif->conn_shmem_ref = conn_ring_ref;
@@ -53743,8 +53721,8 @@ and in case upstream wants to take the forward porting patches:
 +	kfree(usbif);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbback/usbback.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,1165 @@
++++ b/drivers/xen/usbback/usbback.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,1159 @@
 +/*
 + * usbback.c
 + *
@@ -54139,19 +54117,13 @@ and in case upstream wants to take the forward porting patches:
 +		ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
 +					map, nr_segs);
 +		BUG_ON(ret);
-+        /* Make sure than none of the map ops failed with GNTST_eagain */
-+        for( i = 0; i < nr_segs; i++) {
-+            while(map[i].status == GNTST_eagain) {
-+                msleep(10);
-+		        ret = HYPERVISOR_grant_table_op(
-+                                GNTTABOP_map_grant_ref,
-+				                &map[i], 1);
-+		        BUG_ON(ret);
-+            }
-+        }
 +
 +		for (i = 0; i < nr_segs; i++) {
-+			if (unlikely(map[i].status != 0)) {
++			/* Make sure than none of the map ops failed with GNTST_eagain */
++			if (unlikely(map[i].status == GNTST_eagain))
++				gnttab_check_GNTST_eagain_while(GNTTABOP_map_grant_ref, &map[i]);
++
++			if (unlikely(map[i].status != GNTST_okay)) {
 +				printk(KERN_ERR "usbback: invalid buffer -- could not remap it\n");
 +				map[i].handle = USBBACK_INVALID_HANDLE;
 +				ret |= 1;
@@ -54911,7 +54883,7 @@ and in case upstream wants to take the forward porting patches:
 +MODULE_DESCRIPTION("Xen USB backend driver (usbback)");
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbback/usbback.h	2009-11-06 10:23:23.000000000 +0100
++++ b/drivers/xen/usbback/usbback.h	2009-11-06 10:23:23.000000000 +0100
 @@ -0,0 +1,173 @@
 +/*
 + * usbback.h
@@ -55087,8 +55059,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __XEN_USBBACK_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbback/usbstub.c	2009-11-06 10:23:23.000000000 +0100
-@@ -0,0 +1,325 @@
++++ b/drivers/xen/usbback/usbstub.c	2011-03-02 12:00:16.000000000 +0100
+@@ -0,0 +1,324 @@
 +/*
 + * usbstub.c
 + *
@@ -55371,8 +55343,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +	return count;
 +}
-+
-+DRIVER_ATTR(port_ids, S_IRUSR, usbstub_show_portids, NULL);
++static DRIVER_ATTR(port_ids, S_IRUSR, usbstub_show_portids, NULL);
 +
 +/* table of devices that matches any usbdevice */
 +static struct usb_device_id usbstub_table[] = {
@@ -55415,7 +55386,7 @@ and in case upstream wants to take the forward porting patches:
 +	usb_deregister(&usbback_usb_driver);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbback/xenbus.c	2009-11-06 10:23:23.000000000 +0100
++++ b/drivers/xen/usbback/xenbus.c	2009-11-06 10:23:23.000000000 +0100
 @@ -0,0 +1,338 @@
 +/*
 + * xenbus.c
@@ -55756,7 +55727,7 @@ and in case upstream wants to take the forward porting patches:
 +	xenbus_unregister_driver(&usbback_driver);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbfront/Makefile	2009-10-15 11:45:41.000000000 +0200
++++ b/drivers/xen/usbfront/Makefile	2009-10-15 11:45:41.000000000 +0200
 @@ -0,0 +1,11 @@
 +obj-$(CONFIG_XEN_USB_FRONTEND) := xen-hcd.o
 +
@@ -55770,7 +55741,7 @@ and in case upstream wants to take the forward porting patches:
 +EXTRA_CFLAGS += -DXENHCD_PM
 +endif
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbfront/usbfront-dbg.c	2009-10-15 11:45:41.000000000 +0200
++++ b/drivers/xen/usbfront/usbfront-dbg.c	2009-10-15 11:45:41.000000000 +0200
 @@ -0,0 +1,100 @@
 +/*
 + * usbfront-dbg.c
@@ -55873,7 +55844,7 @@ and in case upstream wants to take the forward porting patches:
 +	class_device_remove_file(cldev, &class_device_attr_statistics);
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbfront/usbfront-hcd.c	2009-10-15 11:45:41.000000000 +0200
++++ b/drivers/xen/usbfront/usbfront-hcd.c	2009-10-15 11:45:41.000000000 +0200
 @@ -0,0 +1,231 @@
 +/*
 + * usbfront-hcd.c
@@ -56107,7 +56078,7 @@ and in case upstream wants to take the forward porting patches:
 +#endif
 +};
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbfront/usbfront-hub.c	2009-10-15 11:45:41.000000000 +0200
++++ b/drivers/xen/usbfront/usbfront-hub.c	2009-10-15 11:45:41.000000000 +0200
 @@ -0,0 +1,471 @@
 +/*
 + * usbfront-hub.c
@@ -56581,7 +56552,7 @@ and in case upstream wants to take the forward porting patches:
 +	return ret;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbfront/usbfront-q.c	2009-10-15 11:45:41.000000000 +0200
++++ b/drivers/xen/usbfront/usbfront-q.c	2009-10-15 11:45:41.000000000 +0200
 @@ -0,0 +1,541 @@
 +/*
 + * usbfront-q.c
@@ -57125,7 +57096,7 @@ and in case upstream wants to take the forward porting patches:
 +	return IRQ_HANDLED;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbfront/usbfront.h	2009-10-15 11:45:41.000000000 +0200
++++ b/drivers/xen/usbfront/usbfront.h	2009-10-15 11:45:41.000000000 +0200
 @@ -0,0 +1,203 @@
 +/*
 + * usbfront.h
@@ -57331,7 +57302,7 @@ and in case upstream wants to take the forward porting patches:
 +
 +#endif /* __XEN_USBFRONT_H__ */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/usbfront/xenbus.c	2010-03-31 09:56:02.000000000 +0200
++++ b/drivers/xen/usbfront/xenbus.c	2010-03-31 09:56:02.000000000 +0200
 @@ -0,0 +1,417 @@
 +/*
 + * xenbus.c
@@ -57751,7 +57722,7 @@ and in case upstream wants to take the forward porting patches:
 +MODULE_DESCRIPTION("Xen USB Virtual Host Controller driver (usbfront)");
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/util.c	2007-07-10 09:42:30.000000000 +0200
++++ b/drivers/xen/util.c	2007-07-10 09:42:30.000000000 +0200
 @@ -0,0 +1,65 @@
 +#include <linux/mm.h>
 +#include <linux/module.h>
@@ -57819,8 +57790,8 @@ and in case upstream wants to take the forward porting patches:
 +EXPORT_SYMBOL_GPL(free_vm_area);
 +#endif /* CONFIG_X86 */
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/xenbus/xenbus_backend_client.c	2010-01-04 11:56:34.000000000 +0100
-@@ -0,0 +1,154 @@
++++ b/drivers/xen/xenbus/xenbus_backend_client.c	2010-09-23 15:39:04.000000000 +0200
+@@ -0,0 +1,151 @@
 +/******************************************************************************
 + * Backend-client-facing interface for the Xenbus driver.  In other words, the
 + * interface between the Xenbus and the device-specific code in the backend
@@ -57872,11 +57843,7 @@ and in case upstream wants to take the forward porting patches:
 +	gnttab_set_map_op(&op, (unsigned long)area->addr, GNTMAP_host_map,
 +			  gnt_ref, dev->otherend_id);
 +	
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(10);
-+    } while(op.status == GNTST_eagain);
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
 +	if (op.status != GNTST_okay) {
 +		free_vm_area(area);
@@ -57884,7 +57851,7 @@ and in case upstream wants to take the forward porting patches:
 +				 "mapping in shared page %d from domain %d",
 +				 gnt_ref, dev->otherend_id);
 +		BUG_ON(!IS_ERR(ERR_PTR(op.status)));
-+		return ERR_PTR(op.status);
++		return ERR_PTR(-EINVAL);
 +	}
 +
 +	/* Stuff the handle in an unused field */
@@ -57899,23 +57866,24 @@ and in case upstream wants to take the forward porting patches:
 +		   grant_handle_t *handle, void *vaddr)
 +{
 +	struct gnttab_map_grant_ref op;
++	int ret;
 +	
 +	gnttab_set_map_op(&op, (unsigned long)vaddr, GNTMAP_host_map,
 +			  gnt_ref, dev->otherend_id);
-+    do {
-+	    if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-+		    BUG();
-+        msleep(10);
-+    } while(op.status == GNTST_eagain);
++
++	gnttab_check_GNTST_eagain_do_while(GNTTABOP_map_grant_ref, &op);
 +
 +	if (op.status != GNTST_okay) {
 +		xenbus_dev_fatal(dev, op.status,
 +				 "mapping in shared page %d from domain %d",
 +				 gnt_ref, dev->otherend_id);
-+	} else
++		ret = -EINVAL;
++	} else {
 +		*handle = op.handle;
++		ret = 0;
++	}
 +
-+	return op.status;
++	return ret;
 +}
 +EXPORT_SYMBOL_GPL(xenbus_map_ring);
 +
@@ -57938,7 +57906,7 @@ and in case upstream wants to take the forward porting patches:
 +				 "unmapping page at handle %d error %d",
 +				 (int16_t)area->phys_addr, op.status);
 +
-+	return op.status;
++	return op.status == GNTST_okay ? 0 : -EINVAL;
 +}
 +EXPORT_SYMBOL_GPL(xenbus_unmap_ring_vfree);
 +
@@ -57958,7 +57926,7 @@ and in case upstream wants to take the forward porting patches:
 +				 "unmapping page at handle %d error %d",
 +				 handle, op.status);
 +
-+	return op.status;
++	return op.status == GNTST_okay ? 0 : -EINVAL;
 +}
 +EXPORT_SYMBOL_GPL(xenbus_unmap_ring);
 +
@@ -57976,8 +57944,8 @@ and in case upstream wants to take the forward porting patches:
 +
 +MODULE_LICENSE("Dual BSD/GPL");
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/xenbus/xenbus_dev.c	2009-05-29 10:25:53.000000000 +0200
-@@ -0,0 +1,460 @@
++++ b/drivers/xen/xenbus/xenbus_dev.c	2011-01-03 12:43:21.000000000 +0100
+@@ -0,0 +1,468 @@
 +/*
 + * xenbus_dev.c
 + * 
@@ -58084,6 +58052,9 @@ and in case upstream wants to take the forward porting patches:
 +	mutex_lock(&u->reply_mutex);
 +	while (list_empty(&u->read_buffers)) {
 +		mutex_unlock(&u->reply_mutex);
++		if (filp->f_flags & O_NONBLOCK)
++			return -EAGAIN;
++
 +		ret = wait_event_interruptible(u->read_waitq,
 +					       !list_empty(&u->read_buffers));
 +		if (ret)
@@ -58336,6 +58307,7 @@ and in case upstream wants to take the forward porting patches:
 +	struct xenbus_dev_data *u = filp->private_data;
 +	struct xenbus_dev_transaction *trans, *tmp;
 +	struct watch_adapter *watch, *tmp_watch;
++	struct read_buffer *rb, *tmp_rb;
 +
 +	list_for_each_entry_safe(trans, tmp, &u->transactions, list) {
 +		xenbus_transaction_end(trans->handle, 1);
@@ -58349,6 +58321,10 @@ and in case upstream wants to take the forward porting patches:
 +		free_watch_adapter(watch);
 +	}
 +
++	list_for_each_entry_safe(rb, tmp_rb, &u->read_buffers, list) {
++		list_del(&rb->list);
++		kfree(rb);
++	}
 +	kfree(u);
 +
 +	return 0;
@@ -58439,302 +58415,7 @@ and in case upstream wants to take the forward porting patches:
 +	return 0;
 +}
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/xenbus/xenbus_probe_backend.c	2008-01-21 11:15:26.000000000 +0100
-@@ -0,0 +1,292 @@
-+/******************************************************************************
-+ * Talks to Xen Store to figure out what devices we have (backend half).
-+ *
-+ * Copyright (C) 2005 Rusty Russell, IBM Corporation
-+ * Copyright (C) 2005 Mike Wray, Hewlett-Packard
-+ * Copyright (C) 2005, 2006 XenSource Ltd
-+ * Copyright (C) 2007 Solarflare Communications, Inc.
-+ * 
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version 2
-+ * as published by the Free Software Foundation; or, when distributed
-+ * separately from the Linux kernel or incorporated into other
-+ * software packages, subject to the following license:
-+ * 
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this source file (the "Software"), to deal in the Software without
-+ * restriction, including without limitation the rights to use, copy, modify,
-+ * merge, publish, distribute, sublicense, and/or sell copies of the Software,
-+ * and to permit persons to whom the Software is furnished to do so, subject to
-+ * the following conditions:
-+ * 
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ * 
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-+ * IN THE SOFTWARE.
-+ */
-+
-+#define DPRINTK(fmt, args...)				\
-+	pr_debug("xenbus_probe (%s:%d) " fmt ".\n",	\
-+		 __FUNCTION__, __LINE__, ##args)
-+
-+#include <linux/kernel.h>
-+#include <linux/err.h>
-+#include <linux/string.h>
-+#include <linux/ctype.h>
-+#include <linux/fcntl.h>
-+#include <linux/mm.h>
-+#include <linux/notifier.h>
-+
-+#include <asm/io.h>
-+#include <asm/page.h>
-+#include <asm/maddr.h>
-+#include <asm/pgtable.h>
-+#include <asm/hypervisor.h>
-+#include <xen/xenbus.h>
-+#include <xen/xen_proc.h>
-+#include <xen/evtchn.h>
-+#include <xen/features.h>
-+
-+#include "xenbus_comms.h"
-+#include "xenbus_probe.h"
-+
-+#ifdef HAVE_XEN_PLATFORM_COMPAT_H
-+#include <xen/platform-compat.h>
-+#endif
-+
-+static int xenbus_uevent_backend(struct device *dev, char **envp,
-+				 int num_envp, char *buffer, int buffer_size);
-+static int xenbus_probe_backend(const char *type, const char *domid);
-+
-+extern int read_otherend_details(struct xenbus_device *xendev,
-+				 char *id_node, char *path_node);
-+
-+static int read_frontend_details(struct xenbus_device *xendev)
-+{
-+	return read_otherend_details(xendev, "frontend-id", "frontend");
-+}
-+
-+/* backend/<type>/<fe-uuid>/<id> => <type>-<fe-domid>-<id> */
-+static int backend_bus_id(char bus_id[BUS_ID_SIZE], const char *nodename)
-+{
-+	int domid, err;
-+	const char *devid, *type, *frontend;
-+	unsigned int typelen;
-+
-+	type = strchr(nodename, '/');
-+	if (!type)
-+		return -EINVAL;
-+	type++;
-+	typelen = strcspn(type, "/");
-+	if (!typelen || type[typelen] != '/')
-+		return -EINVAL;
-+
-+	devid = strrchr(nodename, '/') + 1;
-+
-+	err = xenbus_gather(XBT_NIL, nodename, "frontend-id", "%i", &domid,
-+			    "frontend", NULL, &frontend,
-+			    NULL);
-+	if (err)
-+		return err;
-+	if (strlen(frontend) == 0)
-+		err = -ERANGE;
-+	if (!err && !xenbus_exists(XBT_NIL, frontend, ""))
-+		err = -ENOENT;
-+	kfree(frontend);
-+
-+	if (err)
-+		return err;
-+
-+	if (snprintf(bus_id, BUS_ID_SIZE,
-+		     "%.*s-%i-%s", typelen, type, domid, devid) >= BUS_ID_SIZE)
-+		return -ENOSPC;
-+	return 0;
-+}
-+
-+static struct xen_bus_type xenbus_backend = {
-+	.root = "backend",
-+	.levels = 3, 		/* backend/type/<frontend>/<id> */
-+	.get_bus_id = backend_bus_id,
-+	.probe = xenbus_probe_backend,
-+	.error = -ENODEV,
-+	.bus = {
-+		.name     = "xen-backend",
-+		.match    = xenbus_match,
-+		.probe    = xenbus_dev_probe,
-+		.remove   = xenbus_dev_remove,
-+//		.shutdown = xenbus_dev_shutdown,
-+		.uevent   = xenbus_uevent_backend,
-+	},
-+	.dev = {
-+		.bus_id = "xen-backend",
-+	},
-+};
-+
-+static int xenbus_uevent_backend(struct device *dev, char **envp,
-+				 int num_envp, char *buffer, int buffer_size)
-+{
-+	struct xenbus_device *xdev;
-+	struct xenbus_driver *drv;
-+	int i = 0;
-+	int length = 0;
-+
-+	DPRINTK("");
-+
-+	if (dev == NULL)
-+		return -ENODEV;
-+
-+	xdev = to_xenbus_device(dev);
-+	if (xdev == NULL)
-+		return -ENODEV;
-+
-+	/* stuff we want to pass to /sbin/hotplug */
-+	add_uevent_var(envp, num_envp, &i, buffer, buffer_size, &length,
-+		       "XENBUS_TYPE=%s", xdev->devicetype);
-+
-+	add_uevent_var(envp, num_envp, &i, buffer, buffer_size, &length,
-+		       "XENBUS_PATH=%s", xdev->nodename);
-+
-+	add_uevent_var(envp, num_envp, &i, buffer, buffer_size, &length,
-+		       "XENBUS_BASE_PATH=%s", xenbus_backend.root);
-+
-+	/* terminate, set to next free slot, shrink available space */
-+	envp[i] = NULL;
-+	envp = &envp[i];
-+	num_envp -= i;
-+	buffer = &buffer[length];
-+	buffer_size -= length;
-+
-+	if (dev->driver) {
-+		drv = to_xenbus_driver(dev->driver);
-+		if (drv && drv->uevent)
-+			return drv->uevent(xdev, envp, num_envp, buffer,
-+					   buffer_size);
-+	}
-+
-+	return 0;
-+}
-+
-+int xenbus_register_backend(struct xenbus_driver *drv)
-+{
-+	drv->read_otherend_details = read_frontend_details;
-+
-+	return xenbus_register_driver_common(drv, &xenbus_backend);
-+}
-+EXPORT_SYMBOL_GPL(xenbus_register_backend);
-+
-+/* backend/<typename>/<frontend-uuid>/<name> */
-+static int xenbus_probe_backend_unit(const char *dir,
-+				     const char *type,
-+				     const char *name)
-+{
-+	char *nodename;
-+	int err;
-+
-+	nodename = kasprintf(GFP_KERNEL, "%s/%s", dir, name);
-+	if (!nodename)
-+		return -ENOMEM;
-+
-+	DPRINTK("%s\n", nodename);
-+
-+	err = xenbus_probe_node(&xenbus_backend, type, nodename);
-+	kfree(nodename);
-+	return err;
-+}
-+
-+/* backend/<typename>/<frontend-domid> */
-+static int xenbus_probe_backend(const char *type, const char *domid)
-+{
-+	char *nodename;
-+	int err = 0;
-+	char **dir;
-+	unsigned int i, dir_n = 0;
-+
-+	DPRINTK("");
-+
-+	nodename = kasprintf(GFP_KERNEL, "%s/%s/%s", xenbus_backend.root, type, domid);
-+	if (!nodename)
-+		return -ENOMEM;
-+
-+	dir = xenbus_directory(XBT_NIL, nodename, "", &dir_n);
-+	if (IS_ERR(dir)) {
-+		kfree(nodename);
-+		return PTR_ERR(dir);
-+	}
-+
-+	for (i = 0; i < dir_n; i++) {
-+		err = xenbus_probe_backend_unit(nodename, type, dir[i]);
-+		if (err)
-+			break;
-+	}
-+	kfree(dir);
-+	kfree(nodename);
-+	return err;
-+}
-+
-+static void backend_changed(struct xenbus_watch *watch,
-+			    const char **vec, unsigned int len)
-+{
-+	DPRINTK("");
-+
-+	dev_changed(vec[XS_WATCH_PATH], &xenbus_backend);
-+}
-+
-+static struct xenbus_watch be_watch = {
-+	.node = "backend",
-+	.callback = backend_changed,
-+};
-+
-+void xenbus_backend_suspend(int (*fn)(struct device *, void *))
-+{
-+	DPRINTK("");
-+	if (!xenbus_backend.error)
-+		bus_for_each_dev(&xenbus_backend.bus, NULL, NULL, fn);
-+}
-+
-+void xenbus_backend_resume(int (*fn)(struct device *, void *))
-+{
-+	DPRINTK("");
-+	if (!xenbus_backend.error)
-+		bus_for_each_dev(&xenbus_backend.bus, NULL, NULL, fn);
-+}
-+
-+void xenbus_backend_probe_and_watch(void)
-+{
-+	xenbus_probe_devices(&xenbus_backend);
-+	register_xenbus_watch(&be_watch);
-+}
-+
-+void xenbus_backend_bus_register(void)
-+{
-+	xenbus_backend.error = bus_register(&xenbus_backend.bus);
-+	if (xenbus_backend.error)
-+		printk(KERN_WARNING
-+		       "XENBUS: Error registering backend bus: %i\n",
-+		       xenbus_backend.error);
-+}
-+
-+void xenbus_backend_device_register(void)
-+{
-+	if (xenbus_backend.error)
-+		return;
-+
-+	xenbus_backend.error = device_register(&xenbus_backend.dev);
-+	if (xenbus_backend.error) {
-+		bus_unregister(&xenbus_backend.bus);
-+		printk(KERN_WARNING
-+		       "XENBUS: Error registering backend device: %i\n",
-+		       xenbus_backend.error);
-+	}
-+}
-+
-+int xenbus_for_each_backend(void *arg, int (*fn)(struct device *, void *))
-+{
-+	return bus_for_each_dev(&xenbus_backend.bus, NULL, arg, fn);
-+}
-+EXPORT_SYMBOL_GPL(xenbus_for_each_backend);
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ head-2010-04-29/drivers/xen/xenoprof/xenoprofile.c	2010-01-07 09:38:29.000000000 +0100
++++ b/drivers/xen/xenoprof/xenoprofile.c	2010-01-07 09:38:29.000000000 +0100
 @@ -0,0 +1,587 @@
 +/**
 + * @file xenoprofile.c

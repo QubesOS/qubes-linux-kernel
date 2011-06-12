@@ -53,12 +53,12 @@ Signed-off-by: Brandon Philips <bphilips@suse.de>
 Acked-by: Thomas Renninger <trenn@suse.de>
 
 ---
- drivers/char/agp/intel-agp.c |    7 +++++++
+ drivers/char/agp/intel-gtt.c |    7 +++++++
  1 file changed, 7 insertions(+)
 
---- a/drivers/char/agp/intel-agp.c
-+++ b/drivers/char/agp/intel-agp.c
-@@ -801,6 +801,13 @@ static void intel_i830_init_gtt_entries(
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -648,6 +648,13 @@ static void intel_i830_init_gtt_entries(
  	} else {
  		switch (gmch_ctrl & I855_GMCH_GMS_MASK) {
  		case I855_GMCH_GMS_STOLEN_1M:

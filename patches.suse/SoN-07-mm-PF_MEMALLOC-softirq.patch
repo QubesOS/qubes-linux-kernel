@@ -32,7 +32,7 @@ Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1772,6 +1772,13 @@ static inline void rcu_copy_process(stru
+@@ -1761,6 +1761,13 @@ static inline void rcu_copy_process(stru
  
  #endif
  
@@ -60,21 +60,21 @@ Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 @@ -246,6 +248,7 @@ restart:
  
  	account_system_vtime(current);
- 	_local_bh_enable();
+ 	__local_bh_enable(SOFTIRQ_OFFSET);
 +	tsk_restore_flags(current, pflags, PF_MEMALLOC);
  }
  
  #ifndef __ARCH_HAS_DO_SOFTIRQ
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1785,9 +1785,10 @@ int gfp_to_alloc_flags(gfp_t gfp_mask)
+@@ -1928,9 +1928,10 @@ int gfp_to_alloc_flags(gfp_t gfp_mask)
  		alloc_flags |= ALLOC_HARDER;
  
  	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
 -		if (!in_interrupt() &&
--		    ((p->flags & PF_MEMALLOC) ||
+-		    ((current->flags & PF_MEMALLOC) ||
 -		     unlikely(test_thread_flag(TIF_MEMDIE))))
-+		if (!in_irq() && (p->flags & PF_MEMALLOC))
++		if (!in_irq() && (current->flags & PF_MEMALLOC))
 +			alloc_flags |= ALLOC_NO_WATERMARKS;
 +		else if (!in_interrupt() &&
 +				unlikely(test_thread_flag(TIF_MEMDIE)))

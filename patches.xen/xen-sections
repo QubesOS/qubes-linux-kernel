@@ -2,9 +2,9 @@ From: jbeulich@novell.com
 Subject: fix placement of some routines/data
 Patch-mainline: obsolete
 
---- head-2010-05-12.orig/arch/x86/kernel/time-xen.c	2010-05-12 09:03:15.000000000 +0200
-+++ head-2010-05-12/arch/x86/kernel/time-xen.c	2010-05-12 09:13:55.000000000 +0200
-@@ -676,7 +676,7 @@ int xen_update_persistent_clock(void)
+--- head-2011-01-22.orig/arch/x86/kernel/time-xen.c	2010-11-22 13:21:13.000000000 +0100
++++ head-2011-01-22/arch/x86/kernel/time-xen.c	2010-09-16 16:49:59.000000000 +0200
+@@ -648,7 +648,7 @@ int xen_update_persistent_clock(void)
  /* Dynamically-mapped IRQ. */
  DEFINE_PER_CPU(int, timer_irq);
  
@@ -13,27 +13,18 @@ Patch-mainline: obsolete
  {
  	per_cpu(timer_irq, 0) =
  		bind_virq_to_irqhandler(
-@@ -901,7 +901,7 @@ int __cpuinit local_setup_timer(unsigned
- 	return 0;
- }
- 
--void __cpuexit local_teardown_timer(unsigned int cpu)
-+void __cpuinit local_teardown_timer(unsigned int cpu)
- {
- 	BUG_ON(cpu == 0);
- 	unbind_from_irqhandler(per_cpu(timer_irq, cpu), NULL);
---- head-2010-05-12.orig/drivers/xen/core/cpu_hotplug.c	2010-03-24 15:17:58.000000000 +0100
-+++ head-2010-05-12/drivers/xen/core/cpu_hotplug.c	2010-01-25 13:45:39.000000000 +0100
-@@ -24,7 +24,7 @@ static int local_cpu_hotplug_request(voi
+--- head-2011-01-22.orig/drivers/xen/core/cpu_hotplug.c	2011-01-24 12:14:25.000000000 +0100
++++ head-2011-01-22/drivers/xen/core/cpu_hotplug.c	2011-01-24 12:15:51.000000000 +0100
+@@ -25,7 +25,7 @@ static int local_cpu_hotplug_request(voi
  	return (current->mm != NULL);
  }
  
--static void vcpu_hotplug(unsigned int cpu)
-+static void __cpuinit vcpu_hotplug(unsigned int cpu)
+-static void vcpu_hotplug(unsigned int cpu, struct sys_device *dev)
++static void __cpuinit vcpu_hotplug(unsigned int cpu, struct sys_device *dev)
  {
  	int err;
  	char dir[32], state[32];
-@@ -51,7 +51,7 @@ static void vcpu_hotplug(unsigned int cp
+@@ -54,7 +54,7 @@ static void vcpu_hotplug(unsigned int cp
  	}
  }
  
@@ -42,7 +33,7 @@ Patch-mainline: obsolete
  	struct xenbus_watch *watch, const char **vec, unsigned int len)
  {
  	unsigned int cpu;
-@@ -80,12 +80,12 @@ static int smpboot_cpu_notify(struct not
+@@ -83,12 +83,12 @@ static int smpboot_cpu_notify(struct not
  	return NOTIFY_OK;
  }
  
@@ -58,7 +49,7 @@ Patch-mainline: obsolete
  		.node = "cpu",
  		.callback = handle_vcpu_hotplug_event,
  		.flags = XBWF_new_thread };
-@@ -105,7 +105,7 @@ static int __init setup_vcpu_hotplug_eve
+@@ -107,7 +107,7 @@ static int __init setup_vcpu_hotplug_eve
  {
  	static struct notifier_block hotplug_cpu = {
  		.notifier_call = smpboot_cpu_notify };
@@ -67,7 +58,7 @@ Patch-mainline: obsolete
  		.notifier_call = setup_cpu_watcher };
  
  	if (!is_running_on_xen())
-@@ -119,7 +119,7 @@ static int __init setup_vcpu_hotplug_eve
+@@ -121,7 +121,7 @@ static int __init setup_vcpu_hotplug_eve
  
  arch_initcall(setup_vcpu_hotplug_event);
  
@@ -76,7 +67,7 @@ Patch-mainline: obsolete
  {
  	unsigned int cpu;
  	int err;
-@@ -140,7 +140,7 @@ int smp_suspend(void)
+@@ -141,7 +141,7 @@ int smp_suspend(void)
  	return 0;
  }
  
@@ -85,23 +76,30 @@ Patch-mainline: obsolete
  {
  	unsigned int cpu;
  
---- head-2010-05-12.orig/drivers/xen/core/smpboot.c	2010-03-24 15:25:21.000000000 +0100
-+++ head-2010-05-12/drivers/xen/core/smpboot.c	2010-03-19 15:20:15.000000000 +0100
-@@ -181,7 +181,7 @@ static int __cpuinit xen_smp_intr_init(u
+--- head-2011-01-22.orig/drivers/xen/core/gnttab.c	2010-11-22 13:21:03.000000000 +0100
++++ head-2011-01-22/drivers/xen/core/gnttab.c	2011-01-14 15:00:13.000000000 +0100
+@@ -794,7 +794,12 @@ static int gnttab_expand(unsigned int re
+ 	return rc;
  }
  
- #ifdef CONFIG_HOTPLUG_CPU
--static void __cpuexit xen_smp_intr_exit(unsigned int cpu)
-+static void __cpuinit xen_smp_intr_exit(unsigned int cpu)
+-int __devinit gnttab_init(void)
++#ifdef CONFIG_XEN
++static int __init
++#else
++int __devinit
++#endif
++gnttab_init(void)
  {
- 	if (cpu != 0)
- 		local_teardown_timer(cpu);
-@@ -400,7 +400,7 @@ int __cpuexit __cpu_disable(void)
- 	return 0;
- }
+ 	int i;
+ 	unsigned int max_nr_glist_frames, nr_glist_frames;
+--- head-2011-01-22.orig/drivers/xen/pcifront/pci_op.c	2010-11-22 13:10:22.000000000 +0100
++++ head-2011-01-22/drivers/xen/pcifront/pci_op.c	2010-10-04 11:10:07.000000000 +0200
+@@ -416,7 +416,7 @@ void pci_frontend_disable_msi(struct pci
+ #endif /* CONFIG_PCI_MSI */
  
--void __cpuexit __cpu_die(unsigned int cpu)
-+void __cpuinit __cpu_die(unsigned int cpu)
+ /* Claim resources for the PCI frontend as-is, backend won't allow changes */
+-static int pcifront_claim_resource(struct pci_dev *dev, void *data)
++static int __devinit pcifront_claim_resource(struct pci_dev *dev, void *data)
  {
- 	while (HYPERVISOR_vcpu_op(VCPUOP_is_up, cpu, NULL)) {
- 		current->state = TASK_UNINTERRUPTIBLE;
+ 	struct pcifront_device *pdev = data;
+ 	int i;
