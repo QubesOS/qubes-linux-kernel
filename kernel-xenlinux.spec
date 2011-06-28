@@ -59,7 +59,6 @@ Source14:       series.conf
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
-Source60:       config.sh
 Source100:      config-%{build_flavor}
 Source200:      patches.arch
 Source201:      patches.drivers
@@ -67,7 +66,6 @@ Source202:      patches.fixes
 Source203:      patches.rpmify
 Source204:      patches.suse
 Source205:      patches.xen
-Source206:      patches.addon
 Source207:      patches.kernel.org
 Source300:      patches.qubes
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
