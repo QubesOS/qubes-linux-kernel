@@ -174,6 +174,7 @@ dd if=/dev/zero of=%buildroot/boot/initramfs-%kernelrelease.img \
 gzip -c9 < Module.symvers > %buildroot/boot/symvers-%kernelrelease.gz
 
 make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
+make -C %kernel_build_dir SUBDIRS=%_builddir/u2mfn modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
 
 mkdir -p %buildroot/%src_install_dir
 
