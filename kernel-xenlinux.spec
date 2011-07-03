@@ -288,6 +288,7 @@ mkdir -p %buildroot/%vm_install_dir
 /sbin/dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
     --include %_sourcedir/vm-initramfs-pre-udev /pre-udev \
+    --include %_sourcedir/vm-initramfs-pre-pivot /pre-pivot \
     --add-drivers xenblk \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 
