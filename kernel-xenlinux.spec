@@ -19,7 +19,7 @@
 %define build_src_dir %my_builddir/linux-%version
 %define src_install_dir /usr/src/kernels/%kernelrelease
 %define kernel_build_dir %my_builddir/linux-obj
-%define vm_install_dir /var/lib/qubes/vm-kernels/%kernelrelease
+%define vm_install_dir /var/lib/qubes/vm-kernels/%version
 
 %(chmod +x %_sourcedir/{guards,apply-patches,check-for-config-changes})
 
@@ -401,7 +401,7 @@ umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 
-qvm-set-default-kernel %{kernelrelease}
+qvm-set-default-kernel %version
 
 %files qubes-vm
 %defattr(-, root, root)
