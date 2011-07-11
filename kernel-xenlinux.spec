@@ -54,6 +54,7 @@ Conflicts:      sysfsutils < 2.0
 Conflicts:      udev < 118
 Conflicts:      lvm2 < 2.02.33
 Provides:       kernel = %version-%kernelrelease
+Provides:       kernel-uname-r = %version-%kernelrelease
 
 Source0:        linux-%version.tar.bz2
 Source14:       series.conf
@@ -339,6 +340,7 @@ License:        GPL v2 only
 Group:          Development/Sources
 Provides:       multiversion(kernel)
 Provides:       %name-devel = %version-%kernelrelease
+Provides:       kernel-devel-uname-r = %version-%kernelrelease
 AutoReqProv:    on
 
 %description devel
