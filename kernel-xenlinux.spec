@@ -53,8 +53,8 @@ Conflicts:      sysfsutils < 2.0
 # root-lvm only works with newer udevs
 Conflicts:      udev < 118
 Conflicts:      lvm2 < 2.02.33
-Provides:       kernel = %version-%kernelrelease
-Provides:       kernel-uname-r = %version-%kernelrelease
+Provides:       kernel = %kernelrelease
+Provides:       kernel-uname-r = %kernelrelease
 
 Source0:        linux-%version.tar.bz2
 Source14:       series.conf
@@ -339,8 +339,8 @@ Summary:        Development files necessary for building kernel modules
 License:        GPL v2 only
 Group:          Development/Sources
 Provides:       multiversion(kernel)
-Provides:       %name-devel = %version-%kernelrelease
-Provides:       kernel-devel-uname-r = %version-%kernelrelease
+Provides:       %name-devel = %kernelrelease
+Provides:       kernel-devel-uname-r = %kernelrelease
 AutoReqProv:    on
 
 %description devel
