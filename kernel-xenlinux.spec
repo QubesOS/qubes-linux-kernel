@@ -19,7 +19,7 @@
 %define build_src_dir %my_builddir/linux-%version
 %define src_install_dir /usr/src/kernels/%kernelrelease
 %define kernel_build_dir %my_builddir/linux-obj
-%define vm_install_dir /var/lib/qubes/vm-kernels/%kernelrelease
+%define vm_install_dir /var/lib/qubes/vm-kernels/%version
 
 %(chmod +x %_sourcedir/{guards,apply-patches,check-for-config-changes})
 
@@ -53,7 +53,8 @@ Conflicts:      sysfsutils < 2.0
 # root-lvm only works with newer udevs
 Conflicts:      udev < 118
 Conflicts:      lvm2 < 2.02.33
-Provides:       kernel = %version-%kernelrelease
+Provides:       kernel = %kernelrelease
+Provides:       kernel-uname-r = %kernelrelease
 
 Source0:        linux-%version.tar.bz2
 Source14:       series.conf
@@ -287,8 +288,8 @@ fi
 mkdir -p %buildroot/%vm_install_dir
 /sbin/dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
-    --include %_sourcedir/vm-initramfs-pre-udev /pre-udev \
-    --add-drivers xenblk \
+    --include %_sourcedir/vm-initramfs / \
+    -d "xenblk cdrom ext4 jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 
 cp -p arch/x86/boot/vmlinuz %buildroot/%vm_install_dir/vmlinuz
@@ -306,9 +307,16 @@ do
 done
 
 %post
+
+INITRD_OPT="--mkinitrd --dracut"
+if [ -x /usr/lib/qubes/regenerate_initramfs.sh ]; then
+    /usr/lib/qubes/regenerate_initramfs.sh "%{kernelrelease}"
+    INITRD_OPT="--initrdfile=/boot/initramfs-%{kernelrelease}.img"
+fi
+
 /sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
-        --mkinitrd --depmod --dracut\
-        --kernel-args="max_loop=255"\
+        $INITRD_OPT \
+        --depmod --kernel-args="max_loop=255 rdloaddriver=pciback"\
         --multiboot=/boot/xen.gz --banner="Qubes"\
         --make-default --install %{kernelrelease}
 
@@ -326,6 +334,7 @@ fi
 %files
 %defattr(-, root, root)
 %ghost /boot/initramfs-%{kernelrelease}.img
+%ghost %attr(0644, root, root) /etc/modprobe.d/pciback.conf
 /boot/System.map-%{kernelrelease}
 /boot/config-%{kernelrelease}
 /boot/symvers-%kernelrelease.gz
@@ -338,7 +347,8 @@ Summary:        Development files necessary for building kernel modules
 License:        GPL v2 only
 Group:          Development/Sources
 Provides:       multiversion(kernel)
-Provides:       %name-devel = %version-%kernelrelease
+Provides:       %name-devel = %kernelrelease
+Provides:       kernel-devel-uname-r = %kernelrelease
 AutoReqProv:    on
 
 %description devel
@@ -401,7 +411,7 @@ umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 
-qvm-set-default-kernel %{kernelrelease}
+qvm-set-default-kernel %version
 
 %files qubes-vm
 %defattr(-, root, root)
