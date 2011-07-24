@@ -1,9 +1,0 @@
-#
-# Common Makefile for building RPMs
-#
-
-NAME := kernel
-SPECFILE := kernel-domU.spec
-
-
-include Makefile.common
