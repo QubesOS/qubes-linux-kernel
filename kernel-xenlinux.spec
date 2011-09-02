@@ -309,10 +309,6 @@ done
 %post
 
 INITRD_OPT="--mkinitrd --dracut"
-if [ -x /usr/lib/qubes/regenerate_initramfs.sh ]; then
-    /usr/lib/qubes/regenerate_initramfs.sh "%{kernelrelease}"
-    INITRD_OPT="--initrdfile=/boot/initramfs-%{kernelrelease}.img"
-fi
 
 /sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
         $INITRD_OPT \
