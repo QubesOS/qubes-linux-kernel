@@ -20,6 +20,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/version.h>
 #include <linux/proc_fs.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
@@ -30,12 +31,15 @@
 #include <linux/highmem.h>
 #include "/usr/include/u2mfn-kernel.h"
 
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
 static inline unsigned long virt_to_phys(volatile void *address)
 {
 	return __pa((unsigned long) address);
 }
+#endif
 
-#if HAVE_GET_PHYS_TO_MACHINE
+#ifdef virt_to_mfn
 #define VIRT_TO_MFN virt_to_mfn
 #else
 extern unsigned long *phys_to_machine_mapping;
