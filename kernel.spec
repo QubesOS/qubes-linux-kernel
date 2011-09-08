@@ -3,11 +3,11 @@
 #
 
 #%define _unpackaged_files_terminate_build 0
-%define variant xenlinux.qubes
-%define rel %(cat rel).%{variant}
+%define variant %{build_flavor}.qubes
+%define rel %(cat rel-%{build_flavor}).%{variant}
+%define version %(cat version-%{build_flavor})
 
 %define _buildshell /bin/bash
-%define build_flavor xenlinux
 %define build_xen	1
 
 %global cpu_arch x86_64
@@ -57,7 +57,7 @@ Provides:       kernel = %kernelrelease
 Provides:       kernel-uname-r = %kernelrelease
 
 Source0:        linux-%version.tar.bz2
-Source14:       series.conf
+Source14:       series-%{build_flavor}.conf
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
@@ -86,7 +86,7 @@ if ! [ -e %_sourcedir/linux-%version.tar.bz2 ]; then
     exit 1
 fi
 
-SYMBOLS="xen-dom0 xenlinux"
+SYMBOLS="xen-dom0 %{build_flavor}"
 
 # Unpack all sources and patches
 %setup -q -c -T -a 0
@@ -95,7 +95,7 @@ mkdir -p %kernel_build_dir
 
 cd linux-%version
 
-%_sourcedir/apply-patches %_sourcedir/series.conf %_sourcedir $SYMBOLS
+%_sourcedir/apply-patches %_sourcedir/series-%{build_flavor}.conf %_sourcedir $SYMBOLS
 
 cd %kernel_build_dir
 
@@ -158,7 +158,11 @@ cd %kernel_build_dir
 
 mkdir -p %buildroot/boot
 cp -p System.map %buildroot/boot/System.map-%kernelrelease
-cp -p arch/x86/boot/vmlinuz %buildroot/boot/vmlinuz-%kernelrelease
+if [ "%{build_flavor}" == "xenlinux" ]; then
+    cp -p arch/x86/boot/vmlinuz %buildroot/boot/vmlinuz-%kernelrelease
+else
+    cp -p arch/x86/boot/bzImage %buildroot/boot/vmlinuz-%kernelrelease
+fi
 cp .config %buildroot/boot/config-%kernelrelease
 
 %if %install_vdso
@@ -192,7 +196,9 @@ pushd %build_src_dir
 cp --parents `find  -type f -name "Makefile*" -o -name "Kconfig*"` %buildroot/lib/modules/%kernelrelease/build
 cp -a scripts %buildroot/lib/modules/%kernelrelease/build
 cp -a --parents arch/x86/include/asm %buildroot/lib/modules/%kernelrelease/build/
-cp -a --parents arch/x86/include/mach-xen %buildroot/lib/modules/%kernelrelease/build/
+if [ "%{build_flavor}" == "xenlinux" ]; then
+    cp -a --parents arch/x86/include/mach-xen %buildroot/lib/modules/%kernelrelease/build/
+fi
 cp -a include %buildroot/lib/modules/%kernelrelease/build/include
 popd
 
@@ -271,7 +277,7 @@ rm -f modinfo modnames
 
 # Move the devel headers out of the root file system
 mkdir -p %buildroot/usr/src/kernels
-mv %buildroot/lib/modules/%kernelrelease/build/* %buildroot/%src_install_dir
+mv %buildroot/lib/modules/%kernelrelease/build/* %buildroot/%src_install_dir/
 mv %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/%src_install_dir
 rmdir %buildroot/lib/modules/%kernelrelease/build
 ln -sf %src_install_dir %buildroot/lib/modules/%kernelrelease/build
@@ -284,15 +290,24 @@ if [ $? -ne 0 ] || echo "$msg" | grep  'needs unknown symbol'; then
 exit 1
 fi
 
+if [ "%{build_flavor}" == "pvops" ]; then
+    mv  %buildroot/lib/firmware %buildroot/lib/firmware-all
+    mkdir -p %buildroot/lib/firmware
+    mv  %buildroot/lib/firmware-all %buildroot/lib/firmware/%kernelrelease
+fi
 # Prepare initramfs for Qubes VM
 mkdir -p %buildroot/%vm_install_dir
 /sbin/dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
     --include %_sourcedir/vm-initramfs / \
-    -d "xenblk cdrom ext4 jbd2 crc16 dm_snapshot" \
+    -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 
-cp -p arch/x86/boot/vmlinuz %buildroot/%vm_install_dir/vmlinuz
+if [ "%{build_flavor}" == "xenlinux" ]; then
+    cp -p arch/x86/boot/vmlinuz %buildroot/%vm_install_dir/vmlinuz
+else
+    cp -p arch/x86/boot/bzImage %buildroot/%vm_install_dir/vmlinuz
+fi
 
 # Modules for Qubes VM
 mkdir -p %buildroot%vm_install_dir/modules

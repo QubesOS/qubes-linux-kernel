@@ -8,16 +8,19 @@ SRCRPMDIR ?= $(WORKDIR)/srpm
 BUILDDIR ?= $(WORKDIR)
 RPMDIR ?= $(WORKDIR)/rpm
 SOURCEDIR := $(WORKDIR)
-VERSION := $(shell cat version)
 
 NO_OF_CPUS := $(shell grep -c ^processor /proc/cpuinfo)
+
+ifndef BUILD_FLAVOR
+$(error "Add BUILD_FLAVOR=pvops or BUILD_FLAVOR=xenlinux to make cmdline")
+endif
 
 RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "_specdir $(SPECDIR)" \
 		--define "_builddir $(BUILDDIR)" \
 		--define "_srcrpmdir $(SRCRPMDIR)" \
 		--define "_rpmdir $(RPMDIR)" \
-		--define "version $(VERSION)" \
+		--define "build_flavor $(BUILD_FLAVOR)" \
 		--define "jobs $(NO_OF_CPUS)"
 
 VER_REL := $(shell rpm $(RPM_DEFINES) -q --qf "%{VERSION} %{RELEASE}\n" --specfile $(SPECFILE)| head -1)
@@ -26,7 +29,7 @@ ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
 endif
 ifndef VERSION
-$(error "You can not run this Makefile without having VERSION defined")
+VERSION := $(word 1, $(VER_REL))
 endif
 ifndef RELEASE
 RELEASE := $(word 2, $(VER_REL))
@@ -34,7 +37,7 @@ endif
 
 all: help
 
-SRC_BASEURL := http://www.kernel.org/pub/linux/kernel/v2.6/
+SRC_BASEURL := http://www.kernel.org/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\([0-9]*\.[0-9]*\).*/\1/')
 SRC_FILE := linux-${VERSION}.tar.bz2
 SIGN_FILE := linux-${VERSION}.tar.bz2.sign
 

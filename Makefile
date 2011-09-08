@@ -3,7 +3,7 @@
 #
 
 NAME := kernel
-SPECFILE := kernel-xenlinux.spec
+SPECFILE := kernel.spec
 
 
 include Makefile.common
