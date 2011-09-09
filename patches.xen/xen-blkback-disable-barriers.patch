@@ -1,0 +1,11 @@
+--- linux-2.6.38.3/drivers/xen/blkback/xenbus.c	2011-08-18 00:08:53.000000000 +0200
++++ linux-2.6.38.3/drivers/xen/blkback/xenbus.c.new	2011-08-18 14:37:46.615344310 +0200
+@@ -441,7 +441,7 @@
+ 		return;
+ 	}
+ 
+-	err = blkback_barrier(xbt, be, 1);
++	err = blkback_barrier(xbt, be, 0);
+ 	if (err)
+ 		goto abort;
+ 
