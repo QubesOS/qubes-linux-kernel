@@ -345,7 +345,6 @@ fi
 %files
 %defattr(-, root, root)
 %ghost /boot/initramfs-%{kernelrelease}.img
-%ghost %attr(0644, root, root) /etc/modprobe.d/pciback.conf
 /boot/System.map-%{kernelrelease}
 /boot/config-%{kernelrelease}
 /boot/symvers-%kernelrelease.gz
