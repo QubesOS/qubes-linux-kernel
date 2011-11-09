@@ -115,8 +115,10 @@ update-repo-unstable:
 		ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm $$vmrepo/rpm/ ;\
 	done
 
-update-repo-installer:
+update-repo-installer-kernel-dom0:
 	ln -f rpm/x86_64/kernel-$(VERSION)-$(RELEASE)*.rpm ../installer/yum/qubes-dom0/rpm/
+
+update-repo-installer-kernel-vm:
 	ln -f rpm/x86_64/kernel-qubes-vm-$(VERSION)-$(RELEASE)*.rpm ../installer/yum/qubes-dom0/rpm/
 
 # mop up, printing out exactly what was mopped.
