@@ -328,7 +328,8 @@ INITRD_OPT="--mkinitrd --dracut"
 /sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
         $INITRD_OPT \
         --depmod --kernel-args="max_loop=255"\
-        --multiboot=/boot/xen.gz --banner="Qubes"\
+        --multiboot=/boot/xen.gz --mbargs="console=com1" \
+        --banner="Qubes"\
         --make-default --install %{kernelrelease}
 
 if [ -e /boot/grub/grub.conf ]; then
