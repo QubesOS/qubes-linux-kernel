@@ -1,7 +1,7 @@
 .tmp_versions/
-.u2mfn.ko.cmd
-.u2mfn.mod.o.cmd
-.u2mfn.o.cmd
+*.ko.cmd
+*.o.cmd
+*.o
 Makefile.xen
 Module.symvers
 modules.order
