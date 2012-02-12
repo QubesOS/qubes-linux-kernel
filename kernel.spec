@@ -96,11 +96,19 @@ mkdir -p %kernel_build_dir
 
 cd linux-%version
 
-%_sourcedir/apply-patches %_sourcedir/series-%{build_flavor}.conf %_sourcedir $SYMBOLS
+if [ -r %_sourcedir/series-%{version}-%{build_flavor}.conf ]; then
+    %_sourcedir/apply-patches %_sourcedir/series-%{version}-%{build_flavor}.conf %_sourcedir $SYMBOLS
+else
+    %_sourcedir/apply-patches %_sourcedir/series-%{build_flavor}.conf %_sourcedir $SYMBOLS
+fi
 
 cd %kernel_build_dir
 
-cp %_sourcedir/config-%{build_flavor} .config
+if [ -f %_sourcedir/config-%{version}-%{build_flavor} ]; then
+    cp %_sourcedir/config-%{version}-%{build_flavor} .config
+else
+    cp %_sourcedir/config-%{build_flavor} .config
+fi
 
 %build_src_dir/scripts/config \
 	--set-str CONFIG_LOCALVERSION -%release.%cpu_arch \
