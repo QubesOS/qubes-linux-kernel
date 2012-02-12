@@ -37,7 +37,7 @@ endif
 
 all: help
 
-MIRROR := kernel.inode.at
+MIRROR := ftp.kernel.org
 SRC_BASEURL := http://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/')
 SRC_FILE := linux-${VERSION}.tar.bz2
 SIGN_FILE := linux-${VERSION}.tar.bz2.sign
