@@ -425,7 +425,7 @@ umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 
-qvm-prefs --set default-kernel %version
+qubes-prefs --set default-kernel %version
 
 %files qubes-vm
 %defattr(-, root, root)
