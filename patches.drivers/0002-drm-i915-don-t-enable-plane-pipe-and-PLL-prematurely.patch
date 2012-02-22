@@ -1,0 +1,35 @@
+From 9e4eb0947431c5a6b55f442aee3eb505e5a334d5 Mon Sep 17 00:00:00 2001
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date: Tue, 4 Jan 2011 15:09:29 -0800
+Subject: [PATCH 2/3] drm/i915: don't enable plane, pipe and PLL prematurely
+
+On Ironlake+ we need to enable these in a specific order.
+
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/i915/intel_display.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 49fb54f..711beca 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4322,9 +4322,11 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
+ 			pipeconf &= ~PIPECONF_DOUBLE_WIDE;
+ 	}
+ 
+-	dspcntr |= DISPLAY_PLANE_ENABLE;
+-	pipeconf |= PIPECONF_ENABLE;
+-	dpll |= DPLL_VCO_ENABLE;
++	if (!HAS_PCH_SPLIT(dev)) {
++		dspcntr |= DISPLAY_PLANE_ENABLE;
++		pipeconf |= PIPECONF_ENABLE;
++		dpll |= DPLL_VCO_ENABLE;
++	}
+ 
+ 	DRM_DEBUG_KMS("Mode for pipe %c:\n", pipe == 0 ? 'A' : 'B');
+ 	drm_mode_debug_printmodeline(mode);
+-- 
+1.7.6.5
+
