@@ -35,6 +35,7 @@ Group:          System/Kernel
 Url:            http://www.kernel.org/
 AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
+BuildRequires:  qubes-core-vm-devel
 Provides:       multiversion(kernel)
 Provides:       %name = %version-%kernelrelease
 
@@ -95,11 +96,19 @@ mkdir -p %kernel_build_dir
 
 cd linux-%version
 
-%_sourcedir/apply-patches %_sourcedir/series-%{build_flavor}.conf %_sourcedir $SYMBOLS
+if [ -r %_sourcedir/series-%{version}-%{build_flavor}.conf ]; then
+    %_sourcedir/apply-patches %_sourcedir/series-%{version}-%{build_flavor}.conf %_sourcedir $SYMBOLS
+else
+    %_sourcedir/apply-patches %_sourcedir/series-%{build_flavor}.conf %_sourcedir $SYMBOLS
+fi
 
 cd %kernel_build_dir
 
-cp %_sourcedir/config-%{build_flavor} .config
+if [ -f %_sourcedir/config-%{version}-%{build_flavor} ]; then
+    cp %_sourcedir/config-%{version}-%{build_flavor} .config
+else
+    cp %_sourcedir/config-%{build_flavor} .config
+fi
 
 %build_src_dir/scripts/config \
 	--set-str CONFIG_LOCALVERSION -%release.%cpu_arch \
@@ -328,7 +337,8 @@ INITRD_OPT="--mkinitrd --dracut"
 /sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
         $INITRD_OPT \
         --depmod --kernel-args="max_loop=255"\
-        --multiboot=/boot/xen.gz --banner="Qubes"\
+        --multiboot=/boot/xen.gz --mbargs="console=com1" \
+        --banner="Qubes"\
         --make-default --install %{kernelrelease}
 
 if [ -e /boot/grub/grub.conf ]; then
@@ -423,7 +433,7 @@ umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 
-qvm-set-default-kernel %version
+qubes-prefs --set default-kernel %version
 
 %files qubes-vm
 %defattr(-, root, root)

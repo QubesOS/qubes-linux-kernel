@@ -37,10 +37,14 @@ endif
 
 all: help
 
-MIRROR := kernel.inode.at
-SRC_BASEURL := http://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\([0-9]*\.[0-9]*\).*/\1/')
+MIRROR := ftp.kernel.org
+SRC_BASEURL := http://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/')
 SRC_FILE := linux-${VERSION}.tar.bz2
+ifeq ($(BUILD_FLAVOR),pvops)
+SIGN_FILE := linux-${VERSION}.tar.sign
+else
 SIGN_FILE := linux-${VERSION}.tar.bz2.sign
+endif
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
@@ -54,7 +58,11 @@ $(SRC_FILE):
 	@echo "OK."
 
 verify-sources:
+ifeq ($(BUILD_FLAVOR),pvops)
+	@bzcat $(SRC_FILE) | gpg --verify $(SIGN_FILE) -
+else
 	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
+endif
 
 .PHONY: clean-sources
 clean-sources:
