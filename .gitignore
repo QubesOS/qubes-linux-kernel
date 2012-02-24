@@ -1,2 +1,3 @@
 linux-*.tar.bz2*
 kernel-*/
+linux*.tar.sign

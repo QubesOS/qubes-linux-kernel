@@ -45,6 +45,7 @@ SIGN_FILE := linux-${VERSION}.tar.sign
 else
 SIGN_FILE := linux-${VERSION}.tar.bz2.sign
 endif
+HASH_FILE :=${SRC_FILE}.sha1sum
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
@@ -57,12 +58,19 @@ $(SRC_FILE):
 	@wget -q $(URL_SIGN)
 	@echo "OK."
 
-verify-sources:
+import-keys:
+	 gpg --import *-key.asc
+
+verify-sources: import-keys
 ifeq ($(BUILD_FLAVOR),pvops)
 	@bzcat $(SRC_FILE) | gpg --verify $(SIGN_FILE) -
 else
-	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
+#	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
+#	The key has been compromised
+#	and kernel.org decided not to release signature
+#	with a new key... oh, well...
 endif
+	sha1sum -c ${HASH_FILE}
 
 .PHONY: clean-sources
 clean-sources:
