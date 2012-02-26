@@ -1,0 +1,81 @@
+From 86ceafdf50d67bcb2a5196122797a6972bedd279 Mon Sep 17 00:00:00 2001
+From: Tang Liang <liang.tang@oracle.com>
+Date: Thu, 8 Dec 2011 17:36:39 +0800
+Subject: xen: Utilize the restore_msi_irqs hook.
+
+to make a hypercall to restore the vectors in the MSI/MSI-X
+configuration space.
+
+Signed-off-by: Tang Liang <liang.tang@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/pci/xen.c              |   27 +++++++++++++++++++++++++++
+ include/xen/interface/physdev.h |    7 +++++++
+ 2 files changed, 34 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 492ade8..249a5ae 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -324,6 +324,32 @@ static int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ out:
+ 	return ret;
+ }
++
++static void xen_initdom_restore_msi_irqs(struct pci_dev *dev, int irq)
++{
++	int ret = 0;
++
++	if (pci_seg_supported) {
++		struct physdev_pci_device restore_ext;
++
++		restore_ext.seg = pci_domain_nr(dev->bus);
++		restore_ext.bus = dev->bus->number;
++		restore_ext.devfn = dev->devfn;
++		ret = HYPERVISOR_physdev_op(PHYSDEVOP_restore_msi_ext,
++					&restore_ext);
++		if (ret == -ENOSYS)
++			pci_seg_supported = false;
++		WARN(ret && ret != -ENOSYS, "restore_msi_ext -> %d\n", ret);
++	}
++	if (!pci_seg_supported) {
++		struct physdev_restore_msi restore;
++
++		restore.bus = dev->bus->number;
++		restore.devfn = dev->devfn;
++		ret = HYPERVISOR_physdev_op(PHYSDEVOP_restore_msi, &restore);
++		WARN(ret && ret != -ENOSYS, "restore_msi -> %d\n", ret);
++	}
++}
+ #endif
+ 
+ static void xen_teardown_msi_irqs(struct pci_dev *dev)
+@@ -446,6 +472,7 @@ int __init pci_xen_initial_domain(void)
+ #ifdef CONFIG_PCI_MSI
+ 	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
+ 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
++	x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
+ #endif
+ 	xen_setup_acpi_sci();
+ 	__acpi_register_gsi = acpi_register_gsi_xen;
+diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+index c1080d9..0c28989 100644
+--- a/include/xen/interface/physdev.h
++++ b/include/xen/interface/physdev.h
+@@ -145,6 +145,13 @@ struct physdev_manage_pci {
+ 	uint8_t devfn;
+ };
+ 
++#define PHYSDEVOP_restore_msi            19
++struct physdev_restore_msi {
++	/* IN */
++	uint8_t bus;
++	uint8_t devfn;
++};
++
+ #define PHYSDEVOP_manage_pci_add_ext	20
+ struct physdev_manage_pci_ext {
+ 	/* IN */
+-- 
+1.7.6.4
+
