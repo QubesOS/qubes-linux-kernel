@@ -1,0 +1,112 @@
+From b2ed886e43ec90bae86d6cae6582b457e76d1fd8 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 8 Dec 2011 17:16:43 +0800
+Subject: x86/acpi/sleep: Provide registration for acpi_suspend_lowlevel.
+
+Which by default will be x86_acpi_suspend_lowlevel.
+This registration allows us to register another callback
+if there is a need to use another platform specific callback.
+
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: Len Brown <len.brown@intel.com>
+CC: Joseph Cihula <joseph.cihula@intel.com>
+CC: Shane Wang <shane.wang@intel.com>
+CC: linux-pm@lists.linux-foundation.org
+CC: linux-acpi@vger.kernel.org
+CC: Len Brown <len.brown@intel.com>
+Signed-off-by: Liang Tang <liang.tang@oracle.com>
+[v1: Fix when CONFIG_ACPI_SLEEP is not set]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/include/asm/acpi.h  |    2 +-
+ arch/x86/kernel/acpi/boot.c  |    7 +++++++
+ arch/x86/kernel/acpi/sleep.c |    4 ++--
+ arch/x86/kernel/acpi/sleep.h |    2 ++
+ drivers/acpi/sleep.c         |    2 ++
+ 5 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 610001d..68cf060 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -115,7 +115,7 @@ static inline void acpi_disable_pci(void)
+ }
+ 
+ /* Low-level suspend routine. */
+-extern int acpi_suspend_lowlevel(void);
++extern int (*acpi_suspend_lowlevel)(void);
+ 
+ extern const unsigned char acpi_wakeup_code[];
+ #define acpi_wakeup_address (__pa(TRAMPOLINE_SYM(acpi_wakeup_code)))
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index ce664f3..c3a5b95 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -44,6 +44,7 @@
+ #include <asm/mpspec.h>
+ #include <asm/smp.h>
+ 
++#include "sleep.h" /* To include x86_acpi_suspend_lowlevel */
+ static int __initdata acpi_force = 0;
+ u32 acpi_rsdt_forced;
+ int acpi_disabled;
+@@ -558,6 +559,12 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
+ 			   int trigger, int polarity) = acpi_register_gsi_pic;
+ 
++#ifdef CONFIG_ACPI_SLEEP
++int (*acpi_suspend_lowlevel)(void) = x86_acpi_suspend_lowlevel;
++#else
++int (*acpi_suspend_lowlevel)(void);
++#endif
++
+ /*
+  * success: return IRQ number (>=0)
+  * failure: return < 0
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 103b6ab..4d2d0b1 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -25,12 +25,12 @@ static char temp_stack[4096];
+ #endif
+ 
+ /**
+- * acpi_suspend_lowlevel - save kernel state
++ * x86_acpi_suspend_lowlevel - save kernel state
+  *
+  * Create an identity mapped page table and copy the wakeup routine to
+  * low memory.
+  */
+-int acpi_suspend_lowlevel(void)
++int x86_acpi_suspend_lowlevel(void)
+ {
+ 	struct wakeup_header *header;
+ 	/* address in low memory of the wakeup routine. */
+diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
+index 416d4be..4d3feb5 100644
+--- a/arch/x86/kernel/acpi/sleep.h
++++ b/arch/x86/kernel/acpi/sleep.h
+@@ -13,3 +13,5 @@ extern unsigned long acpi_copy_wakeup_routine(unsigned long);
+ extern void wakeup_long64(void);
+ 
+ extern void do_suspend_lowlevel(void);
++
++extern int x86_acpi_suspend_lowlevel(void);
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index 0a7ed69..44dbdde 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -254,6 +254,8 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+ 		break;
+ 
+ 	case ACPI_STATE_S3:
++		if (!acpi_suspend_lowlevel)
++			return -ENOSYS;
+ 		error = acpi_suspend_lowlevel();
+ 		if (error)
+ 			return error;
+-- 
+1.7.6.4
+
