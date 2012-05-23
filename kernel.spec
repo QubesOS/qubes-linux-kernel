@@ -13,7 +13,7 @@
 %global cpu_arch x86_64
 %define cpu_arch_flavor %cpu_arch/%build_flavor
 
-%define kernelrelease %version-%rel.%cpu_arch
+%define kernelrelease %(echo %{version} | sed 's/3\\.[0-9]\\+$/\\0.0/')-%rel.%cpu_arch
 %define my_builddir %_builddir/%{name}-%{version}
 
 %define build_src_dir %my_builddir/linux-%version
