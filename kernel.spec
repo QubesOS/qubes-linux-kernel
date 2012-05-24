@@ -165,6 +165,11 @@ make -C %kernel_build_dir SUBDIRS=%_builddir/u2mfn modules
 export NO_BRP_STRIP_DEBUG=true
 export STRIP_KEEP_SYMTAB='*/vmlinux-*'
 
+# /lib/modules/%kernelrelease-%build_flavor/build will be a stale symlink until the
+# kernel-devel package is installed. Don't check for stale symlinks
+# in the brp-symlink check:
+export NO_BRP_STALE_LINK_ERROR=yes
+
 cd %kernel_build_dir
 
 mkdir -p %buildroot/boot
