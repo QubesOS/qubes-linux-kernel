@@ -13,7 +13,7 @@
 %global cpu_arch x86_64
 %define cpu_arch_flavor %cpu_arch/%build_flavor
 
-%define kernelrelease %version-%rel.%cpu_arch
+%define kernelrelease %(echo %{version} | sed 's/3\\.[0-9]\\+$/\\0.0/')-%rel.%cpu_arch
 %define my_builddir %_builddir/%{name}-%{version}
 
 %define build_src_dir %my_builddir/linux-%version
@@ -225,6 +225,7 @@ rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*/*.o
 
 cp -a scripts/* %buildroot/lib/modules/%kernelrelease/build/scripts/
 cp -a include/* %buildroot/lib/modules/%kernelrelease/build/include
+cp -a --parents arch/x86/include/generated %buildroot/lib/modules/%kernelrelease/build/
 
 # Make sure the Makefile and version.h have a matching timestamp so that
 # external modules can be built
