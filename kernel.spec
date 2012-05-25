@@ -128,6 +128,7 @@ fi
 
 make prepare $MAKE_ARGS
 make scripts $MAKE_ARGS
+make scripts_basic $MAKE_ARGS
 krel=$(make -s kernelrelease $MAKE_ARGS)
 
 if [ "$krel" != "%kernelrelease" ]; then
