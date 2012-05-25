@@ -1,0 +1,53 @@
+From 5000cd48f33e3e4d31cdeda0751188794f8bebf4 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 8 Dec 2011 17:34:58 +0800
+Subject: xen/acpi/sleep: Register to the acpi_suspend_lowlevel a callback.
+
+We piggyback on "x86/acpi: Provide registration for acpi_suspend_lowlevel."
+to register a Xen version of the callback. The callback does not
+do anything special - except it omits the x86_acpi_suspend_lowlevel.
+It does that b/c during suspend it tries to save cr8 values (which
+the hypervisor does not support), and then on resume path the
+cr3, cr8, idt, and gdt are all resumed which clashes with what
+the hypervisor has set up for the guest.
+
+Signed-off-by: Liang Tang <liang.tang@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ include/xen/acpi.h |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
+
+diff --git a/include/xen/acpi.h b/include/xen/acpi.h
+index 48a9c01..ebaabbb 100644
+--- a/include/xen/acpi.h
++++ b/include/xen/acpi.h
+@@ -43,11 +43,25 @@
+ int xen_acpi_notify_hypervisor_state(u8 sleep_state,
+ 				     u32 pm1a_cnt, u32 pm1b_cnd);
+ 
++static inline int xen_acpi_suspend_lowlevel(void)
++{
++	/*
++	* Xen will save and restore CPU context, so
++	* we can skip that and just go straight to
++	* the suspend.
++	*/
++	acpi_enter_sleep_state(ACPI_STATE_S3, 0);
++	return 0;
++}
++
+ static inline void xen_acpi_sleep_register(void)
+ {
+-	if (xen_initial_domain())
++	if (xen_initial_domain()) {
+ 		acpi_os_set_prepare_sleep(
+ 			&xen_acpi_notify_hypervisor_state);
++
++		acpi_suspend_lowlevel = xen_acpi_suspend_lowlevel;
++	}
+ }
+ #else
+ static inline void xen_acpi_sleep_register(void)
+-- 
+1.7.6.4
+
