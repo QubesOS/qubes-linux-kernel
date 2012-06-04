@@ -231,7 +231,9 @@ rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*/*.o
 
 cp -a scripts/* %buildroot/lib/modules/%kernelrelease/build/scripts/
 cp -a include/* %buildroot/lib/modules/%kernelrelease/build/include
-cp -a --parents arch/x86/include/generated %buildroot/lib/modules/%kernelrelease/build/
+if [ "%{build_flavor}" != "xenlinux" ]; then
+    cp -a --parents arch/x86/include/generated %buildroot/lib/modules/%kernelrelease/build/
+fi
 
 # Make sure the Makefile and version.h have a matching timestamp so that
 # external modules can be built
