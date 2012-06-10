@@ -20,7 +20,7 @@ if [ `blockdev --getro /dev/xvda` = 1 ] ; then
 	while ! [ -e /dev/xvdc ]; do sleep 0.1; done
 	while ! [ -e /dev/xvdc2 ]; do sleep 0.1; done
 
-	echo "0 `blockdev --getsz /dev/xvda` snapshot /dev/xvda /dev/xvdc2 P 16" | \
+	echo "0 `blockdev --getsz /dev/xvda` snapshot /dev/xvda /dev/xvdc2 N 16" | \
     		dmsetup create dmroot || { echo "Qubes: FATAL: cannot create dmroot!"; }
 	echo Qubes: done.
 else
