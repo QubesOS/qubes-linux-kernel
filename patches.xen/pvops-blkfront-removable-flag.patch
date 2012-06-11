@@ -1,0 +1,26 @@
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 4e86393..34493d7 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1188,7 +1188,7 @@ static void blkfront_connect(struct blkfront_info *info)
+ 	unsigned long sector_size;
+ 	unsigned int binfo;
+ 	int err;
+-	int barrier, flush, discard;
++	int barrier, flush, discard, removable;
+ 
+ 	switch (info->connected) {
+ 	case BLKIF_STATE_CONNECTED:
+@@ -1266,6 +1266,12 @@ static void blkfront_connect(struct blkfront_info *info)
+ 	if (!err && discard)
+ 		blkfront_setup_discard(info);
+ 
++	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
++			    "removable", "%d", &removable,
++			    NULL);
++	if (!err && removable)
++		binfo |= VDISK_REMOVABLE;
++
+ 	err = xlvbd_alloc_gendisk(sectors, info, binfo, sector_size);
+ 	if (err) {
+ 		xenbus_dev_fatal(info->xbdev, err, "xlvbd_add at %s",
