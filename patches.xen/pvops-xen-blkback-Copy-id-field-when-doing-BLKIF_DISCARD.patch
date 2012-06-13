@@ -1,0 +1,54 @@
+From 8c9ce606a60e4a0cb447bdc082ce383b96b227b4 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Fri, 25 May 2012 16:11:09 -0400
+Subject: [PATCH 2/3] xen/blkback: Copy id field when doing BLKIF_DISCARD.
+
+We weren't copying the id field so when we sent the response
+back to the frontend (especially with a 64-bit host and 32-bit
+guest), we ended up using a random value. This lead to the
+frontend crashing as it would try to pass to __blk_end_request_all
+a NULL 'struct request' (b/c it would use the 'id' to find the
+proper 'struct request' in its shadow array) and end up crashing:
+
+BUG: unable to handle kernel NULL pointer dereference at 000000e4
+IP: [<c0646d4c>] __blk_end_request_all+0xc/0x40
+.. snip..
+EIP is at __blk_end_request_all+0xc/0x40
+.. snip..
+ [<ed95db72>] blkif_interrupt+0x172/0x330 [xen_blkfront]
+
+This fixes the bug by passing in the proper id for the response.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=824641
+
+CC: stable@kernel.org
+Tested-by: William Dauchy <wdauchy@gmail.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/block/xen-blkback/common.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 773cf27..9ad3b5e 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -257,6 +257,7 @@ static inline void blkif_get_x86_32_req(struct blkif_request *dst,
+ 		break;
+ 	case BLKIF_OP_DISCARD:
+ 		dst->u.discard.flag = src->u.discard.flag;
++		dst->u.discard.id = src->u.discard.id;
+ 		dst->u.discard.sector_number = src->u.discard.sector_number;
+ 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
+ 		break;
+@@ -287,6 +288,7 @@ static inline void blkif_get_x86_64_req(struct blkif_request *dst,
+ 		break;
+ 	case BLKIF_OP_DISCARD:
+ 		dst->u.discard.flag = src->u.discard.flag;
++		dst->u.discard.id = src->u.discard.id;
+ 		dst->u.discard.sector_number = src->u.discard.sector_number;
+ 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
+ 		break;
+-- 
+1.7.4.4
+
