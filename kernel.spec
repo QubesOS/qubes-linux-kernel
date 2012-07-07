@@ -42,6 +42,7 @@ Provides:       %name = %version-%kernelrelease
 
 Provides:       kernel-xen-dom0
 Provides:       kernel-qubes-dom0
+Provides:       kernel-qubes-dom0-%{build_flavor}
 Provides:       kernel-drm-nouveau = 16
 
 Requires:       xen >= 3.4.3
