@@ -42,6 +42,7 @@ Provides:       %name = %version-%kernelrelease
 
 Provides:       kernel-xen-dom0
 Provides:       kernel-qubes-dom0
+Provides:       kernel-qubes-dom0-%{build_flavor}
 Provides:       kernel-drm-nouveau = 16
 
 Requires:       xen >= 3.4.3
@@ -163,6 +164,11 @@ make -C %kernel_build_dir SUBDIRS=%_builddir/u2mfn modules
 # strip removes too much from the vmlinux ELF binary
 export NO_BRP_STRIP_DEBUG=true
 export STRIP_KEEP_SYMTAB='*/vmlinux-*'
+
+# /lib/modules/%kernelrelease-%build_flavor/build will be a stale symlink until the
+# kernel-devel package is installed. Don't check for stale symlinks
+# in the brp-symlink check:
+export NO_BRP_STALE_LINK_ERROR=yes
 
 cd %kernel_build_dir
 
