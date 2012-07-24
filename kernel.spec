@@ -347,7 +347,7 @@ INITRD_OPT="--mkinitrd --dracut"
 /sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
         $INITRD_OPT \
         --depmod --kernel-args="max_loop=255"\
-        --multiboot=/boot/xen.gz --mbargs="console=com1" \
+        --multiboot=/boot/xen.gz --mbargs="console=none" \
         --banner="Qubes"\
         --make-default --install %{kernelrelease}
 
