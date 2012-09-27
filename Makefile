@@ -69,8 +69,8 @@ else
 #	The key has been compromised
 #	and kernel.org decided not to release signature
 #	with a new key... oh, well...
-endif
 	sha1sum -c ${HASH_FILE}
+endif
 
 .PHONY: clean-sources
 clean-sources:
