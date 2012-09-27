@@ -45,8 +45,8 @@ index 12eb07b..a5277c2 100644
 +
 +		xen_acpi_sleep_register();
  	}
- 		
- 
+ #ifdef CONFIG_PCI
+ 	/* PCI BIOS service won't work from a PV guest. */
 diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
 index aa31337..77a845f 100644
 --- a/drivers/xen/Makefile

@@ -44,9 +44,9 @@ index 12eb07b..4c82936 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
 @@ -62,6 +62,14 @@
- #include <asm/reboot.h>
  #include <asm/stackprotector.h>
  #include <asm/hypervisor.h>
+ #include <asm/pci_x86.h>
 +#include <asm/mwait.h>
 +
 +#ifdef CONFIG_ACPI
@@ -93,9 +93,9 @@ index 12eb07b..4c82936 100644
 +		*dx = cpuid_leaf5_edx_val;
 +		return;
 +
- 	case 0xb:
- 		/* Suppress extended topology stuff */
- 		maskebx = 0;
+ 	case CPUID_THERM_POWER_LEAF:
+ 		/* Disabling APERFMPERF for kernel usage */
+ 		maskecx = ~(1 << APERFMPERF_PRESENT);
 @@ -232,9 +253,75 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
  
  	*bx &= maskebx;
