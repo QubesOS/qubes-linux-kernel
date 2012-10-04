@@ -317,7 +317,7 @@ fi
 
 # Include firmware in initramfs
 mkdir -p %buildroot/etc/dracut.conf.d
-echo "fw_dir+=\"/lib/firmware/%kernelrelease\"" > %buildroot/etc/dracut.conf.d/firmware-%kernelrelease.conf
+echo 'fw_dir="$fw_dir:/lib/firmware/%kernelrelease"' > %buildroot/etc/dracut.conf.d/firmware-%kernelrelease.conf
 
 # Prepare initramfs for Qubes VM
 mkdir -p %buildroot/%vm_install_dir
