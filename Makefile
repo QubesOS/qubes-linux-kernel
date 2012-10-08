@@ -54,8 +54,8 @@ get-sources: $(SRC_FILE)
 
 $(SRC_FILE):
 	@echo -n "Downloading $(URL)... "
-	@wget -q $(URL)
-	@wget -q $(URL_SIGN)
+	@wget -q -N $(URL)
+	@wget -q -N $(URL_SIGN)
 	@echo "OK."
 
 import-keys:
