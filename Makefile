@@ -50,11 +50,15 @@ HASH_FILE :=${SRC_FILE}.sha1sum
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
 
-get-sources: $(SRC_FILE)
+get-sources: $(SRC_FILE) $(SIGN_FILE)
 
 $(SRC_FILE):
 	@echo -n "Downloading $(URL)... "
 	@wget -q -N $(URL)
+	@echo "OK."
+
+$(SIGN_FILE):
+	@echo -n "Downloading $(URL_SIGN)... "
 	@wget -q -N $(URL_SIGN)
 	@echo "OK."
 
