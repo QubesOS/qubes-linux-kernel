@@ -11,9 +11,7 @@ SOURCEDIR := $(WORKDIR)
 
 NO_OF_CPUS := $(shell grep -c ^processor /proc/cpuinfo)
 
-ifndef BUILD_FLAVOR
-$(error "Add BUILD_FLAVOR=pvops or BUILD_FLAVOR=xenlinux to make cmdline")
-endif
+BUILD_FLAVOR := pvops
 
 RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "_specdir $(SPECDIR)" \
