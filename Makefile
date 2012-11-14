@@ -51,27 +51,23 @@ URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
 get-sources: $(SRC_FILE) $(SIGN_FILE)
 
 $(SRC_FILE):
-	@echo -n "Downloading $(URL)... "
 	@wget -q -N $(URL)
-	@echo "OK."
 
 $(SIGN_FILE):
-	@echo -n "Downloading $(URL_SIGN)... "
 	@wget -q -N $(URL_SIGN)
-	@echo "OK."
 
 import-keys:
-	 gpg --import *-key.asc
+	 gpg -q --import *-key.asc
 
 verify-sources: import-keys
 ifeq ($(BUILD_FLAVOR),pvops)
-	@bzcat $(SRC_FILE) | gpg --verify $(SIGN_FILE) -
+	@bzcat $(SRC_FILE) | gpg -q --verify $(SIGN_FILE) - 2>/dev/null
 else
 #	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
 #	The key has been compromised
 #	and kernel.org decided not to release signature
 #	with a new key... oh, well...
-	sha1sum -c ${HASH_FILE}
+	sha1sum --quiet -c ${HASH_FILE}
 endif
 
 .PHONY: clean-sources
