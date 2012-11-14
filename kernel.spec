@@ -36,7 +36,7 @@ Group:          System/Kernel
 Url:            http://www.kernel.org/
 AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
-BuildRequires:  qubes-core-vm-devel
+BuildRequires:  qubes-core-libs-devel
 Provides:       multiversion(kernel)
 Provides:       %name = %version-%kernelrelease
 
