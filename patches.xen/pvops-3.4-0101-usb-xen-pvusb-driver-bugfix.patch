@@ -1,0 +1,13 @@
+diff -pur linux-3.4.18.orig/drivers/usb/host/xen-usbback/usbback.c linux-3.4.18/drivers/usb/host/xen-usbback/usbback.c
+--- linux-3.4.18.orig/drivers/usb/host/xen-usbback/usbback.c	2012-11-20 00:03:57.562663987 +0100
++++ linux-3.4.18/drivers/usb/host/xen-usbback/usbback.c	2012-12-09 16:16:36.395197677 +0100
+@@ -582,6 +582,8 @@
+ 		break;
+ 	}
+ 
++	urb->transfer_flags &= ~(URB_FREE_BUFFER);
++
+ 	if (req->buffer_length) {
+ 		urb->transfer_dma = pending_req->transfer_dma;
+ 		urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+diff -pur linux-3.4.18.orig/drivers/usb/host/xen-usbfront.c linux-3.4.18/drivers/usb/host/xen-usbfront.c
