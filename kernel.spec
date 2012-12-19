@@ -316,10 +316,6 @@ if [ "%{build_flavor}" == "pvops" ]; then
     mv  %buildroot/lib/firmware-all %buildroot/lib/firmware/%kernelrelease
 fi
 
-# Include firmware in initramfs
-mkdir -p %buildroot/etc/dracut.conf.d
-echo 'fw_dir="$fw_dir:/lib/firmware/%kernelrelease"' > %buildroot/etc/dracut.conf.d/firmware-%kernelrelease.conf
-
 # Prepare initramfs for Qubes VM
 mkdir -p %buildroot/%vm_install_dir
 /sbin/dracut --nomdadmconf --nolvmconf \
@@ -377,7 +373,6 @@ fi
 %attr(0644, root, root) /boot/vmlinuz-%{kernelrelease}
 /lib/firmware/%{kernelrelease}
 /lib/modules/%{kernelrelease}
-/etc/dracut.conf.d/firmware-%kernelrelease.conf
 
 %package devel
 Summary:        Development files necessary for building kernel modules
