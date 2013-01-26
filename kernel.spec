@@ -44,13 +44,14 @@ Provides:       kernel-xen-dom0
 Provides:       kernel-qubes-dom0
 Provides:       kernel-qubes-dom0-%{build_flavor}
 Provides:       kernel-drm-nouveau = 16
+Provides:       kernel-modules-extra = %kernelrelease
 
 Requires:       xen >= 3.4.3
 Requires(post): /sbin/new-kernel-pkg
 Requires(preun):/sbin/new-kernel-pkg
 
 Requires(pre):  coreutils gawk
-Requires(post): dracut
+Requires(post): dracut strip
 
 Conflicts:      sysfsutils < 2.0
 # root-lvm only works with newer udevs
