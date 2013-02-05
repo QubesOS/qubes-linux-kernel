@@ -364,6 +364,11 @@ fi
 %posttrans
 /sbin/new-kernel-pkg --package %{name}-%{kernelrelease} --rpmposttrans %{kernelrelease}
 
+# grubby (used by new-kernel-pkg) do not understand xen entries in grub2 config
+if [ -e /boot/grub2/grub.cfg ]; then
+        grub2-mkconfig > /boot/grub2/grub.cfg
+fi
+
 %preun
 /sbin/new-kernel-pkg --rminitrd --rmmoddep --remove %{kernelrelease}
 
