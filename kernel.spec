@@ -51,7 +51,7 @@ Requires(post): /sbin/new-kernel-pkg
 Requires(preun):/sbin/new-kernel-pkg
 
 Requires(pre):  coreutils gawk
-Requires(post): dracut strip
+Requires(post): dracut binutils
 
 Conflicts:      sysfsutils < 2.0
 # root-lvm only works with newer udevs
