@@ -38,8 +38,8 @@ index 610001d..68cf060 100644
 -extern int acpi_suspend_lowlevel(void);
 +extern int (*acpi_suspend_lowlevel)(void);
  
- extern const unsigned char acpi_wakeup_code[];
- #define acpi_wakeup_address (__pa(TRAMPOLINE_SYM(acpi_wakeup_code)))
+ /* Physical address to resume after wakeup */
+ #define acpi_wakeup_address ((unsigned long)(real_mode_header->wakeup_start))
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
 index ce664f3..c3a5b95 100644
 --- a/arch/x86/kernel/acpi/boot.c
@@ -70,8 +70,8 @@ index 103b6ab..4d2d0b1 100644
 --- a/arch/x86/kernel/acpi/sleep.c
 +++ b/arch/x86/kernel/acpi/sleep.c
 @@ -25,12 +25,12 @@ static char temp_stack[4096];
- 	acpi_enter_sleep_state(3, wake_sleep_flags);
- }
+ #endif
+ 
  /**
 - * acpi_suspend_lowlevel - save kernel state
 + * x86_acpi_suspend_lowlevel - save kernel state
@@ -82,8 +82,8 @@ index 103b6ab..4d2d0b1 100644
 -int acpi_suspend_lowlevel(void)
 +int x86_acpi_suspend_lowlevel(void)
  {
- 	struct wakeup_header *header;
- 	/* address in low memory of the wakeup routine. */
+ 	struct wakeup_header *header =
+ 		(struct wakeup_header *) __va(real_mode_header->wakeup_header);
 diff --git a/arch/x86/kernel/acpi/sleep.h b/arch/x86/kernel/acpi/sleep.h
 index 416d4be..4d3feb5 100644
 --- a/arch/x86/kernel/acpi/sleep.h

@@ -32,7 +32,7 @@ index 48a9c01..ebaabbb 100644
 +	* we can skip that and just go straight to
 +	* the suspend.
 +	*/
-+	acpi_enter_sleep_state(ACPI_STATE_S3, 0);
++	acpi_enter_sleep_state(ACPI_STATE_S3);
 +	return 0;
 +}
 +
