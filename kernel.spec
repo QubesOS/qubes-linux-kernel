@@ -324,6 +324,7 @@ mkdir -p %buildroot/%vm_install_dir
 /sbin/dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
     --include %_sourcedir/vm-initramfs / \
+    --add "dm" \
     -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 
