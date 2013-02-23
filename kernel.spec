@@ -133,6 +133,7 @@ fi
 
 make prepare $MAKE_ARGS
 make scripts $MAKE_ARGS
+make scripts_basic $MAKE_ARGS
 krel=$(make -s kernelrelease $MAKE_ARGS)
 
 if [ "$krel" != "%kernelrelease" ]; then
@@ -323,6 +324,7 @@ mkdir -p %buildroot/%vm_install_dir
 /sbin/dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
     --include %_sourcedir/vm-initramfs / \
+    --add "dm" --omit "plymouth" \
     -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 
