@@ -107,43 +107,6 @@ srpm: get-sources $(SPECFILE)
 verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)
 
-
-update-repo-current:
-	ln -f rpm/x86_64/kernel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current/dom0/rpm/
-	ln -f rpm/x86_64/kernel-debuginfo-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current/dom0/rpm/
-	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current/dom0/rpm/
-	for vmrepo in ../yum/current-release/current/vm/* ; do \
-		ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm $$vmrepo/rpm/ ;\
-	done
-	ln -f rpm/x86_64/kernel-qubes-vm-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current/dom0/rpm/
-
-
-update-repo-current-testing:
-	ln -f rpm/x86_64/kernel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/dom0/rpm/
-	ln -f rpm/x86_64/kernel-debuginfo-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/dom0/rpm/
-	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/dom0/rpm/
-	for vmrepo in ../yum/current-release/current-testing/vm/* ; do \
-		ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm $$vmrepo/rpm/ ;\
-	done
-	ln -f rpm/x86_64/kernel-qubes-vm-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/current-testing/dom0/rpm/
-
-update-repo-unstable:
-	ln -f rpm/x86_64/kernel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/unstable/dom0/rpm/
-	ln -f rpm/x86_64/kernel-debuginfo-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/unstable/dom0/rpm/
-	ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/unstable/dom0/rpm/
-	for vmrepo in ../yum/current-release/unstable/vm/* ; do \
-		ln -f rpm/x86_64/kernel-devel-$(VERSION)-$(RELEASE)*.rpm $$vmrepo/rpm/ ;\
-	done
-	ln -f rpm/x86_64/kernel-qubes-vm-$(VERSION)-$(RELEASE)*.rpm ../yum/current-release/unstable/dom0/rpm/
-
-update-repo-installer: update-repo-installer-kernel-dom0 update-repo-installer-kernel-vm
-
-update-repo-installer-kernel-dom0:
-	ln -f rpm/x86_64/kernel-$(VERSION)-$(RELEASE)*.rpm ../installer/yum/qubes-dom0/rpm/
-
-update-repo-installer-kernel-vm:
-	ln -f rpm/x86_64/kernel-qubes-vm-$(VERSION)-$(RELEASE)*.rpm ../installer/yum/qubes-dom0/rpm/
-
 # mop up, printing out exactly what was mopped.
 
 .PHONY : clean

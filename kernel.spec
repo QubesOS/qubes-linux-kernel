@@ -2,6 +2,13 @@
 # Based on the Open SUSE kernel-spec & Fedora kernel-spec.
 #
 
+# default to pvops build
+%{!?build_flavor:%define build_flavor pvops}
+
+%if 0%{?qubes_builder}
+%define _sourcedir %(pwd)
+%endif
+
 #%define _unpackaged_files_terminate_build 0
 %define variant %{build_flavor}.qubes
 %define plainrel %(cat rel-%{build_flavor})
