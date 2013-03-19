@@ -150,14 +150,7 @@ find . ! -type d -printf '%%P\n' > %my_builddir/obj-files
 
 cd %kernel_build_dir
 
-# If the %jobs macro is defined to a number, make will spawn that many jobs.
-# There are several ways how to define it:
-# With plain rpmbuild:
-#     rpmbuild -ba --define 'jobs N' kernel-$flavor.spec
-# To spawn as many jobs as there are cpu cores:
-#     rpmbuild -ba --define "jobs 0$(grep -c ^processor /proc/cpuinfo)" \
-#         kernel-$flavor.spec
-make %{?jobs:-j%jobs} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
+make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
 
 # Build u2mfn module
 make -C %kernel_build_dir SUBDIRS=%_builddir/u2mfn modules

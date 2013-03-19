@@ -18,8 +18,7 @@ RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "_builddir $(BUILDDIR)" \
 		--define "_srcrpmdir $(SRCRPMDIR)" \
 		--define "_rpmdir $(RPMDIR)" \
-		--define "build_flavor $(BUILD_FLAVOR)" \
-		--define "jobs $(NO_OF_CPUS)"
+		--define "build_flavor $(BUILD_FLAVOR)"
 
 VER_REL := $(shell rpm $(RPM_DEFINES) -q --qf "%{VERSION} %{RELEASE}\n" --specfile $(SPECFILE)| head -1)
 
