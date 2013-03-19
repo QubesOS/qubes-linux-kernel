@@ -85,7 +85,7 @@ Source205:      patches.xen
 Source207:      patches.kernel.org
 Source300:      patches.qubes
 Source301:      u2mfn
-Source302:      vm-initramfs-pre-udev
+Source302:      vm-initramfs
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
@@ -103,6 +103,11 @@ SYMBOLS="xen-dom0 %{build_flavor}"
 
 # Unpack all sources and patches
 %setup -q -c -T -a 0
+
+if [ %{_sourcedir} != %{_builddir} ]; then
+    cp -r %{SOURCE301} %{_builddir}/
+    cp -r %{SOURCE302} %{_builddir}/
+fi
 
 mkdir -p %kernel_build_dir
 
