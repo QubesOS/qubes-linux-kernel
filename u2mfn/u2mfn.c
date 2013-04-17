@@ -150,7 +150,7 @@ static struct file_operations u2mfn_fops = {
 static int u2mfn_init(void)
 {
 	struct proc_dir_entry *u2mfn_node =
-	    proc_create_data("u2mfn", 0600, NULL,
+	    proc_create_data("u2mfn", 0666, NULL,
 			     &u2mfn_fops, 0);
 	if (!u2mfn_node)
 		return -1;
