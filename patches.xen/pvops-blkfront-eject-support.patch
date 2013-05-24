@@ -1,9 +1,9 @@
 --- linux-3.4.1.orig/drivers/block/xen-blkfront.c	2012-06-01 09:18:44.000000000 +0200
 +++ linux-3.4.1/drivers/block/xen-blkfront.c	2012-07-15 15:54:31.350255623 +0200
 @@ -44,6 +44,7 @@
- #include <linux/mutex.h>
  #include <linux/scatterlist.h>
  #include <linux/bitmap.h>
+ #include <linux/list.h>
 +#include <linux/fd.h>
  
  #include <xen/xen.h>

@@ -66,13 +66,12 @@ diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
 index 0982bcc..d62fe38 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
-@@ -40,6 +40,8 @@ obj-$(CONFIG_USB_HWA_HCD)	+= hwa-hc.o
+@@ -40,5 +40,7 @@ obj-$(CONFIG_USB_HWA_HCD)	+= hwa-hc.o
  obj-$(CONFIG_USB_IMX21_HCD)	+= imx21-hcd.o
  obj-$(CONFIG_USB_FSL_MPH_DR_OF)	+= fsl-mph-dr-of.o
  obj-$(CONFIG_USB_OCTEON2_COMMON) += octeon2-common.o
 +obj-$(CONFIG_XEN_USBDEV_FRONTEND) += xen-usbfront.o
 +obj-$(CONFIG_XEN_USBDEV_BACKEND) += xen-usbback/
- obj-$(CONFIG_MIPS_ALCHEMY)	+= alchemy-common.o
  obj-$(CONFIG_USB_HCD_BCMA)	+= bcma-hcd.o
  obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
 diff --git a/drivers/usb/host/xen-usbback/Makefile b/drivers/usb/host/xen-usbback/Makefile

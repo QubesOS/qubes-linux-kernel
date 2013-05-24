@@ -6,8 +6,8 @@ index 4e86393..34493d7 100644
  	unsigned long sector_size;
  	unsigned int binfo;
  	int err;
--	int barrier, flush, discard;
-+	int barrier, flush, discard, removable;
+-	int barrier, flush, discard, persistent;
++	int barrier, flush, discard, persistent, removable;
  
  	switch (info->connected) {
  	case BLKIF_STATE_CONNECTED:
@@ -21,6 +21,6 @@ index 4e86393..34493d7 100644
 +	if (!err && removable)
 +		binfo |= VDISK_REMOVABLE;
 +
- 	err = xlvbd_alloc_gendisk(sectors, info, binfo, sector_size);
- 	if (err) {
- 		xenbus_dev_fatal(info->xbdev, err, "xlvbd_add at %s",
+ 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
+			    "feature-persistent", "%u", &persistent,
+ 			    NULL);
