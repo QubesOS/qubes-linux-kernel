@@ -3,7 +3,7 @@ index 4e86393..34493d7 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
 @@ -1188,7 +1188,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	unsigned long sector_size;
+ 	unsigned int physical_sector_size;
  	unsigned int binfo;
  	int err;
 -	int barrier, flush, discard, persistent;

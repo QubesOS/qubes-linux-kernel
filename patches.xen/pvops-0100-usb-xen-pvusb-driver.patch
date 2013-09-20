@@ -66,7 +66,7 @@ diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
 index 0982bcc..d62fe38 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
-@@ -40,5 +40,7 @@ obj-$(CONFIG_USB_HWA_HCD)	+= hwa-hc.o
+@@ -40,6 +40,8 @@ obj-$(CONFIG_USB_HWA_HCD)	+= hwa-hc.o
  obj-$(CONFIG_USB_IMX21_HCD)	+= imx21-hcd.o
  obj-$(CONFIG_USB_FSL_MPH_DR_OF)	+= fsl-mph-dr-of.o
  obj-$(CONFIG_USB_OCTEON2_COMMON) += octeon2-common.o
@@ -74,6 +74,7 @@ index 0982bcc..d62fe38 100644
 +obj-$(CONFIG_XEN_USBDEV_BACKEND) += xen-usbback/
  obj-$(CONFIG_USB_HCD_BCMA)	+= bcma-hcd.o
  obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
+ obj-$(CONFIG_USB_FUSBH200_HCD)	+= fusbh200-hcd.o
 diff --git a/drivers/usb/host/xen-usbback/Makefile b/drivers/usb/host/xen-usbback/Makefile
 new file mode 100644
 index 0000000..9f3628c
@@ -88,7 +89,7 @@ new file mode 100644
 index 0000000..d9671ec
 --- /dev/null
 +++ b/drivers/usb/host/xen-usbback/common.h
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,171 @@
 +/*
 + * This file is part of Xen USB backend driver.
 + *
@@ -139,6 +140,7 @@ index 0000000..d9671ec
 +#include <linux/interrupt.h>
 +#include <linux/slab.h>
 +#include <linux/usb.h>
++#include <linux/usb/ch11.h>
 +#include <linux/vmalloc.h>
 +#include <linux/kthread.h>
 +#include <linux/wait.h>

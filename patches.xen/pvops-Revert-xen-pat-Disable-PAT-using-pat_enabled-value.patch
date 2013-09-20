@@ -1,0 +1,49 @@
+From c8f92fa48f8d2a8a1ad56347e52ba4c16be57a48 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Fri, 20 Sep 2013 05:16:21 +0200
+Subject: [PATCH] Revert "xen/pat: Disable PAT using pat_enabled value."
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+This reverts commit c79c49826270b8b0061b2fca840fc3f013c8a78a.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ arch/x86/xen/enlighten.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index a492be2..a3c8582 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -68,7 +68,6 @@
+ #include <asm/hypervisor.h>
+ #include <asm/mwait.h>
+ #include <asm/pci_x86.h>
+-#include <asm/pat.h>
+ 
+ #ifdef CONFIG_ACPI
+ #include <linux/acpi.h>
+@@ -1512,14 +1511,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	 */
+ 	acpi_numa = -1;
+ #endif
+-#ifdef CONFIG_X86_PAT
+-	/*
+-	 * For right now disable the PAT. We should remove this once
+-	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
+-	 * (xen/pat: Disable PAT support for now) is reverted.
+-	 */
+-	pat_enabled = 0;
+-#endif
++
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+ 	   possible map and a non-dummy shared_info. */
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+-- 
+1.8.3.1
+
