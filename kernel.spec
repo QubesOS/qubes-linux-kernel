@@ -220,7 +220,7 @@ mkdir -p %buildroot/lib/modules/%kernelrelease/weak-updates
 pushd %build_src_dir
 cp --parents `find  -type f -name "Makefile*" -o -name "Kconfig*"` %buildroot/lib/modules/%kernelrelease/build
 cp -a scripts %buildroot/lib/modules/%kernelrelease/build
-cp -a --parents arch/x86/include/asm %buildroot/lib/modules/%kernelrelease/build/
+cp -a --parents arch/x86/include %buildroot/lib/modules/%kernelrelease/build/
 if [ "%{build_flavor}" == "xenlinux" ]; then
     cp -a --parents arch/x86/include/mach-xen %buildroot/lib/modules/%kernelrelease/build/
 fi
@@ -245,12 +245,13 @@ if [ "%{build_flavor}" != "xenlinux" ]; then
     cp -a --parents arch/x86/include/generated %buildroot/lib/modules/%kernelrelease/build/
 fi
 
-# Make sure the Makefile and version.h have a matching timestamp so that
-# external modules can be built
-touch -r %buildroot/lib/modules/%kernelrelease/build/Makefile %buildroot/lib/modules/%kernelrelease/build/include/linux/version.h
-touch -r %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/lib/modules/%kernelrelease/build/include/linux/autoconf.h
 # Copy .config to include/config/auto.conf so "make prepare" is unnecessary.
 cp %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
+
+# Make sure the Makefile and version.h have a matching timestamp so that
+# external modules can be built
+touch -r %buildroot/lib/modules/%kernelrelease/build/Makefile %buildroot/lib/modules/%kernelrelease/build/include/generated/uapi/linux/version.h
+touch -r %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
 
 if test -s vmlinux.id; then
 cp vmlinux.id %buildroot/lib/modules/%kernelrelease/build/vmlinux.id
