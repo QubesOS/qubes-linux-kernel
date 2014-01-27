@@ -32,6 +32,7 @@
 %(chmod +x %_sourcedir/{guards,apply-patches,check-for-config-changes})
 
 %define install_vdso 1
+%define debuginfodir /usr/lib/debug
 
 Name:           kernel
 Summary:        The Xen Kernel
@@ -76,13 +77,8 @@ Source17:       apply-patches
 Source33:       check-for-config-changes
 Source100:      config-%{build_flavor}
 # FIXME: Including dirs this way does NOT produce proper src.rpms
-Source200:      patches.arch
-Source201:      patches.drivers
-Source202:      patches.fixes
-Source203:      patches.rpmify
-Source204:      patches.suse
+Source204:      patches.rpmify
 Source205:      patches.xen
-Source207:      patches.kernel.org
 Source300:      patches.qubes
 Source301:      u2mfn
 Source302:      vm-initramfs
@@ -161,6 +157,16 @@ find . ! -type d -printf '%%P\n' > %my_builddir/obj-files
 %build
 
 cd %kernel_build_dir
+
+# This override tweaks the kernel makefiles so that we run debugedit on an
+# object before embedding it.  When we later run find-debuginfo.sh, it will
+# run debugedit again.  The edits it does change the build ID bits embedded
+# in the stripped object, but repeating debugedit is a no-op.  We do it
+# beforehand to get the proper final build ID bits into the embedded image.
+# This affects the vDSO images in vmlinux, and the vmlinux image in bzImage.
+export AFTER_LINK=\
+'sh -xc "/usr/lib/rpm/debugedit -b $$RPM_BUILD_DIR -d /usr/src/debug \
+                    -i $@ > $@.id"'
 
 make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
 
