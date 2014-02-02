@@ -70,7 +70,7 @@ Conflicts:      lvm2 < 2.02.33
 Provides:       kernel = %kernelrelease
 Provides:       kernel-uname-r = %kernelrelease
 
-Source0:        linux-%version.tar.bz2
+Source0:        linux-%version.tar.xz
 Source14:       series-%{build_flavor}.conf
 Source16:       guards
 Source17:       apply-patches
@@ -89,7 +89,7 @@ ExclusiveArch:  x86_64
 Qubes Dom0 kernel.
 
 %prep
-if ! [ -e %_sourcedir/linux-%version.tar.bz2 ]; then
+if ! [ -e %_sourcedir/linux-%version.tar.xz ]; then
     echo "The %name-%version.nosrc.rpm package does not contain the" \
 	 "complete sources. Please install kernel-source-%version.src.rpm."
     exit 1

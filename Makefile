@@ -36,7 +36,7 @@ all: help
 
 MIRROR := ftp.kernel.org
 SRC_BASEURL := http://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/')
-SRC_FILE := linux-${VERSION}.tar.bz2
+SRC_FILE := linux-${VERSION}.tar.xz
 ifeq ($(BUILD_FLAVOR),pvops)
 SIGN_FILE := linux-${VERSION}.tar.sign
 else
@@ -60,7 +60,7 @@ import-keys:
 
 verify-sources: import-keys
 ifeq ($(BUILD_FLAVOR),pvops)
-	@bzcat $(SRC_FILE) | gpg -q --verify $(SIGN_FILE) - 2>/dev/null
+	@xzcat $(SRC_FILE) | gpg -q --verify $(SIGN_FILE) - 2>/dev/null
 else
 #	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
 #	The key has been compromised

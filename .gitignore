@@ -1,3 +1,4 @@
 linux-*.tar.bz2
+linux-*.tar.xz
 linux-*.sign
 kernel-*/
