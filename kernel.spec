@@ -21,7 +21,7 @@
 %global cpu_arch x86_64
 %define cpu_arch_flavor %cpu_arch/%build_flavor
 
-%define kernelrelease %(echo %{version} | sed 's/3\\.[0-9]\\+$/\\0.0/')-%rel.%cpu_arch
+%define kernelrelease %(echo %{version} | sed 's/^3\\.[0-9]\\+$/\\0.0/')-%rel.%cpu_arch
 %define my_builddir %_builddir/%{name}-%{version}
 
 %define build_src_dir %my_builddir/linux-%version
@@ -126,7 +126,8 @@ fi
 %build_src_dir/scripts/config \
 	--set-str CONFIG_LOCALVERSION -%release.%cpu_arch \
 	--disable CONFIG_DEBUG_INFO
-#	--enable  CONFIG_DEBUG_INFO
+#	--enable  CONFIG_DEBUG_INFO \
+#	--disable  CONFIG_DEBUG_INFO_REDUCED
 # Enabling CONFIG_DEBUG_INFO produces *huge* packages!
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD"
