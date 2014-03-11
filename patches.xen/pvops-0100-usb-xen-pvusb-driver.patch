@@ -35,10 +35,10 @@ diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
 index f788eb8..cbb0961 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -675,3 +675,26 @@ config USB_OCTEON_OHCI
- 	  for ehci and ohci.
- 
- 	  If unsure, say N.
+@@ -745,3 +745,26 @@
+ 	  This option is of interest only to developers who need to validate
+ 	  their USB hardware designs.  It is not needed for normal use.  If
+ 	  unsure, say N.
 +
 +config XEN_USBDEV_FRONTEND
 +	tristate "Xen pvusb device frontend driver"
