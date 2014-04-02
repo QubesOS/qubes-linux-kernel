@@ -1,6 +1,10 @@
+From e9d8b2c2968499c1f96563e6522c56958d5a1d0d Mon Sep 17 00:00:00 2001
 From: Wei Liu <wei.liu2@citrix.com>
-Date: Mon, 17 Mar 2014 11:52:53 +0000
-Subject: [PATCH RFC] xen-netback: disable rogue vif in kthread context
+Date: Tue, 1 Apr 2014 12:46:12 +0100
+Subject: [PATCH] xen-netback: disable rogue vif in kthread context
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 When netback discovers frontend is sending malformed packet it will
 disables the interface which serves that frontend.
@@ -22,19 +26,25 @@ turned off.
 Also change a "continue" to "break" after xenvif_fatal_tx_err, as it
 doesn't make sense to continue processing packets if frontend is rogue.
 
+This is a fix for XSA-90.
+
+Reported-by: Török Edwin <edwin@etorok.net>
 Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
  drivers/net/xen-netback/common.h    |    5 +++++
- drivers/net/xen-netback/interface.c |    9 +++++++++
- drivers/net/xen-netback/netback.c   |   14 ++++++++++++--
- 3 files changed, 26 insertions(+), 2 deletions(-)
+ drivers/net/xen-netback/interface.c |   11 +++++++++++
+ drivers/net/xen-netback/netback.c   |   16 ++++++++++++++--
+ 3 files changed, 30 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index ae413a2..4bf5b33 100644
+index 89b2d42..89d1d05 100644
 --- a/drivers/net/xen-netback/common.h
 +++ b/drivers/net/xen-netback/common.h
-@@ -113,6 +113,11 @@ struct xenvif {
+@@ -104,6 +104,11 @@ struct xenvif {
  	domid_t          domid;
  	unsigned int     handle;
  
@@ -47,24 +57,26 @@ index ae413a2..4bf5b33 100644
  	struct napi_struct napi;
  	/* When feature-split-event-channels = 0, tx_irq = rx_irq. */
 diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 301cc03..234f1c8 100644
+index cdc298e..ef05c5c 100644
 --- a/drivers/net/xen-netback/interface.c
 +++ b/drivers/net/xen-netback/interface.c
-@@ -62,6 +62,13 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
+@@ -63,6 +63,15 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
  	struct xenvif *vif = container_of(napi, struct xenvif, napi);
  	int work_done;
  
-+	/* This vif is rogue, we pretend we've used up all budget to
-+	 * deschedule it from NAPI. But this interface will be turned
-+	 * off in thread context later.
++	/* This vif is rogue, we pretend we've there is nothing to do
++	 * for this vif to deschedule it from NAPI. But this interface
++	 * will be turned off in thread context later.
 +	 */
-+	if (unlikely(vif->disabled))
-+		return budget;
++	if (unlikely(vif->disabled)) {
++		napi_complete(napi);
++		return 0;
++	}
 +
  	work_done = xenvif_tx_action(vif, budget);
  
  	if (work_done < budget) {
-@@ -321,6 +328,8 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+@@ -363,6 +372,8 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
  	vif->csum = 1;
  	vif->dev = dev;
  
@@ -74,19 +86,20 @@ index 301cc03..234f1c8 100644
  	vif->credit_usec  = 0UL;
  	init_timer(&vif->credit_timeout);
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 438d0c0..94e7261 100644
+index ae34f5f..3f021e0 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -655,7 +655,7 @@ static void xenvif_tx_err(struct xenvif *vif,
+@@ -711,7 +711,8 @@ static void xenvif_tx_err(struct xenvif *vif,
  static void xenvif_fatal_tx_err(struct xenvif *vif)
  {
  	netdev_err(vif->dev, "fatal error; disabling device\n");
 -	xenvif_carrier_off(vif);
 +	vif->disabled = true;
++	xenvif_kick_thread(vif);
  }
  
  static int xenvif_count_requests(struct xenvif *vif,
-@@ -1126,7 +1126,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+@@ -1212,7 +1213,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
  				   vif->tx.sring->req_prod, vif->tx.req_cons,
  				   XEN_NETIF_TX_RING_SIZE);
  			xenvif_fatal_tx_err(vif);
@@ -95,9 +108,11 @@ index 438d0c0..94e7261 100644
  		}
  
  		RING_FINAL_CHECK_FOR_REQUESTS(&vif->tx, work_to_do);
-@@ -1549,6 +1549,16 @@ int xenvif_kthread(void *data)
+@@ -1808,7 +1809,18 @@ int xenvif_kthread_guest_rx(void *data)
+ 	while (!kthread_should_stop()) {
  		wait_event_interruptible(vif->wq,
  					 rx_work_todo(vif) ||
++					 vif->disabled ||
  					 kthread_should_stop());
 +
 +		/* This frontend is found to be rogue, disable it in
