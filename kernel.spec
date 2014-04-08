@@ -444,6 +444,7 @@ Provides:       kernel-qubes-domU
 
 Requires(pre):  coreutils gawk
 Requires(post): dracut
+Requires(post): qubes-core-dom0
 
 Conflicts:      sysfsutils < 2.0
 # root-lvm only works with newer udevs
@@ -467,7 +468,9 @@ umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 
-qubes-prefs --set default-kernel %version-%plainrel
+# If qubes-prefs isn't installed yet, the default kernel will be set by %post
+# of qubes-core-dom0
+type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %version-%plainrel
 
 %files qubes-vm
 %defattr(-, root, root)
