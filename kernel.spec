@@ -34,6 +34,10 @@
 %define install_vdso 1
 %define debuginfodir /usr/lib/debug
 
+# If you want to build debuginfo package, enable also CONFIG_DEBUG_INFO in %%setup section
+# Otherwise debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
+%global debug_package %{nil}
+
 Name:           kernel
 Summary:        The Xen Kernel
 Version:        %{version}
