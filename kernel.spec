@@ -50,7 +50,7 @@ AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
 BuildRequires:  qubes-core-libs-devel
 Provides:       multiversion(kernel)
-Provides:       %name = %version-%kernelrelease
+Provides:       %name = %kernelrelease
 
 Provides:       kernel-xen-dom0
 Provides:       kernel-qubes-dom0
@@ -454,7 +454,7 @@ Conflicts:      sysfsutils < 2.0
 # root-lvm only works with newer udevs
 Conflicts:      udev < 118
 Conflicts:      lvm2 < 2.02.33
-Provides:       kernel-qubes-vm = %version-%kernelrelease
+Provides:       kernel-qubes-vm = %kernelrelease
 
 %description qubes-vm
 Qubes domU kernel.
