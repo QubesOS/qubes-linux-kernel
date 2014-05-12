@@ -476,6 +476,21 @@ mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 # of qubes-core-dom0
 type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %version-%plainrel
 
+exit 0
+
+%preun qubes-vm
+
+if [ "`qubes-prefs -g default-kernel`" == "%version-%plainrel" ]; then
+    echo "This kernel version is set as default VM kernel, cannot remove"
+    exit 1
+fi
+if qvm-ls --kernel | grep -qw "%version-%plainrel"; then
+    echo "This kernel version is used by at least one VM, cannot remove"
+    exit 1
+fi
+
+exit 0
+
 %files qubes-vm
 %defattr(-, root, root)
 %ghost %attr(0644, root, root) %vm_install_dir/modules.img
