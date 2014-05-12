@@ -60,7 +60,6 @@ Provides:       kernel-drm-nouveau = 16
 Provides:       kernel-modules-extra = %kernelrelease
 Provides:       kernel-modeset = 1
 
-Requires:       xen >= 3.4.3
 Requires(post): /sbin/new-kernel-pkg
 Requires(preun):/sbin/new-kernel-pkg
 
