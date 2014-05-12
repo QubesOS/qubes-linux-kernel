@@ -493,6 +493,7 @@ exit 0
 
 %files qubes-vm
 %defattr(-, root, root)
+%dir %vm_install_dir
 %ghost %attr(0644, root, root) %vm_install_dir/modules.img
 %attr(0644, root, root) %vm_install_dir/initramfs
 %attr(0644, root, root) %vm_install_dir/vmlinuz
