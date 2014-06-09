@@ -49,6 +49,7 @@ Url:            http://www.kernel.org/
 AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
 BuildRequires:  qubes-core-libs-devel
+BuildRequires:	dracut
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
