@@ -16,7 +16,7 @@
 %define version %(cat version-%{build_flavor})
 
 %define _buildshell /bin/bash
-%define build_xen	1
+%define build_xen       1
 
 %global cpu_arch x86_64
 %define cpu_arch_flavor %cpu_arch/%build_flavor
@@ -49,7 +49,7 @@ Url:            http://www.kernel.org/
 AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
 BuildRequires:  qubes-core-libs-devel
-BuildRequires:	dracut
+BuildRequires:  dracut
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
@@ -95,7 +95,7 @@ Qubes Dom0 kernel.
 %prep
 if ! [ -e %_sourcedir/linux-%version.tar.xz ]; then
     echo "The %name-%version.nosrc.rpm package does not contain the" \
-	 "complete sources. Please install kernel-source-%version.src.rpm."
+         "complete sources. Please install kernel-source-%version.src.rpm."
     exit 1
 fi
 
@@ -128,10 +128,10 @@ else
 fi
 
 %build_src_dir/scripts/config \
-	--set-str CONFIG_LOCALVERSION -%release.%cpu_arch \
-	--disable CONFIG_DEBUG_INFO
-#	--enable  CONFIG_DEBUG_INFO \
-#	--disable  CONFIG_DEBUG_INFO_REDUCED
+        --set-str CONFIG_LOCALVERSION -%release.%cpu_arch \
+        --disable CONFIG_DEBUG_INFO
+#       --enable  CONFIG_DEBUG_INFO \
+#       --disable  CONFIG_DEBUG_INFO_REDUCED
 # Enabling CONFIG_DEBUG_INFO produces *huge* packages!
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD"
@@ -210,7 +210,7 @@ make vdso_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
 # That way, rpm will know that this package requires some additional
 # space in /boot.
 dd if=/dev/zero of=%buildroot/boot/initramfs-%kernelrelease.img \
-	bs=1M count=20
+        bs=1M count=20
 
 gzip -c9 < Module.symvers > %buildroot/boot/symvers-%kernelrelease.gz
 
@@ -293,13 +293,13 @@ collect_modules_list()
 }
 
 collect_modules_list networking \
-			 'register_netdev|ieee80211_register_hw|usbnet_probe'
+                         'register_netdev|ieee80211_register_hw|usbnet_probe'
 collect_modules_list block \
-			 'ata_scsi_ioctl|scsi_add_host|scsi_add_host_with_dma|blk_init_queue|register_mtd_blktrans|scsi_esp_register|scsi_register_device_handler'
+                         'ata_scsi_ioctl|scsi_add_host|scsi_add_host_with_dma|blk_init_queue|register_mtd_blktrans|scsi_esp_register|scsi_register_device_handler'
 collect_modules_list drm \
-			 'drm_open|drm_init'
+                         'drm_open|drm_init'
 collect_modules_list modesetting \
-			 'drm_crtc_init'
+                         'drm_crtc_init'
 
 # detect missing or incorrect license tags
 rm -f modinfo
@@ -310,8 +310,8 @@ do
 done < modnames
 
 egrep -v \
-	  'GPL( v2)?$|Dual BSD/GPL$|Dual MPL/GPL$|GPL and additional rights$' \
-	  modinfo && exit 1
+          'GPL( v2)?$|Dual BSD/GPL$|Dual MPL/GPL$|GPL and additional rights$' \
+          modinfo && exit 1
 
 rm -f modinfo modnames
 
