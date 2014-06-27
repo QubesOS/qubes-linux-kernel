@@ -1,0 +1,53 @@
+From 9346c2a8defab777d1fba6bcc284f6ada181fe96 Mon Sep 17 00:00:00 2001
+From: Jie Liu <jeff.liu@oracle.com>
+Date: Wed, 13 Nov 2013 20:59:58 +0800
+Subject: [PATCH] xen: simplify balloon_first_page() with
+ list_first_entry_or_null()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Replace the code logic at balloon_first_page() by calling
+list_first_entry_or_null() directly.  since here is only
+one user of that routine, therefore we can just remove it.
+
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/xen/balloon.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index 4c02e2b..37d06ea 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -157,13 +157,6 @@ static struct page *balloon_retrieve(bool prefer_highmem)
+ 	return page;
+ }
+ 
+-static struct page *balloon_first_page(void)
+-{
+-	if (list_empty(&ballooned_pages))
+-		return NULL;
+-	return list_entry(ballooned_pages.next, struct page, lru);
+-}
+-
+ static struct page *balloon_next_page(struct page *page)
+ {
+ 	struct list_head *next = page->lru.next;
+@@ -328,7 +321,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ 	if (nr_pages > ARRAY_SIZE(frame_list))
+ 		nr_pages = ARRAY_SIZE(frame_list);
+ 
+-	page = balloon_first_page();
++	page = list_first_entry_or_null(&ballooned_pages, struct page, lru);
+ 	for (i = 0; i < nr_pages; i++) {
+ 		if (!page) {
+ 			nr_pages = i;
+-- 
+1.8.1.4
+
