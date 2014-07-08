@@ -331,6 +331,8 @@ exit 1
 fi
 
 if [ "%{build_flavor}" == "pvops" ]; then
+    # in case of no firmware built - place empty dir
+    mkdir -p %buildroot/lib/firmware
     mv  %buildroot/lib/firmware %buildroot/lib/firmware-all
     mkdir -p %buildroot/lib/firmware
     mv  %buildroot/lib/firmware-all %buildroot/lib/firmware/%kernelrelease
