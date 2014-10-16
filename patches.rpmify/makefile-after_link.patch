@@ -78,8 +78,8 @@ index fd14be1..1f3eb19 100644
 +		$(if $(AFTER_LINK),; $(AFTER_LINK)) && \
 +		sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
  
- VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
- GCOV_PROFILE := n
+ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
+ 	$(call cc-ldoption, -Wl$(comma)--build-id) -Wl,-Bsymbolic $(LTO_CFLAGS)
 diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
 index cd9c6c6..3edf048 100644
 --- a/scripts/link-vmlinux.sh

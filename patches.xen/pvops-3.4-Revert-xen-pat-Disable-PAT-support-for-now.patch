@@ -34,7 +34,7 @@ index 69f5857..a5d252a 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
 @@ -420,13 +420,13 @@ static pteval_t iomap_pte(pteval_t val)
- static pteval_t xen_pte_val(pte_t pte)
+ __visible pteval_t xen_pte_val(pte_t pte)
  {
  	pteval_t pteval = pte.pte;
 -#if 0
@@ -50,7 +50,7 @@ index 69f5857..a5d252a 100644
  		return pteval;
  
 @@ -468,7 +468,7 @@ void xen_set_pat(u64 pat)
- static pte_t xen_make_pte(pteval_t pte)
+ __visible pte_t xen_make_pte(pteval_t pte)
  {
  	phys_addr_t addr = (pte & PTE_PFN_MASK);
 -#if 0
