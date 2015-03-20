@@ -48,8 +48,9 @@ Group:          System/Kernel
 Url:            http://www.kernel.org/
 AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
-BuildRequires:  qubes-core-libs-devel
+BuildRequires:  qubes-kernel-vm-support
 BuildRequires:  dracut
+BuildRequires:  busybox
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
@@ -84,8 +85,6 @@ Source100:      config-%{build_flavor}
 Source204:      patches.rpmify
 Source205:      patches.xen
 Source300:      patches.qubes
-Source301:      u2mfn
-Source302:      vm-initramfs
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
@@ -103,11 +102,6 @@ SYMBOLS="xen-dom0 %{build_flavor}"
 
 # Unpack all sources and patches
 %setup -q -c -T -a 0
-
-if [ %{_sourcedir} != %{_builddir} ]; then
-    cp -r %{SOURCE301} %{_builddir}/
-    cp -r %{SOURCE302} %{_builddir}/
-fi
 
 mkdir -p %kernel_build_dir
 
@@ -158,6 +152,9 @@ make clean $MAKE_ARGS
 
 rm -f source
 find . ! -type d -printf '%%P\n' > %my_builddir/obj-files
+u2mfn_ver=`dkms status u2mfn|tail -n 1|cut -f 2 -d ' '|tr -d ':,:'`
+rm -rf %_builddir/u2mfn
+cp -r /usr/src/u2mfn-$u2mfn_ver %_builddir/u2mfn
 
 %build
 
@@ -176,7 +173,7 @@ export AFTER_LINK=\
 make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
 
 # Build u2mfn module
-make -C %kernel_build_dir SUBDIRS=%_builddir/u2mfn modules
+make -C %kernel_build_dir M=%_builddir/u2mfn modules
 
 %install
 
@@ -215,7 +212,7 @@ dd if=/dev/zero of=%buildroot/boot/initramfs-%kernelrelease.img \
 gzip -c9 < Module.symvers > %buildroot/boot/symvers-%kernelrelease.gz
 
 make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
-make -C %kernel_build_dir SUBDIRS=%_builddir/u2mfn modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
+make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
 
 mkdir -p %buildroot/%src_install_dir
 
@@ -342,8 +339,8 @@ fi
 mkdir -p %buildroot/%vm_install_dir
 /sbin/dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
-    --include %_sourcedir/vm-initramfs / \
-    --add "dm" --omit "plymouth" \
+    --modules "kernel-modules qubes-vm-simple" \
+    --conf /dev/null --confdir /var/empty \
     -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 

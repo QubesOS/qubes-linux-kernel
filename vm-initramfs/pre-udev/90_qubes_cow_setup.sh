@@ -1,1 +1,0 @@
-../lib/dracut/hooks/pre-udev/90_qubes_cow_setup.sh
