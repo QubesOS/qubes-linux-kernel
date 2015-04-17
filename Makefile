@@ -56,11 +56,12 @@ $(SIGN_FILE):
 	@wget -q -N $(URL_SIGN)
 
 import-keys:
-	 gpg -q --import *-key.asc
+	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
+	@gpg --no-auto-check-trustdb --no-default-keyring --keyring linux-kernel-trustedkeys.gpg -q --import *-key.asc
 
 verify-sources: import-keys
 ifeq ($(BUILD_FLAVOR),pvops)
-	@xzcat $(SRC_FILE) | gpg -q --verify $(SIGN_FILE) - 2>/dev/null
+	@xzcat $(SRC_FILE) | gpgv --keyring linux-kernel-trustedkeys.gpg $(SIGN_FILE) - 2>/dev/null
 else
 #	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
 #	The key has been compromised
