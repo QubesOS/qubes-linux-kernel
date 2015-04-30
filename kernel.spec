@@ -2,24 +2,21 @@
 # Based on the Open SUSE kernel-spec & Fedora kernel-spec.
 #
 
-# default to pvops build
-%{!?build_flavor:%define build_flavor pvops}
-
 %if 0%{?qubes_builder}
 %define _sourcedir %(pwd)
 %endif
 
 #%define _unpackaged_files_terminate_build 0
-%define variant %{build_flavor}.qubes
-%define plainrel %(cat rel-%{build_flavor})
+%define variant pvops.qubes
+%define plainrel %(cat rel)
 %define rel %{plainrel}.%{variant}
-%define version %(cat version-%{build_flavor})
+%define version %(cat version)
 
 %define _buildshell /bin/bash
 %define build_xen       1
 
 %global cpu_arch x86_64
-%define cpu_arch_flavor %cpu_arch/%build_flavor
+%define cpu_arch_flavor %cpu_arch
 
 %define kernelrelease %(echo %{version} | sed 's/^3\\.[0-9]\\+$/\\0.0/')-%rel.%cpu_arch
 %define my_builddir %_builddir/%{name}-%{version}
@@ -57,7 +54,7 @@ Provides:       %name = %kernelrelease
 
 Provides:       kernel-xen-dom0
 Provides:       kernel-qubes-dom0
-Provides:       kernel-qubes-dom0-%{build_flavor}
+Provides:       kernel-qubes-dom0-pvops
 Provides:       kernel-drm = 4.3.0
 Provides:       kernel-drm-nouveau = 16
 Provides:       kernel-modules-extra = %kernelrelease
@@ -77,11 +74,11 @@ Provides:       kernel = %kernelrelease
 Provides:       kernel-uname-r = %kernelrelease
 
 Source0:        linux-%version.tar.xz
-Source14:       series-%{build_flavor}.conf
+Source14:       series.conf
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
-Source100:      config-%{build_flavor}
+Source100:      config
 # FIXME: Including dirs this way does NOT produce proper src.rpms
 Source204:      patches.rpmify
 Source205:      patches.xen
@@ -99,7 +96,7 @@ if ! [ -e %_sourcedir/linux-%version.tar.xz ]; then
     exit 1
 fi
 
-SYMBOLS="xen-dom0 %{build_flavor}"
+SYMBOLS="xen-dom0 pvops"
 
 # Unpack all sources and patches
 %setup -q -c -T -a 0
@@ -108,18 +105,18 @@ mkdir -p %kernel_build_dir
 
 cd linux-%version
 
-if [ -r %_sourcedir/series-%{version}-%{build_flavor}.conf ]; then
-    %_sourcedir/apply-patches %_sourcedir/series-%{version}-%{build_flavor}.conf %_sourcedir $SYMBOLS
+if [ -r %_sourcedir/series-%{version}.conf ]; then
+    %_sourcedir/apply-patches %_sourcedir/series-%{version}.conf %_sourcedir $SYMBOLS
 else
-    %_sourcedir/apply-patches %_sourcedir/series-%{build_flavor}.conf %_sourcedir $SYMBOLS
+    %_sourcedir/apply-patches %_sourcedir/series.conf %_sourcedir $SYMBOLS
 fi
 
 cd %kernel_build_dir
 
-if [ -f %_sourcedir/config-%{version}-%{build_flavor} ]; then
-    cp %_sourcedir/config-%{version}-%{build_flavor} .config
+if [ -f %_sourcedir/config-%{version} ]; then
+    cp %_sourcedir/config-%{version} .config
 else
-    cp %_sourcedir/config-%{build_flavor} .config
+    cp %_sourcedir/config .config
 fi
 
 %build_src_dir/scripts/config \
@@ -192,11 +189,7 @@ cd %kernel_build_dir
 
 mkdir -p %buildroot/boot
 cp -p System.map %buildroot/boot/System.map-%kernelrelease
-if [ "%{build_flavor}" == "xenlinux" ]; then
-    cp -p arch/x86/boot/vmlinuz %buildroot/boot/vmlinuz-%kernelrelease
-else
-    cp -p arch/x86/boot/bzImage %buildroot/boot/vmlinuz-%kernelrelease
-fi
+cp -p arch/x86/boot/bzImage %buildroot/boot/vmlinuz-%kernelrelease
 cp .config %buildroot/boot/config-%kernelrelease
 
 %if %install_vdso
@@ -230,9 +223,6 @@ pushd %build_src_dir
 cp --parents `find  -type f -name "Makefile*" -o -name "Kconfig*"` %buildroot/lib/modules/%kernelrelease/build
 cp -a scripts %buildroot/lib/modules/%kernelrelease/build
 cp -a --parents arch/x86/include %buildroot/lib/modules/%kernelrelease/build/
-if [ "%{build_flavor}" == "xenlinux" ]; then
-    cp -a --parents arch/x86/include/mach-xen %buildroot/lib/modules/%kernelrelease/build/
-fi
 cp -a include %buildroot/lib/modules/%kernelrelease/build/include
 popd
 
@@ -250,9 +240,6 @@ rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*/*.o
 
 cp -a scripts/* %buildroot/lib/modules/%kernelrelease/build/scripts/
 cp -a include/* %buildroot/lib/modules/%kernelrelease/build/include
-if [ "%{build_flavor}" != "xenlinux" ]; then
-    cp -a --parents arch/x86/include/generated %buildroot/lib/modules/%kernelrelease/build/
-fi
 
 # Copy .config to include/config/auto.conf so "make prepare" is unnecessary.
 cp %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
@@ -328,13 +315,11 @@ if [ $? -ne 0 ] || echo "$msg" | grep  'needs unknown symbol'; then
 exit 1
 fi
 
-if [ "%{build_flavor}" == "pvops" ]; then
-    # in case of no firmware built - place empty dir
-    mkdir -p %buildroot/lib/firmware
-    mv  %buildroot/lib/firmware %buildroot/lib/firmware-all
-    mkdir -p %buildroot/lib/firmware
-    mv  %buildroot/lib/firmware-all %buildroot/lib/firmware/%kernelrelease
-fi
+# in case of no firmware built - place empty dir
+mkdir -p %buildroot/lib/firmware
+mv  %buildroot/lib/firmware %buildroot/lib/firmware-all
+mkdir -p %buildroot/lib/firmware
+mv  %buildroot/lib/firmware-all %buildroot/lib/firmware/%kernelrelease
 
 # Prepare initramfs for Qubes VM
 mkdir -p %buildroot/%vm_install_dir
@@ -345,11 +330,7 @@ mkdir -p %buildroot/%vm_install_dir
     -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 
-if [ "%{build_flavor}" == "xenlinux" ]; then
-    cp -p arch/x86/boot/vmlinuz %buildroot/%vm_install_dir/vmlinuz
-else
-    cp -p arch/x86/boot/bzImage %buildroot/%vm_install_dir/vmlinuz
-fi
+cp -p arch/x86/boot/bzImage %buildroot/%vm_install_dir/vmlinuz
 
 # Modules for Qubes VM
 mkdir -p %buildroot%vm_install_dir/modules
@@ -411,7 +392,7 @@ AutoReqProv:    on
 
 %description devel
 This package contains files necessary for building kernel modules (and
-kernel module packages) against the %build_flavor flavor of the kernel.
+kernel module packages) against the kernel.
 
 %post devel
 if [ -f /etc/sysconfig/kernel ]
