@@ -51,6 +51,7 @@ BuildRequires:  coreutils module-init-tools sparse
 BuildRequires:  qubes-kernel-vm-support
 BuildRequires:  dracut
 BuildRequires:  busybox
+BuildRequires:  bc
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
