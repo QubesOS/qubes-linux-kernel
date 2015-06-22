@@ -1,15 +1,13 @@
-# default to pvops build
-%{!?build_flavor:%define build_flavor pvops}
 
 %if 0%{?qubes_builder}
 %define _sourcedir %(pwd)
 %endif
 
 #%define _unpackaged_files_terminate_build 0
-%define variant %{build_flavor}.qubes
-%define plainrel %(cat rel-%{build_flavor})
+%define variant pvops.qubes
+%define plainrel %(cat rel)
 %define rel %{plainrel}.%{variant}
-%define version %(cat version-%{build_flavor})
+%define version %(cat version)
 
 Name:		kernel-devel
 Version:	%{version}
@@ -23,7 +21,7 @@ Url:            http://www.kernel.org/
 
 %description
 This package contains files necessary for building kernel modules (and
-kernel module packages) against the %build_flavor flavor of the kernel.
+kernel module packages) against the pvops flavor of the kernel.
 
 %prep
 echo "Dummy spec, do not try to build, use kernel.spec instead"
