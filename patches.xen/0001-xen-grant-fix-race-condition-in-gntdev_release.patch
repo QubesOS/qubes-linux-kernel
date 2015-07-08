@@ -1,0 +1,44 @@
+From b876e14888bdafa112c3265e6420543fa74aa709 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Fri, 26 Jun 2015 02:16:49 +0200
+Subject: [PATCH] xen/grant: fix race condition in gntdev_release
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+While gntdev_release is called, MMU notifier is still registered and
+will traverse priv->maps list even if no pages are mapped (which is the
+case - gntdev_release is called after all). But gntdev_release will
+clear that list, so make sure that only one of those things happens at
+the same time.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/xen/gntdev.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index 8927485..4bd23bb 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -568,12 +568,14 @@ static int gntdev_release(struct inode *inode, struct file *flip)
+ 
+ 	pr_debug("priv %p\n", priv);
+ 
++	spin_lock(&priv->lock);
+ 	while (!list_empty(&priv->maps)) {
+ 		map = list_entry(priv->maps.next, struct grant_map, next);
+ 		list_del(&map->next);
+ 		gntdev_put_map(NULL /* already removed */, map);
+ 	}
+ 	WARN_ON(!list_empty(&priv->freeable_maps));
++	spin_unlock(&priv->lock);
+ 
+ 	if (use_ptemod)
+ 		mmu_notifier_unregister(&priv->mn, priv->mm);
+-- 
+1.9.3
+
