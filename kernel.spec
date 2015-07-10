@@ -62,6 +62,7 @@ Provides:       kernel-modeset = 1
 
 Requires(pre):  coreutils gawk
 Requires(post): dracut binutils
+Requires:       qubes-core-dom0-linux-kernel-install
 
 Conflicts:      sysfsutils < 2.0
 # root-lvm only works with newer udevs
