@@ -61,9 +61,6 @@ Provides:       kernel-drm-nouveau = 16
 Provides:       kernel-modules-extra = %kernelrelease
 Provides:       kernel-modeset = 1
 
-Requires(post): /sbin/new-kernel-pkg
-Requires(preun):/sbin/new-kernel-pkg
-
 Requires(pre):  coreutils gawk
 Requires(post): dracut binutils
 
@@ -366,31 +363,13 @@ do
 done
 
 %post
-
-INITRD_OPT="--mkinitrd --dracut"
-
-/sbin/new-kernel-pkg --package %{name}-%{kernelrelease}\
-        $INITRD_OPT \
-        --depmod --kernel-args="max_loop=255"\
-        --multiboot=/boot/xen.gz --mbargs="console=none" \
-        --banner="Qubes"\
-        --make-default --install %{kernelrelease}
-
-if [ -e /boot/grub/grub.conf ]; then
-# Make it possible to enter GRUB menu if something goes wrong...
-sed -i "s/^timeout *=.*/timeout=3/" /boot/grub/grub.conf 
-fi
+/sbin/depmod -a %{kernelrelease}
 
 %posttrans
-/sbin/new-kernel-pkg --package %{name}-%{kernelrelease} --rpmposttrans %{kernelrelease}
-
-# grubby (used by new-kernel-pkg) do not understand xen entries in grub2 config
-if [ -e /boot/grub2/grub.cfg ]; then
-        grub2-mkconfig > /boot/grub2/grub.cfg
-fi
+/bin/kernel-install add %{kernelrelease} /boot/vmlinuz-%{kernelrelease} || exit $?
 
 %preun
-/sbin/new-kernel-pkg --rminitrd --rmmoddep --remove %{kernelrelease}
+/bin/kernel-install remove %{kernelrelease} /boot/vmlinuz-%{kernelrelease} || exit $?
 
 %files
 %defattr(-, root, root)
