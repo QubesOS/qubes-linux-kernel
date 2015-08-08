@@ -348,6 +348,11 @@ done
 %posttrans
 /bin/kernel-install add %{kernelrelease} /boot/vmlinuz-%{kernelrelease} || exit $?
 
+# grubby (used by new-kernel-pkg) do not understand xen entries in grub2 config
+if [ -x /sbin/new-kernel-pkg -a -e /boot/grub2/grub.cfg ]; then
+        grub2-mkconfig > /boot/grub2/grub.cfg
+fi
+
 %preun
 /bin/kernel-install remove %{kernelrelease} /boot/vmlinuz-%{kernelrelease} || exit $?
 
