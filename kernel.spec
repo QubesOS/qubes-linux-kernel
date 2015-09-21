@@ -237,7 +237,8 @@ rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*.o
 rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*/*.o
 
 cp -a scripts/* %buildroot/lib/modules/%kernelrelease/build/scripts/
-cp -a include/* %buildroot/lib/modules/%kernelrelease/build/include
+cp -a include/* %buildroot/lib/modules/%kernelrelease/build/include/
+cp -a --parents arch/x86/include/* %buildroot/lib/modules/%kernelrelease/build/
 
 # Copy .config to include/config/auto.conf so "make prepare" is unnecessary.
 cp %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
