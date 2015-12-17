@@ -791,6 +791,14 @@ Patch26204: xsa155-linux43-0005-xen-blkback-read-from-indirect-descriptors-only-
 Patch26205: xsa155-linux-xsa155-0006-xen-scsiback-safely-copy-requests.patch
 Patch26206: xsa155-linux-xsa155-0007-xen-pciback-Save-xen_pci_op-commands-before-processi.patch
 
+# XSA 155 - frontends
+Patch26207: xsa155-linux-0008-xen-Add-RING_COPY_RESPONSE.patch
+Patch26208: xsa155-linux318-0009-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
+Patch26209: xsa155-linux318-0010-xen-netfront-do-not-use-data-already-exposed-to-back.patch
+Patch26210: xsa155-linux-0011-xen-netfront-add-range-check-for-Tx-response-id.patch
+Patch26211: xsa155-linux312-0012-xen-blkfront-make-local-copy-of-response-before-usin.patch
+Patch26212: xsa155-linux319-0013-xen-blkfront-prepare-request-locally-only-then-put-i.patch
+
 # END OF PATCH DEFINITIONS
 
 %endif
@@ -1546,6 +1554,14 @@ ApplyPatch xsa155-linux-xsa155-0004-xen-blkback-only-read-request-operation-from
 ApplyPatch xsa155-linux43-0005-xen-blkback-read-from-indirect-descriptors-only-once.patch
 ApplyPatch xsa155-linux-xsa155-0006-xen-scsiback-safely-copy-requests.patch
 ApplyPatch xsa155-linux-xsa155-0007-xen-pciback-Save-xen_pci_op-commands-before-processi.patch
+
+# XSA 155 - frontends
+ApplyPatch xsa155-linux-0008-xen-Add-RING_COPY_RESPONSE.patch
+ApplyPatch xsa155-linux318-0009-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
+ApplyPatch xsa155-linux318-0010-xen-netfront-do-not-use-data-already-exposed-to-back.patch
+ApplyPatch xsa155-linux-0011-xen-netfront-add-range-check-for-Tx-response-id.patch
+ApplyPatch xsa155-linux312-0012-xen-blkfront-make-local-copy-of-response-before-usin.patch
+ApplyPatch xsa155-linux319-0013-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 
 # END OF PATCH APPLICATIONS
 
