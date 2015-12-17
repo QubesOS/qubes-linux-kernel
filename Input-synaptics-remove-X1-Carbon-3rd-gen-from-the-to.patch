@@ -1,0 +1,35 @@
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Date: Sun, 8 Mar 2015 22:38:55 -0700
+Subject: [PATCH] Input: synaptics - remove X1 Carbon 3rd gen from the
+ topbuttonpad list
+
+Lenovo decided to switch back to physical buttons for the trackstick on
+their latest series. The PNPId list was provided before they reverted back
+to physical buttons, so it contains the new models too.  We can know from
+the touchpad capabilities that the touchpad has physical buttons, so
+removing the ids from the list is not mandatory. It is still nicer to
+remove the wrong ids, so start by removing the X1 Carbon 3rd gen, with the
+PNPId of LEN0048.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/mouse/synaptics.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index ecc7811cbd46..160def02cde2 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -183,7 +183,6 @@ static const char * const topbuttonpad_pnp_ids[] = {
+ 	"LEN0045",
+ 	"LEN0046",
+ 	"LEN0047",
+-	"LEN0048",
+ 	"LEN0049",
+ 	"LEN2000",
+ 	"LEN2001", /* Edge E431 */
+-- 
+2.1.0
+

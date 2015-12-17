@@ -1,0 +1,31 @@
+From: Josh Boyer <jwboyer@fedoraproject.org>
+Date: Thu, 29 Jan 2015 14:03:17 -0500
+Subject: [PATCH] drm/i915: Disable verbose state checks
+
+For stable releases, we disable the verbose state checks in the i915 driver.
+They are mostly for development purposes and they fill the retrace server
+to the point of uselessness.  We leave these enabled in rawhide kernels,
+where they are both more likely to get attention from upstream and more
+likely to be fixable.
+
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+---
+ drivers/gpu/drm/i915/i915_params.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_params.c b/drivers/gpu/drm/i915/i915_params.c
+index db07153b693f..c049fe3fbdff 100644
+--- a/drivers/gpu/drm/i915/i915_params.c
++++ b/drivers/gpu/drm/i915/i915_params.c
+@@ -51,7 +51,7 @@ struct i915_params i915 __read_mostly = {
+ 	.disable_vtd_wa = 0,
+ 	.use_mmio_flip = 0,
+ 	.mmio_debug = 0,
+-	.verbose_state_checks = 1,
++	.verbose_state_checks = 0,
+ };
+ 
+ module_param_named(modeset, i915.modeset, int, 0400);
+-- 
+2.1.0
+

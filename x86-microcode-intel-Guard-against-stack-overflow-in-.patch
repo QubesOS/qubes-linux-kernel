@@ -1,0 +1,36 @@
+From 4423997d1e2f479f98b8f0c7ad733607f361ed76 Mon Sep 17 00:00:00 2001
+From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+Date: Tue, 3 Feb 2015 13:00:22 +0100
+Subject: [PATCH] x86/microcode/intel: Guard against stack overflow in the
+ loader
+
+mc_saved_tmp is a static array allocated on the stack, we need to make
+sure mc_saved_count stays within its bounds, otherwise we're overflowing
+the stack in _save_mc(). A specially crafted microcode header could lead
+to a kernel crash or potentially kernel execution.
+
+Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1422964824-22056-1-git-send-email-quentin.casasnovas@oracle.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/microcode/intel_early.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/microcode/intel_early.c b/arch/x86/kernel/cpu/microcode/intel_early.c
+index ec9df6f9cd47..5e109a31f62b 100644
+--- a/arch/x86/kernel/cpu/microcode/intel_early.c
++++ b/arch/x86/kernel/cpu/microcode/intel_early.c
+@@ -321,7 +321,7 @@ get_matching_model_microcode(int cpu, unsigned long start,
+ 	unsigned int mc_saved_count = mc_saved_data->mc_saved_count;
+ 	int i;
+ 
+-	while (leftover) {
++	while (leftover && mc_saved_count < ARRAY_SIZE(mc_saved_tmp)) {
+ 		mc_header = (struct microcode_header_intel *)ucode_ptr;
+ 
+ 		mc_size = get_totalsize(mc_header);
+-- 
+2.1.0
+

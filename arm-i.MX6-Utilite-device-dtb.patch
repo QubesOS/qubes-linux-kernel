@@ -1,0 +1,65 @@
+From: Peter Robinson <pbrobinson@gmail.com>
+Date: Fri, 11 Jul 2014 00:10:56 +0100
+Subject: [PATCH] arm: i.MX6 Utilite device dtb
+
+---
+ arch/arm/boot/dts/imx6q-cm-fx6.dts | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6q-cm-fx6.dts b/arch/arm/boot/dts/imx6q-cm-fx6.dts
+index 99b46f8030ad..8b6ddd16dcc5 100644
+--- a/arch/arm/boot/dts/imx6q-cm-fx6.dts
++++ b/arch/arm/boot/dts/imx6q-cm-fx6.dts
+@@ -97,11 +97,49 @@
+ 				MX6QDL_PAD_KEY_ROW0__UART4_RX_DATA	0x1b0b1
+ 			>;
+ 		};
++
++		pinctrl_usdhc1: usdhc1grp {
++			fsl,pins = <
++				MX6QDL_PAD_SD1_CMD__SD1_CMD             0x17059
++				MX6QDL_PAD_SD1_CLK__SD1_CLK             0x10059
++				MX6QDL_PAD_SD1_DAT0__SD1_DATA0          0x17059
++				MX6QDL_PAD_SD1_DAT1__SD1_DATA1          0x17059
++				MX6QDL_PAD_SD1_DAT2__SD1_DATA2          0x17059
++				MX6QDL_PAD_SD1_DAT3__SD1_DATA3          0x17059
++			>;
++		};
++
++		pinctrl_usdhc3: usdhc3grp {
++			fsl,pins = <
++				MX6QDL_PAD_SD3_CMD__SD3_CMD             0x17059
++				MX6QDL_PAD_SD3_CLK__SD3_CLK             0x10059
++				MX6QDL_PAD_SD3_DAT0__SD3_DATA0          0x17059
++				MX6QDL_PAD_SD3_DAT1__SD3_DATA1          0x17059
++				MX6QDL_PAD_SD3_DAT2__SD3_DATA2          0x17059
++				MX6QDL_PAD_SD3_DAT3__SD3_DATA3          0x17059
++			>;
++		};
+ 	};
+ };
+ 
++&sata {
++	status = "okay";
++};
++
+ &uart4 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart4>;
+ 	status = "okay";
+ };
++
++&usdhc1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	status = "okay";
++};
++
++&usdhc3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc3>;
++	status = "okay";
++};
+-- 
+1.9.3
+

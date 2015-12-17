@@ -1,0 +1,509 @@
+From: Dave Anderson <anderson@redhat.com>
+Date: Tue, 26 Nov 2013 12:42:46 -0500
+Subject: [PATCH] crash-driver
+
+Bugzilla: N/A
+Upstream-status: Fedora mustard
+---
+ arch/arm/include/asm/crash-driver.h     |   6 ++
+ arch/arm64/include/asm/crash-driver.h   |   6 ++
+ arch/ia64/include/asm/crash-driver.h    |  90 ++++++++++++++++++++++
+ arch/ia64/kernel/ia64_ksyms.c           |   3 +
+ arch/powerpc/include/asm/crash-driver.h |   6 ++
+ arch/s390/include/asm/crash-driver.h    |  60 +++++++++++++++
+ arch/s390/mm/maccess.c                  |   2 +
+ arch/x86/include/asm/crash-driver.h     |   6 ++
+ drivers/char/Kconfig                    |   3 +
+ drivers/char/Makefile                   |   2 +
+ drivers/char/crash.c                    | 128 ++++++++++++++++++++++++++++++++
+ include/asm-generic/crash-driver.h      |  72 ++++++++++++++++++
+ 12 files changed, 384 insertions(+)
+ create mode 100644 arch/arm/include/asm/crash-driver.h
+ create mode 100644 arch/arm64/include/asm/crash-driver.h
+ create mode 100644 arch/ia64/include/asm/crash-driver.h
+ create mode 100644 arch/powerpc/include/asm/crash-driver.h
+ create mode 100644 arch/s390/include/asm/crash-driver.h
+ create mode 100644 arch/x86/include/asm/crash-driver.h
+ create mode 100644 drivers/char/crash.c
+ create mode 100644 include/asm-generic/crash-driver.h
+
+diff --git a/arch/arm/include/asm/crash-driver.h b/arch/arm/include/asm/crash-driver.h
+new file mode 100644
+index 000000000000..06e7ae916601
+--- /dev/null
++++ b/arch/arm/include/asm/crash-driver.h
+@@ -0,0 +1,6 @@
++#ifndef _ARM_CRASH_H
++#define _ARM_CRASH_H
++
++#include <asm-generic/crash-driver.h>
++
++#endif /* _ARM_CRASH_H */
+diff --git a/arch/arm64/include/asm/crash-driver.h b/arch/arm64/include/asm/crash-driver.h
+new file mode 100644
+index 000000000000..43b26da0c5d6
+--- /dev/null
++++ b/arch/arm64/include/asm/crash-driver.h
+@@ -0,0 +1,6 @@
++#ifndef _ARM64_CRASH_H
++#define _ARM64_CRASH_H
++
++#include <asm-generic/crash-driver.h>
++
++#endif /* _ARM64_CRASH_H */
+diff --git a/arch/ia64/include/asm/crash-driver.h b/arch/ia64/include/asm/crash-driver.h
+new file mode 100644
+index 000000000000..404bcb93c112
+--- /dev/null
++++ b/arch/ia64/include/asm/crash-driver.h
+@@ -0,0 +1,90 @@
++#ifndef _ASM_IA64_CRASH_H
++#define _ASM_IA64_CRASH_H
++
++/*
++ * linux/include/asm-ia64/crash-driver.h
++ *
++ * Copyright (c) 2004 Red Hat, Inc. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifdef __KERNEL__
++
++#include <linux/efi.h>
++#include <linux/mm.h>
++#include <asm/mmzone.h>
++
++static inline void *
++map_virtual(u64 offset, struct page **pp)
++{
++	struct page *page;
++	unsigned long pfn;
++	u32 type;
++
++	if (REGION_NUMBER(offset) == 5) {
++		char byte;
++
++		if (__get_user(byte, (char *)offset) == 0)
++			return (void *)offset;
++		else
++			return NULL;
++	}
++
++	switch (type = efi_mem_type(offset))
++	{
++	case EFI_LOADER_CODE:
++	case EFI_LOADER_DATA:
++	case EFI_BOOT_SERVICES_CODE:
++	case EFI_BOOT_SERVICES_DATA:
++	case EFI_CONVENTIONAL_MEMORY:
++		break;
++
++	default:
++		printk(KERN_INFO
++		    "crash memory driver: invalid memory type for %lx: %d\n",
++			offset, type);
++		return NULL;
++	}
++
++	pfn = offset >> PAGE_SHIFT;
++
++	if (!pfn_valid(pfn)) {
++		printk(KERN_INFO
++			"crash memory driver: invalid pfn: %lx )\n", pfn);
++		return NULL;
++	}
++
++	page = pfn_to_page(pfn);
++
++	if (!page->virtual) {
++		printk(KERN_INFO
++		    "crash memory driver: offset: %lx page: %lx page->virtual: NULL\n",
++			offset, (unsigned long)page);
++		return NULL;
++	}
++
++	return (page->virtual + (offset & (PAGE_SIZE-1)));
++}
++
++static inline void unmap_virtual(struct page *page)
++{
++	return;
++}
++
++#endif /* __KERNEL__ */
++
++#endif /* _ASM_IA64_CRASH_H */
+diff --git a/arch/ia64/kernel/ia64_ksyms.c b/arch/ia64/kernel/ia64_ksyms.c
+index 5b7791dd3965..aee4b870c763 100644
+--- a/arch/ia64/kernel/ia64_ksyms.c
++++ b/arch/ia64/kernel/ia64_ksyms.c
+@@ -84,6 +84,9 @@ EXPORT_SYMBOL(ia64_save_scratch_fpregs);
+ #include <asm/unwind.h>
+ EXPORT_SYMBOL(unw_init_running);
+ 
++#include <linux/efi.h>
++EXPORT_SYMBOL_GPL(efi_mem_type);
++
+ #if defined(CONFIG_IA64_ESI) || defined(CONFIG_IA64_ESI_MODULE)
+ extern void esi_call_phys (void);
+ EXPORT_SYMBOL_GPL(esi_call_phys);
+diff --git a/arch/powerpc/include/asm/crash-driver.h b/arch/powerpc/include/asm/crash-driver.h
+new file mode 100644
+index 000000000000..50092d965dc5
+--- /dev/null
++++ b/arch/powerpc/include/asm/crash-driver.h
+@@ -0,0 +1,6 @@
++#ifndef _PPC64_CRASH_H
++#define _PPC64_CRASH_H
++
++#include <asm-generic/crash-driver.h>
++
++#endif /* _PPC64_CRASH_H */
+diff --git a/arch/s390/include/asm/crash-driver.h b/arch/s390/include/asm/crash-driver.h
+new file mode 100644
+index 000000000000..552be5e2c571
+--- /dev/null
++++ b/arch/s390/include/asm/crash-driver.h
+@@ -0,0 +1,60 @@
++#ifndef _S390_CRASH_H
++#define _S390_CRASH_H
++
++#ifdef __KERNEL__
++
++#include <linux/mm.h>
++#include <linux/highmem.h>
++
++/*
++ * For swapped prefix pages get bounce buffer using xlate_dev_mem_ptr()
++ */
++static inline void *map_virtual(u64 offset, struct page **pp)
++{
++	struct page *page;
++	unsigned long pfn;
++	void *vaddr;
++
++	vaddr = xlate_dev_mem_ptr(offset);
++	pfn = ((unsigned long) vaddr) >> PAGE_SHIFT;
++	if ((unsigned long) vaddr != offset)
++		page = pfn_to_page(pfn);
++	else
++		page = NULL;
++
++	if (!page_is_ram(pfn)) {
++		printk(KERN_INFO
++		    "crash memory driver: !page_is_ram(pfn: %lx)\n", pfn);
++		return NULL;
++	}
++
++	if (!pfn_valid(pfn)) {
++		printk(KERN_INFO
++		    "crash memory driver: invalid pfn: %lx )\n", pfn);
++		return NULL;
++	}
++
++	*pp = page;
++	return vaddr;
++}
++
++/*
++ * Free bounce buffer if necessary
++ */
++static inline void unmap_virtual(struct page *page)
++{
++	void *vaddr;
++
++	if (page) {
++		/*
++		 * Because for bounce buffers vaddr will never be 0
++		 * unxlate_dev_mem_ptr() will always free the bounce buffer.
++		 */
++		vaddr = (void *)(page_to_pfn(page) << PAGE_SHIFT);
++		unxlate_dev_mem_ptr(0, vaddr);
++	}
++}
++
++#endif /* __KERNEL__ */
++
++#endif /* _S390_CRASH_H */
+diff --git a/arch/s390/mm/maccess.c b/arch/s390/mm/maccess.c
+index 2a2e35416d2f..a529181429bb 100644
+--- a/arch/s390/mm/maccess.c
++++ b/arch/s390/mm/maccess.c
+@@ -193,6 +193,7 @@ void *xlate_dev_mem_ptr(unsigned long addr)
+ 	put_online_cpus();
+ 	return bounce;
+ }
++EXPORT_SYMBOL_GPL(xlate_dev_mem_ptr);
+ 
+ /*
+  * Free converted buffer for /dev/mem access (if necessary)
+@@ -202,3 +203,4 @@ void unxlate_dev_mem_ptr(unsigned long addr, void *buf)
+ 	if ((void *) addr != buf)
+ 		free_page((unsigned long) buf);
+ }
++EXPORT_SYMBOL_GPL(unxlate_dev_mem_ptr);
+diff --git a/arch/x86/include/asm/crash-driver.h b/arch/x86/include/asm/crash-driver.h
+new file mode 100644
+index 000000000000..fd4736ec99f5
+--- /dev/null
++++ b/arch/x86/include/asm/crash-driver.h
+@@ -0,0 +1,6 @@
++#ifndef _X86_CRASH_H
++#define _X86_CRASH_H
++
++#include <asm-generic/crash-driver.h>
++
++#endif /* _X86_CRASH_H */
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index efefd12a0f7b..6a318132b7ee 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -4,6 +4,9 @@
+ 
+ menu "Character devices"
+ 
++config CRASH
++	tristate "Crash Utility memory driver"
++
+ source "drivers/tty/Kconfig"
+ 
+ config DEVKMEM
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index d06cde26031b..0832636fd9bc 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -62,3 +62,5 @@ js-rtc-y = rtc.o
+ 
+ obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
+ obj-$(CONFIG_XILLYBUS)		+= xillybus/
++
++obj-$(CONFIG_CRASH)            += crash.o
+diff --git a/drivers/char/crash.c b/drivers/char/crash.c
+new file mode 100644
+index 000000000000..085378a1d539
+--- /dev/null
++++ b/drivers/char/crash.c
+@@ -0,0 +1,128 @@
++/*
++ *  linux/drivers/char/crash.c
++ *
++ *  Copyright (C) 2004  Dave Anderson <anderson@redhat.com>
++ *  Copyright (C) 2004  Red Hat, Inc.
++ */
++
++/******************************************************************************
++ *
++ *   This program is free software; you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation; either version 2, or (at your option)
++ *   any later version.
++ *
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *   GNU General Public License for more details.
++ *
++ *   You should have received a copy of the GNU General Public License
++ *   along with this program; if not, write to the Free Software
++ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ *****************************************************************************/
++
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/miscdevice.h>
++#include <linux/init.h>
++#include <asm/io.h>
++#include <asm/uaccess.h>
++#include <asm/types.h>
++#include <asm/crash-driver.h>
++
++#define CRASH_VERSION   "1.0"
++
++/*
++ *  These are the file operation functions that allow crash utility
++ *  access to physical memory.
++ */
++
++static loff_t
++crash_llseek(struct file * file, loff_t offset, int orig)
++{
++	switch (orig) {
++	case 0:
++		file->f_pos = offset;
++		return file->f_pos;
++	case 1:
++		file->f_pos += offset;
++		return file->f_pos;
++	default:
++		return -EINVAL;
++	}
++}
++
++/*
++ *  Determine the page address for an address offset value,
++ *  get a virtual address for it, and copy it out.
++ *  Accesses must fit within a page.
++ */
++static ssize_t
++crash_read(struct file *file, char *buf, size_t count, loff_t *poff)
++{
++	void *vaddr;
++	struct page *page;
++	u64 offset;
++	ssize_t read;
++
++	offset = *poff;
++	if (offset >> PAGE_SHIFT != (offset+count-1) >> PAGE_SHIFT)
++		return -EINVAL;
++
++	vaddr = map_virtual(offset, &page);
++	if (!vaddr)
++		return -EFAULT;
++
++	if (copy_to_user(buf, vaddr, count)) {
++		unmap_virtual(page);
++		return -EFAULT;
++	}
++	unmap_virtual(page);
++
++	read = count;
++	*poff += read;
++	return read;
++}
++
++static struct file_operations crash_fops = {
++	.owner = THIS_MODULE,
++	.llseek = crash_llseek,
++	.read = crash_read,
++};
++
++static struct miscdevice crash_dev = {
++	MISC_DYNAMIC_MINOR,
++	"crash",
++	&crash_fops
++};
++
++static int __init
++crash_init(void)
++{
++	int ret;
++
++	ret = misc_register(&crash_dev);
++	if (ret) {
++		printk(KERN_ERR
++		    "crash memory driver: cannot misc_register (MISC_DYNAMIC_MINOR)\n");
++		goto out;
++	}
++
++	ret = 0;
++	printk(KERN_INFO "crash memory driver: version %s\n", CRASH_VERSION);
++out:
++	return ret;
++}
++
++static void __exit
++crash_cleanup_module(void)
++{
++	misc_deregister(&crash_dev);
++}
++
++module_init(crash_init);
++module_exit(crash_cleanup_module);
++
++MODULE_LICENSE("GPL");
+diff --git a/include/asm-generic/crash-driver.h b/include/asm-generic/crash-driver.h
+new file mode 100644
+index 000000000000..25ab9869d566
+--- /dev/null
++++ b/include/asm-generic/crash-driver.h
+@@ -0,0 +1,72 @@
++#ifndef __CRASH_H__
++#define __CRASH_H__
++
++/*
++ * include/linux/crash-driver.h
++ *
++ * Copyright (c) 2013 Red Hat, Inc. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifdef __KERNEL__
++
++#include <linux/mm.h>
++#include <linux/highmem.h>
++
++static inline void *
++map_virtual(u64 offset, struct page **pp)
++{
++	struct page *page;
++	unsigned long pfn;
++	void *vaddr;
++
++	pfn = (unsigned long)(offset >> PAGE_SHIFT);
++
++	if (!page_is_ram(pfn)) {
++		printk(KERN_INFO
++		    "crash memory driver: !page_is_ram(pfn: %lx)\n", pfn);
++		return NULL;
++	}
++
++	if (!pfn_valid(pfn)) {
++		printk(KERN_INFO
++		    "crash memory driver: invalid pfn: %lx )\n", pfn);
++		return NULL;
++	}
++
++	page = pfn_to_page(pfn);
++
++	vaddr = kmap(page);
++	if (!vaddr) {
++		printk(KERN_INFO
++		    "crash memory driver: pfn: %lx kmap(page: %lx) failed\n",
++			pfn, (unsigned long)page);
++		return NULL;
++	}
++
++	*pp = page;
++	return (vaddr + (offset & (PAGE_SIZE-1)));
++}
++
++static inline void unmap_virtual(struct page *page)
++{
++	kunmap(page);
++}
++
++#endif /* __KERNEL__ */
++
++#endif /* __CRASH_H__ */
+-- 
+2.1.0
+

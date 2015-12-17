@@ -1,0 +1,178 @@
+From: Dave Howells <dhowells@redhat.com>
+Date: Tue, 23 Oct 2012 09:36:28 -0400
+Subject: [PATCH] Add an EFI signature blob parser and key loader.
+
+X.509 certificates are loaded into the specified keyring as asymmetric type
+keys.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+ crypto/asymmetric_keys/Kconfig      |   8 +++
+ crypto/asymmetric_keys/Makefile     |   1 +
+ crypto/asymmetric_keys/efi_parser.c | 109 ++++++++++++++++++++++++++++++++++++
+ include/linux/efi.h                 |   4 ++
+ 4 files changed, 122 insertions(+)
+ create mode 100644 crypto/asymmetric_keys/efi_parser.c
+
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 4870f28403f5..4a1b50d73b80 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -67,4 +67,12 @@ config SIGNED_PE_FILE_VERIFICATION
+ 	  This option provides support for verifying the signature(s) on a
+ 	  signed PE binary.
+ 
++config EFI_SIGNATURE_LIST_PARSER
++	bool "EFI signature list parser"
++	depends on EFI
++	select X509_CERTIFICATE_PARSER
++	help
++	  This option provides support for parsing EFI signature lists for
++	  X.509 certificates and turning them into keys.
++
+ endif # ASYMMETRIC_KEY_TYPE
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index e47fcd9ac5e8..6512f6596785 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -8,6 +8,7 @@ asymmetric_keys-y := asymmetric_type.o signature.o
+ 
+ obj-$(CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE) += public_key.o
+ obj-$(CONFIG_PUBLIC_KEY_ALGO_RSA) += rsa.o
++obj-$(CONFIG_EFI_SIGNATURE_LIST_PARSER) += efi_parser.o
+ 
+ #
+ # X.509 Certificate handling
+diff --git a/crypto/asymmetric_keys/efi_parser.c b/crypto/asymmetric_keys/efi_parser.c
+new file mode 100644
+index 000000000000..424896a0b169
+--- /dev/null
++++ b/crypto/asymmetric_keys/efi_parser.c
+@@ -0,0 +1,109 @@
++/* EFI signature/key/certificate list parser
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#define pr_fmt(fmt) "EFI: "fmt
++#include <linux/module.h>
++#include <linux/printk.h>
++#include <linux/err.h>
++#include <linux/efi.h>
++#include <keys/asymmetric-type.h>
++
++static __initdata efi_guid_t efi_cert_x509_guid = EFI_CERT_X509_GUID;
++
++/**
++ * parse_efi_signature_list - Parse an EFI signature list for certificates
++ * @data: The data blob to parse
++ * @size: The size of the data blob
++ * @keyring: The keyring to add extracted keys to
++ */
++int __init parse_efi_signature_list(const void *data, size_t size, struct key *keyring)
++{
++	unsigned offs = 0;
++	size_t lsize, esize, hsize, elsize;
++
++	pr_devel("-->%s(,%zu)\n", __func__, size);
++
++	while (size > 0) {
++		efi_signature_list_t list;
++		const efi_signature_data_t *elem;
++		key_ref_t key;
++
++		if (size < sizeof(list))
++			return -EBADMSG;
++
++		memcpy(&list, data, sizeof(list));
++		pr_devel("LIST[%04x] guid=%pUl ls=%x hs=%x ss=%x\n",
++			 offs,
++			 list.signature_type.b, list.signature_list_size,
++			 list.signature_header_size, list.signature_size);
++
++		lsize = list.signature_list_size;
++		hsize = list.signature_header_size;
++		esize = list.signature_size;
++		elsize = lsize - sizeof(list) - hsize;
++
++		if (lsize > size) {
++			pr_devel("<--%s() = -EBADMSG [overrun @%x]\n",
++				 __func__, offs);
++			return -EBADMSG;
++		}
++		if (lsize < sizeof(list) ||
++		    lsize - sizeof(list) < hsize ||
++		    esize < sizeof(*elem) ||
++		    elsize < esize ||
++		    elsize % esize != 0) {
++			pr_devel("- bad size combo @%x\n", offs);
++			return -EBADMSG;
++		}
++
++		if (efi_guidcmp(list.signature_type, efi_cert_x509_guid) != 0) {
++			data += lsize;
++			size -= lsize;
++			offs += lsize;
++			continue;
++		}
++
++		data += sizeof(list) + hsize;
++		size -= sizeof(list) + hsize;
++		offs += sizeof(list) + hsize;
++
++		for (; elsize > 0; elsize -= esize) {
++			elem = data;
++
++			pr_devel("ELEM[%04x]\n", offs);
++
++			key = key_create_or_update(
++				make_key_ref(keyring, 1),
++				"asymmetric",
++				NULL,
++				&elem->signature_data,
++				esize - sizeof(*elem),
++				(KEY_POS_ALL & ~KEY_POS_SETATTR) |
++				KEY_USR_VIEW,
++				KEY_ALLOC_NOT_IN_QUOTA |
++				KEY_ALLOC_TRUSTED);
++
++			if (IS_ERR(key))
++				pr_err("Problem loading in-kernel X.509 certificate (%ld)\n",
++				       PTR_ERR(key));
++			else
++				pr_notice("Loaded cert '%s' linked to '%s'\n",
++					  key_ref_to_ptr(key)->description,
++					  keyring->description);
++
++			data += esize;
++			size -= esize;
++			offs += esize;
++		}
++	}
++
++	return 0;
++}
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 58d7feadd149..b1d686e9175e 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -919,6 +919,10 @@ extern bool efi_poweroff_required(void);
+ char * __init efi_md_typeattr_format(char *buf, size_t size,
+ 				     const efi_memory_desc_t *md);
+ 
++struct key;
++extern int __init parse_efi_signature_list(const void *data, size_t size,
++					   struct key *keyring);
++
+ /**
+  * efi_range_is_wc - check the WC bit on an address range
+  * @start: starting kvirt address
+-- 
+2.1.0
+

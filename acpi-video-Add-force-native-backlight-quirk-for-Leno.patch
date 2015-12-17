@@ -1,0 +1,84 @@
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Tue, 3 Mar 2015 08:31:24 +0100
+Subject: [PATCH] acpi: video: Add force native backlight quirk for Lenovo
+ Ideapad Z570
+
+The Lenovo Ideapad Z570 (which is an Acer in disguise like some other Ideapads)
+has a broken acpi_video interface, this was fixed in commmit a11d342fb8
+("ACPI / video: force vendor backlight on Lenovo Ideapad Z570").
+
+Which stops acpi_video from registering a backlight interface, but this is
+only a partial fix, because for people who have the ideapad-laptop module
+installed that module will now register a backlight interface, which also
+does not work, so we need to use the native intel_backlight interface.
+
+The Lenovo Ideapad 570 is a pre-win8 laptop / too old for the acpi-video code
+to automatically prefer the native backlight interface, so add a quirk for it.
+
+This commit also removes the previous incomplete fix.
+
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1187004
+Cc: Stepan Bujnak <stepanbujnak@fastmail.fm>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/acpi/video.c        | 17 +++++++++++++++++
+ drivers/acpi/video_detect.c |  8 --------
+ 2 files changed, 17 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 2f1f16df460c..16d744e4552f 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -425,6 +425,12 @@ static int __init video_disable_native_backlight(const struct dmi_system_id *d)
+ 	return 0;
+ }
+ 
++static int __init video_enable_native_backlight(const struct dmi_system_id *d)
++{
++	use_native_backlight_dmi = NATIVE_BACKLIGHT_ON;
++	return 0;
++}
++
+ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 	/*
+ 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
+@@ -556,6 +562,17 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "XPS L521X"),
+ 		},
+ 	},
++
++	/* Non win8 machines which need native backlight nevertheless */
++	{
++	 /* https://bugzilla.redhat.com/show_bug.cgi?id=1187004 */
++	 .callback = video_enable_native_backlight,
++	 .ident = "Lenovo Ideapad Z570",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "102434U"),
++		},
++	},
+ 	{}
+ };
+ 
+diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+index 27c43499977a..c42feb2bacd0 100644
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -174,14 +174,6 @@ static struct dmi_system_id video_detect_dmi_table[] = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 5737"),
+ 		},
+ 	},
+-	{
+-	.callback = video_detect_force_vendor,
+-	.ident = "Lenovo IdeaPad Z570",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "Ideapad Z570"),
+-		},
+-	},
+ 	{ },
+ };
+ 
+-- 
+2.1.0
+

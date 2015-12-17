@@ -1,0 +1,8 @@
+# CONFIG_HIGHMEM4G is not set
+CONFIG_HIGHMEM64G=y
+
+CONFIG_XEN_DEV_EVTCHN=m
+CONFIG_XEN_SYS_HYPERVISOR=y
+
+# I2O only works on non-PAE 32-bit x86
+# CONFIG_I2O is not set

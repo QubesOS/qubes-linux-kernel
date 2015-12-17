@@ -1,0 +1,49 @@
+From: Thierry Reding <treding@nvidia.com>
+Date: Fri, 6 Feb 2015 11:44:05 +0100
+Subject: [PATCH] iommu/exynos: Play nice in multi-platform builds
+
+The Exynos System MMU driver unconditionally executes code and registers
+a struct iommu_ops with the platform bus irrespective of whether it runs
+on an Exynos SoC or not. This causes problems in multi-platform kernels
+where drivers for other SoCs will no longer be able to register their
+own struct iommu_ops or even try to use a struct iommu_ops for an IOMMU
+that obviously isn't there.
+
+The smallest fix I could think of is to check for the existence of any
+Exynos System MMU devices in the device tree and skip initialization
+otherwise.
+
+This fixes a problem on Tegra20 where the DRM driver will try to use the
+obviously non-existent Exynos System MMU.
+
+Reported-by: Nicolas Chauvet <kwizart@gmail.com>
+Cc: Kukjin Kim <kgene@kernel.org>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+---
+ drivers/iommu/exynos-iommu.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+index 7ce52737c7a1..dc14fec4ede1 100644
+--- a/drivers/iommu/exynos-iommu.c
++++ b/drivers/iommu/exynos-iommu.c
+@@ -1186,8 +1186,15 @@ static const struct iommu_ops exynos_iommu_ops = {
+ 
+ static int __init exynos_iommu_init(void)
+ {
++	struct device_node *np;
+ 	int ret;
+ 
++	np = of_find_matching_node(NULL, sysmmu_of_match);
++	if (!np)
++		return 0;
++
++	of_node_put(np);
++
+ 	lv2table_kmem_cache = kmem_cache_create("exynos-iommu-lv2table",
+ 				LV2TABLE_SIZE, LV2TABLE_SIZE, 0, NULL);
+ 	if (!lv2table_kmem_cache) {
+-- 
+2.1.0
+

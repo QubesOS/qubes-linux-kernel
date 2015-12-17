@@ -1,0 +1,27 @@
+### config-no-extra: only (to a first approximation) modules listed in
+###   mod-extra.list should be listed here. 
+
+# CONFIG_ISDN is not set
+# CONFIG_RDS is not set
+# CONFIG_IP_DCCP is not set
+# CONFIG_IP_SCTP is not set
+# CONFIG_ATALK is not set
+# CONFIG_HAMRADIO is not set
+
+# CONFIG_DEV_APPLETALK is not set
+
+# CONFIG_FUSION is not set
+# CONFIG_I2O is not set
+
+# CONFIG_NET_TULIP is not set
+
+# CONFIG_HERMES is not set
+
+# CONFIG_OCFS2_FS is not set
+# CONFIG_CUSE is not set
+# CONFIG_AFFS_FS is not set
+# CONFIG_BEFS_FS is not set
+# CONFIG_UFS_FS is not set
+# CONFIG_SYSV_FS is not set
+# CONFIG_NCP_FS is not set
+# CONFIG_CODA_FS is not set

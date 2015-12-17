@@ -1,0 +1,44 @@
+Bugzilla: N/A
+Upstream-status: Sigh.  We almost got to drop this.
+
+From 20e3f1e1b9341d233a11734c07c076caac9936ef Mon Sep 17 00:00:00 2001
+From: Josh Boyer <jwboyer@fedoraproject.org>
+Date: Mon, 28 Jul 2014 12:59:48 -0400
+Subject: [PATCH] Revert "Revert "ACPI / video: change acpi-video
+ brightness_switch_enabled default to 0""
+
+This reverts commit 2843768b701971ab10e62c77d5c75ad7c306f1bd.
+---
+ Documentation/kernel-parameters.txt | 2 +-
+ drivers/acpi/video.c                | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index b7fa2f599459..e8db409a7e3a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3532,7 +3532,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			the allocated input device; If set to 0, video driver
+ 			will only send out the event without touching backlight
+ 			brightness level.
+-			default: 1
++			default: 0
+ 
+ 	virtio_mmio.device=
+ 			[VMMIO] Memory mapped virtio (platform) device.
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 350d52a8f781..44c89f705018 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -68,7 +68,7 @@ MODULE_AUTHOR("Bruno Ducrot");
+ MODULE_DESCRIPTION("ACPI Video Driver");
+ MODULE_LICENSE("GPL");
+ 
+-static bool brightness_switch_enabled = 1;
++static bool brightness_switch_enabled;
+ module_param(brightness_switch_enabled, bool, 0644);
+ 
+ /*
+-- 
+1.9.3
+

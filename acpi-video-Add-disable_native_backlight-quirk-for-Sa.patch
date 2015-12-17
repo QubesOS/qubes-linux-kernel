@@ -1,0 +1,38 @@
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Fri, 9 Jan 2015 15:28:29 +0100
+Subject: [PATCH] acpi-video: Add disable_native_backlight quirk for Samsung
+ 730U3E/740U3E
+
+The Samsung 730U3E/740U3E has integrated ATI Radeon graphics, and backlight
+control does not work properly when using the native interfaces.
+
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1094948
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/acpi/video.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index e109b2cfb5b3..a8b7ee312493 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -769,7 +769,15 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "HP ENVY 15 Notebook PC"),
+ 		},
+ 	},
+-
++	{
++	 /* https://bugzilla.redhat.com/show_bug.cgi?id=1094948 */
++	 .callback = video_disable_native_backlight,
++	 .ident = "SAMSUNG 730U3E/740U3E",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "730U3E/740U3E"),
++		},
++	},
+ 	{
+ 	 /* https://bugzilla.redhat.com/show_bug.cgi?id=1163574 */
+ 	 .callback = video_disable_native_backlight,
+-- 
+2.1.0
+

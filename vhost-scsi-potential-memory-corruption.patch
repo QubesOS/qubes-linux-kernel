@@ -1,0 +1,53 @@
+From: Dan Carpenter <dan.carpenter@oracle.com>
+Date: Thu, 5 Feb 2015 10:37:33 +0300
+Subject: [PATCH] vhost/scsi: potential memory corruption
+
+This code in vhost_scsi_make_tpg() is confusing because we limit "tpgt"
+to UINT_MAX but the data type of "tpg->tport_tpgt" and that is a u16.
+
+I looked at the context and it turns out that in
+vhost_scsi_set_endpoint(), "tpg->tport_tpgt" is used as an offset into
+the vs_tpg[] array which has VHOST_SCSI_MAX_TARGET (256) elements so
+anything higher than 255 then it is invalid.  I have made that the limit
+now.
+
+In vhost_scsi_send_evt() we mask away values higher than 255, but now
+that the limit has changed, we don't need the mask.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/vhost/scsi.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index cb84f69f76ad..28cf2510d33b 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -1251,7 +1251,7 @@ tcm_vhost_send_evt(struct vhost_scsi *vs,
+ 		 * lun[4-7] need to be zero according to virtio-scsi spec.
+ 		 */
+ 		evt->event.lun[0] = 0x01;
+-		evt->event.lun[1] = tpg->tport_tpgt & 0xFF;
++		evt->event.lun[1] = tpg->tport_tpgt;
+ 		if (lun->unpacked_lun >= 256)
+ 			evt->event.lun[2] = lun->unpacked_lun >> 8 | 0x40 ;
+ 		evt->event.lun[3] = lun->unpacked_lun & 0xFF;
+@@ -2122,12 +2122,12 @@ tcm_vhost_make_tpg(struct se_wwn *wwn,
+ 			struct tcm_vhost_tport, tport_wwn);
+ 
+ 	struct tcm_vhost_tpg *tpg;
+-	unsigned long tpgt;
++	u16 tpgt;
+ 	int ret;
+ 
+ 	if (strstr(name, "tpgt_") != name)
+ 		return ERR_PTR(-EINVAL);
+-	if (kstrtoul(name + 5, 10, &tpgt) || tpgt > UINT_MAX)
++	if (kstrtou16(name + 5, 10, &tpgt) || tpgt > VHOST_SCSI_MAX_TARGET)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	tpg = kzalloc(sizeof(struct tcm_vhost_tpg), GFP_KERNEL);
+-- 
+2.1.0
+

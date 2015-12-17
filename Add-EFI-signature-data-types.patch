@@ -1,0 +1,56 @@
+From: Dave Howells <dhowells@redhat.com>
+Date: Tue, 23 Oct 2012 09:30:54 -0400
+Subject: [PATCH] Add EFI signature data types
+
+Add the data types that are used for containing hashes, keys and certificates
+for cryptographic verification.
+
+Bugzilla: N/A
+Upstream-status: Fedora mustard for now
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+ include/linux/efi.h | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index ebe6a24cc1e1..5ce40e215f15 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -581,6 +581,12 @@ void efi_native_runtime_setup(void);
+ #define DEVICE_TREE_GUID \
+     EFI_GUID(  0xb1b621d5, 0xf19c, 0x41a5, 0x83, 0x0b, 0xd9, 0x15, 0x2c, 0x69, 0xaa, 0xe0 )
+ 
++#define EFI_CERT_SHA256_GUID \
++    EFI_GUID(  0xc1c41626, 0x504c, 0x4092, 0xac, 0xa9, 0x41, 0xf9, 0x36, 0x93, 0x43, 0x28 )
++
++#define EFI_CERT_X509_GUID \
++    EFI_GUID(  0xa5c059a1, 0x94e4, 0x4aa7, 0x87, 0xb5, 0xab, 0x15, 0x5c, 0x2b, 0xf0, 0x72 )
++
+ typedef struct {
+ 	efi_guid_t guid;
+ 	u64 table;
+@@ -796,6 +802,20 @@ typedef struct _efi_file_io_interface {
+ 
+ #define EFI_INVALID_TABLE_ADDR		(~0UL)
+ 
++typedef struct  {
++	efi_guid_t signature_owner;
++	u8 signature_data[];
++} efi_signature_data_t;
++
++typedef struct {
++	efi_guid_t signature_type;
++	u32 signature_list_size;
++	u32 signature_header_size;
++	u32 signature_size;
++	u8 signature_header[];
++	/* efi_signature_data_t signatures[][] */
++} efi_signature_list_t;
++
+ /*
+  * All runtime access to EFI goes through this structure:
+  */
+-- 
+1.9.3
+

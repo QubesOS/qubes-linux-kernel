@@ -1,0 +1,32 @@
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Date: Sun, 8 Mar 2015 22:39:17 -0700
+Subject: [PATCH] Input: synaptics - remove X250 from the topbuttonpad list
+
+Lenovo X250 has a PnpID of LEN0046, but it does not have the top software
+button requirement.
+
+For the record, Lenovo T450s and W541 have a PnpID of LEN200f and LEN004a,
+so they are not on the top software button list.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Reviewed-by: Daniel Martin <consume.noise@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/mouse/synaptics.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 160def02cde2..ca7ca8d4eb33 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -181,7 +181,6 @@ static const char * const topbuttonpad_pnp_ids[] = {
+ 	"LEN0041",
+ 	"LEN0042", /* Yoga */
+ 	"LEN0045",
+-	"LEN0046",
+ 	"LEN0047",
+ 	"LEN0049",
+ 	"LEN2000",
+-- 
+2.1.0
+

@@ -1,0 +1,19 @@
+debug patch for bz 787171/766277
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index bcbdb33..a6a5fdb 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2530,8 +2530,10 @@ global_root:
+ 	 */
+ 	if (IS_ROOT(dentry) &&
+ 	    (dentry->d_name.len != 1 || dentry->d_name.name[0] != '/')) {
+-		WARN(1, "Root dentry has weird name <%.*s>\n",
+-		     (int) dentry->d_name.len, dentry->d_name.name);
++		WARN(1, "Root dentry has weird name <%.*s>  vfsmnt:%s fs:%s\n",
++		     (int) dentry->d_name.len, dentry->d_name.name,
++			vfsmnt->mnt_root->d_name.name,
++			vfsmnt->mnt_sb->s_type->name);
+ 	}
+ 	if (!slash)
+ 		error = prepend(buffer, buflen, "/", 1);

@@ -1,0 +1,93 @@
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Tue, 14 Apr 2015 11:15:24 +0200
+Subject: [PATCH] toshiba_acpi: Do not register vendor backlight when
+ acpi_video bl is available
+
+commit a39f46df33c6 ("toshiba_acpi: Fix regression caused by backlight extra
+check code") causes the backlight to no longer work on the Toshiba Z30,
+reverting that commit fixes this but restores the original issue fixed
+by that commit.
+
+Looking at the toshiba_acpi backlight code for a fix for this I noticed that
+the toshiba code is the only code under platform/x86 which unconditionally
+registers a vendor acpi backlight interface, without checking for acpi_video
+backlight support first.
+
+This commit adds the necessary checks bringing toshiba_acpi in line with the
+other drivers, and fixing the Z30 regression without needing to revert the
+commit causing it.
+
+Chances are that there will be some Toshiba models which have a non working
+acpi-video implementation while the toshiba vendor backlight interface does
+work, this commit adds an empty dmi_id table where such systems can be added,
+this is identical to how other drivers handle such systems.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/platform/x86/Kconfig        |  1 +
+ drivers/platform/x86/toshiba_acpi.c | 23 +++++++++++++++++++++++
+ 2 files changed, 24 insertions(+)
+
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 638e797037da..c3fd78820d07 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -614,6 +614,7 @@ config ACPI_TOSHIBA
+ 	depends on INPUT
+ 	depends on RFKILL || RFKILL = n
+ 	depends on SERIO_I8042 || SERIO_I8042 = n
++	depends on ACPI_VIDEO || ACPI_VIDEO = n
+ 	select INPUT_POLLDEV
+ 	select INPUT_SPARSEKMAP
+ 	---help---
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+index fc34a71866ed..1c5879ae3b53 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -57,6 +57,7 @@
+ #include <linux/i8042.h>
+ #include <linux/acpi.h>
+ #include <linux/dmi.h>
++#include <acpi/video.h>
+ #include <asm/uaccess.h>
+ 
+ MODULE_AUTHOR("John Belmonte");
+@@ -264,6 +265,14 @@ static const struct key_entry toshiba_acpi_alt_keymap[] = {
+ 	{ KE_END, 0 },
+ };
+ 
++/*
++ * List of models which have a broken acpi-video backlight interface and thus
++ * need to use the toshiba (vendor) interface instead.
++ */
++static const struct dmi_system_id toshiba_vendor_backlight_dmi[] = {
++	{}
++};
++
+ /* utility
+  */
+ 
+@@ -1798,6 +1807,20 @@ static int toshiba_acpi_setup_backlight(struct toshiba_acpi_dev *dev)
+ 	ret = get_tr_backlight_status(dev, &enabled);
+ 	dev->tr_backlight_supported = !ret;
+ 
++	/*
++	 * Tell acpi-video-detect code to prefer vendor backlight on all
++	 * systems with transflective backlight and on dmi matched systems.
++	 */
++	if (dev->tr_backlight_supported ||
++	    dmi_check_system(toshiba_vendor_backlight_dmi))
++		acpi_video_dmi_promote_vendor();
++
++	if (acpi_video_backlight_support())
++		return 0;
++
++	/* acpi-video may have loaded before we called dmi_promote_vendor() */
++	acpi_video_unregister_backlight();
++
+ 	memset(&props, 0, sizeof(props));
+ 	props.type = BACKLIGHT_PLATFORM;
+ 	props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
+-- 
+2.1.0
+

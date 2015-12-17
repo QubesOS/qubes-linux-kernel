@@ -1,0 +1,60 @@
+From: Kyle McMartin <kmcmartin@redhat.com>
+Date: Tue, 30 Sep 2014 16:19:47 -0400
+Subject: [PATCH] arm: highbank l2 reverts
+
+Revert some v3.16 changes to mach-highbank which broke L2 cache enablement.
+Will debug upstream separately, but we need F22/21 running there. (#1139762)
+---
+ arch/arm/mach-highbank/highbank.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
+index 8c35ae4ff176..38e1dc3b4c6e 100644
+--- a/arch/arm/mach-highbank/highbank.c
++++ b/arch/arm/mach-highbank/highbank.c
+@@ -51,13 +51,11 @@ static void __init highbank_scu_map_io(void)
+ }
+ 
+ 
+-static void highbank_l2c310_write_sec(unsigned long val, unsigned reg)
++static void highbank_l2x0_disable(void)
+ {
+-	if (reg == L2X0_CTRL)
+-		highbank_smc1(0x102, val);
+-	else
+-		WARN_ONCE(1, "Highbank L2C310: ignoring write to reg 0x%x\n",
+-			  reg);
++	outer_flush_all();
++	/* Disable PL310 L2 Cache controller */
++	highbank_smc1(0x102, 0x0);
+ }
+ 
+ static void __init highbank_init_irq(void)
+@@ -66,6 +64,14 @@ static void __init highbank_init_irq(void)
+ 
+ 	if (of_find_compatible_node(NULL, NULL, "arm,cortex-a9"))
+ 		highbank_scu_map_io();
++
++	/* Enable PL310 L2 Cache controller */
++	if (IS_ENABLED(CONFIG_CACHE_L2X0) &&
++	    of_find_compatible_node(NULL, NULL, "arm,pl310-cache")) {
++		highbank_smc1(0x102, 0x1);
++		l2x0_of_init(0, ~0);
++		outer_cache.disable = highbank_l2x0_disable;
++	}
+ }
+ 
+ static void highbank_power_off(void)
+@@ -179,9 +185,6 @@ DT_MACHINE_START(HIGHBANK, "Highbank")
+ #if defined(CONFIG_ZONE_DMA) && defined(CONFIG_ARM_LPAE)
+ 	.dma_zone_size	= (4ULL * SZ_1G),
+ #endif
+-	.l2c_aux_val	= 0,
+-	.l2c_aux_mask	= ~0,
+-	.l2c_write_sec	= highbank_l2c310_write_sec,
+ 	.init_irq	= highbank_init_irq,
+ 	.init_machine	= highbank_init,
+ 	.dt_compat	= highbank_match,
+-- 
+1.9.3
+

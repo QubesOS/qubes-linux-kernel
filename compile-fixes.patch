@@ -1,0 +1,6 @@
+#
+# Small compile fixes (For more involved fixes, please use a separate patch).
+#
+# Please add the errors from gcc before the diffs to save others having
+# to do a compile to figure out what your diff is fixing. Thanks.
+#

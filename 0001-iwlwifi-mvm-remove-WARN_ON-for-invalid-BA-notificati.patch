@@ -1,0 +1,34 @@
+From 1f16ea294d2ef63013740f4c8539e430b6c12dff Mon Sep 17 00:00:00 2001
+From: Johannes Berg <johannes.berg@intel.com>
+Date: Fri, 6 Mar 2015 09:17:37 +0100
+Subject: [PATCH] iwlwifi: mvm: remove WARN_ON for invalid BA notification
+
+The firmware frequently manages to trigger this, and there's
+no known driver workaround, so stop warning.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+---
+ drivers/net/wireless/iwlwifi/mvm/tx.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/mvm/tx.c b/drivers/net/wireless/iwlwifi/mvm/tx.c
+index 07304e1..96a0540 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
+@@ -949,8 +949,10 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *mvm, struct iwl_rx_cmd_buffer *rxb,
+ 	mvmsta = iwl_mvm_sta_from_mac80211(sta);
+ 	tid_data = &mvmsta->tid_data[tid];
+ 
+-	if (WARN_ONCE(tid_data->txq_id != scd_flow, "Q %d, tid %d, flow %d",
+-		      tid_data->txq_id, tid, scd_flow)) {
++	if (tid_data->txq_id != scd_flow) {
++		IWL_ERR(mvm,
++			"invalid BA notification: Q %d, tid %d, flow %d\n",
++			tid_data->txq_id, tid, scd_flow);
+ 		rcu_read_unlock();
+ 		return 0;
+ 	}
+-- 
+2.1.0
+

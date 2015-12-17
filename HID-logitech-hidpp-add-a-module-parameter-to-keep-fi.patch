@@ -1,0 +1,52 @@
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Date: Thu, 26 Mar 2015 12:41:57 -0400
+Subject: [PATCH] HID: logitech-hidpp: add a module parameter to keep firmware
+ gestures
+
+The Logitech T650 used to report 3 fingers swipes to the up as a press on the
+Super key. When we switched the touchpad to the raw mode, we also disable such
+firmware gesture and some users may rely on it.
+
+Unfortunately, 3 finger swipes are still not supported in most of the Linux
+environments, which means that we disabled a feature of the touchpad.
+
+Allow users to revert the raw reporting mode and keep going with the firmware
+gestures by providing a new module parameter.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/hid/hid-logitech-hidpp.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index a93cefe0e522..00304f742eca 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -28,6 +28,11 @@ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@gmail.com>");
+ MODULE_AUTHOR("Nestor Lopez Casado <nlopezcasad@logitech.com>");
+ 
++static bool disable_raw_mode;
++module_param(disable_raw_mode, bool, 0644);
++MODULE_PARM_DESC(disable_raw_mode,
++	"Disable Raw mode reporting for touchpads and keep firmware gestures.");
++
+ #define REPORT_ID_HIDPP_SHORT			0x10
+ #define REPORT_ID_HIDPP_LONG			0x11
+ 
+@@ -1159,6 +1164,11 @@ static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 
+ 	hidpp->quirks = id->driver_data;
+ 
++	if (disable_raw_mode) {
++		hidpp->quirks &= ~HIDPP_QUIRK_CLASS_WTP;
++		hidpp->quirks &= ~HIDPP_QUIRK_DELAYED_INIT;
++	}
++
+ 	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
+ 		ret = wtp_allocate(hdev, id);
+ 		if (ret)
+-- 
+2.1.0
+
