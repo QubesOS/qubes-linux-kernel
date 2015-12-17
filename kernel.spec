@@ -782,6 +782,15 @@ Patch26193: toshiba_acpi-Do-not-register-vendor-backlight-when-a.patch
 #rhbz 1218662
 Patch26199: libata-Blacklist-queued-TRIM-on-all-Samsung-800-seri.patch
 
+# XSA 155 - backends
+Patch26200: xsa155-linux-xsa155-0001-xen-Add-RING_COPY_REQUEST.patch
+Patch26201: xsa155-linux-xsa155-0002-xen-netback-don-t-use-last-request-to-determine-mini.patch
+Patch26202: xsa155-linux-xsa155-0003-xen-netback-use-RING_COPY_REQUEST-throughout.patch
+Patch26203: xsa155-linux-xsa155-0004-xen-blkback-only-read-request-operation-from-shared-.patch
+Patch26204: xsa155-linux43-0005-xen-blkback-read-from-indirect-descriptors-only-once.patch
+Patch26205: xsa155-linux-xsa155-0006-xen-scsiback-safely-copy-requests.patch
+Patch26206: xsa155-linux-xsa155-0007-xen-pciback-Save-xen_pci_op-commands-before-processi.patch
+
 # END OF PATCH DEFINITIONS
 
 %endif
@@ -1528,6 +1537,15 @@ ApplyPatch toshiba_acpi-Do-not-register-vendor-backlight-when-a.patch
 
 #rhbz 1218662
 ApplyPatch libata-Blacklist-queued-TRIM-on-all-Samsung-800-seri.patch
+
+# XSA 155 - backends
+ApplyPatch xsa155-linux-xsa155-0001-xen-Add-RING_COPY_REQUEST.patch
+ApplyPatch xsa155-linux-xsa155-0002-xen-netback-don-t-use-last-request-to-determine-mini.patch
+ApplyPatch xsa155-linux-xsa155-0003-xen-netback-use-RING_COPY_REQUEST-throughout.patch
+ApplyPatch xsa155-linux-xsa155-0004-xen-blkback-only-read-request-operation-from-shared-.patch
+ApplyPatch xsa155-linux43-0005-xen-blkback-read-from-indirect-descriptors-only-once.patch
+ApplyPatch xsa155-linux-xsa155-0006-xen-scsiback-safely-copy-requests.patch
+ApplyPatch xsa155-linux-xsa155-0007-xen-pciback-Save-xen_pci_op-commands-before-processi.patch
 
 # END OF PATCH APPLICATIONS
 
