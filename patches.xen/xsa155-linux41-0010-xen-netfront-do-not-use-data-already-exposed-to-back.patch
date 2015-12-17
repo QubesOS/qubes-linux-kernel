@@ -1,0 +1,73 @@
+From 2adc557330dde5b474d885518d2663180d3c8f45 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Wed, 16 Dec 2015 05:19:37 +0100
+Subject: [PATCH 10/13] xen-netfront: do not use data already exposed to
+ backend
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Backend may freely modify anything on shared page, so use data which was
+supposed to be written there, instead of reading it back from the shared
+page.
+
+This is part of XSA155.
+
+CC: stable@vger.kernel.org
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/net/xen-netfront.c | 32 +++++++++++---------------------
+ 1 file changed, 11 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 2af5100..959e479 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -452,17 +452,19 @@ static struct xen_netif_tx_request *xenn
+ 	struct sk_buff *skb, struct page *page,
+ 	unsigned int offset, unsigned int len)
+ {
++	unsigned int this_len;
+ 	/* Skip unused frames from start of page */
+ 	page += offset >> PAGE_SHIFT;
+ 	offset &= ~PAGE_MASK;
+ 
+ 	while (len) {
+ 		tx->flags |= XEN_NETTXF_more_data;
++		this_len = min_t(unsigned int, PAGE_SIZE - offset, len);
+ 		tx = xennet_make_one_txreq(queue, skb_get(skb),
+-					   page, offset, len);
++					   page, offset, this_len);
+ 		page++;
+ 		offset = 0;
+-		len -= tx->size;
++		len -= this_len;
+ 	}
+ 
+ 	return tx;
+@@ -522,7 +524,7 @@ static int xennet_start_xmit(struct sk_b
+ 	int slots;
+ 	struct page *page;
+ 	unsigned int offset;
+-	unsigned int len;
++	unsigned int len, this_len;
+ 	unsigned long flags;
+ 	struct netfront_queue *queue = NULL;
+ 	unsigned int num_queues = dev->real_num_tx_queues;
+@@ -567,11 +569,12 @@ static int xennet_start_xmit(struct sk_b
+ 	}
+ 
+ 	/* First request for the linear area. */
++	this_len = min_t(unsigned int, PAGE_SIZE - offset, len);
+ 	first_tx = tx = xennet_make_one_txreq(queue, skb,
+ 					      page, offset, len);
+ 	page++;
+ 	offset = 0;
+-	len -= tx->size;
++	len -= this_len;
+ 
+ 	if (skb->ip_summed == CHECKSUM_PARTIAL)
+ 		/* local packet? */
