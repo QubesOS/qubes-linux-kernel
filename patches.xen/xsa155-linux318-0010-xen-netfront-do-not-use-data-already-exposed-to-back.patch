@@ -1,0 +1,54 @@
+From 2adc557330dde5b474d885518d2663180d3c8f45 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Wed, 16 Dec 2015 05:19:37 +0100
+Subject: [PATCH 10/13] xen-netfront: do not use data already exposed to
+ backend
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Backend may freely modify anything on shared page, so use data which was
+supposed to be written there, instead of reading it back from the shared
+page.
+
+This is part of XSA155.
+
+CC: stable@vger.kernel.org
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/net/xen-netfront.c | 32 +++++++++++---------------------
+ 1 file changed, 11 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 2af5100..959e479 100644
+--- a/drivers/net/xen-netfront.c	2015-12-17 05:17:39.600724757 +0100
++++ b/drivers/net/xen-netfront.c	2015-12-17 05:19:35.060724757 +0100
+@@ -429,6 +429,7 @@
+ 	int frags = skb_shinfo(skb)->nr_frags;
+ 	unsigned int offset = offset_in_page(data);
+ 	unsigned int len = skb_headlen(skb);
++	unsigned int size;
+ 	unsigned int id;
+ 	grant_ref_t ref;
+ 	int i;
+@@ -436,10 +437,11 @@
+ 	/* While the header overlaps a page boundary (including being
+ 	   larger than a page), split it it into page-sized chunks. */
+ 	while (len > PAGE_SIZE - offset) {
+-		tx->size = PAGE_SIZE - offset;
++		size = PAGE_SIZE - offset;
++		tx->size = size;
+ 		tx->flags |= XEN_NETTXF_more_data;
+-		len -= tx->size;
+-		data += tx->size;
++		len -= size;
++		data += size;
+ 		offset = 0;
+ 
+ 		id = get_id_from_freelist(&queue->tx_skb_freelist, queue->tx_skbs);
+-- 
+2.1.0
+

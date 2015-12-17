@@ -1,0 +1,37 @@
+From 76a020d3b2023ca02961eab38318ef2d6f1338d9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Wed, 16 Dec 2015 05:22:24 +0100
+Subject: [PATCH 11/13] xen-netfront: add range check for Tx response id
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Tx response ID is fetched from shared page, so make sure it is sane
+before using it as an array index.
+
+This is part of XSA155.
+
+CC: stable@vger.kernel.org
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/net/xen-netfront.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 959e479..94309e6 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -379,6 +379,7 @@ static void xennet_tx_buf_gc(struct netfront_queue *queue)
+ 				continue;
+ 
+ 			id  = txrsp.id;
++			BUG_ON(id >= NET_TX_RING_SIZE);
+ 			skb = queue->tx_skbs[id].skb;
+ 			if (unlikely(gnttab_query_foreign_access(
+ 				queue->grant_tx_ref[id]) != 0)) {
+-- 
+2.1.0
+
