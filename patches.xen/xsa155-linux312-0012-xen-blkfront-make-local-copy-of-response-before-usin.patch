@@ -48,7 +48,7 @@ index 2fee2ee..5d7eb04 100644
  		 * never have given to it (we stamp it up to BLK_RING_SIZE -
 @@ -1325,29 +1325,29 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  		 */
- 		if (id >= BLK_RING_SIZE) {
+ 		if (id >= BLK_RING_SIZE(info)) {
  			WARN(1, "%s: response to %s has incorrect id (%ld)\n",
 -			     info->gd->disk_name, op_name(bret->operation), id);
 +			     info->gd->disk_name, op_name(bret.operation), id);
