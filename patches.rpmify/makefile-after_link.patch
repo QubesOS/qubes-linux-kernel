@@ -64,10 +64,10 @@ index 2a8ddfd..452ca53 100644
  quiet_cmd_vdso64as = VDSO64A $@
        cmd_vdso64as = $(CC) $(a_flags) -c -o $@ $<
  
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+diff --git a/arch/x86/entry/vdso/Makefile b/arch/x86/entry/vdso/Makefile
 index fd14be1..1f3eb19 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
+--- a/arch/x86/entry/vdso/Makefile
++++ b/arch/x86/entry/vdso/Makefile
 @@ -178,8 +178,9 @@ $(obj)/vdso32-syms.lds: $(vdso32.so-y:%=$(obj)/vdso32-%-syms.lds) FORCE
  quiet_cmd_vdso = VDSO    $@
        cmd_vdso = $(CC) -nostdlib -o $@ \
@@ -78,8 +78,24 @@ index fd14be1..1f3eb19 100644
 +		$(if $(AFTER_LINK),; $(AFTER_LINK)) && \
 +		sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
  
- VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
+ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=both) \
  	$(call cc-ldoption, -Wl$(comma)--build-id) -Wl,-Bsymbolic $(LTO_CFLAGS)
+diff --git a/arch/x86/um/vdso/Makefile b/arch/x86/um/vdso/Makefile
+index fd14be1..1f3eb19 100644
+--- a/arch/x86/um/vdso/Makefile
++++ b/arch/x86/um/vdso/Makefile
+@@ -71,8 +71,9 @@ $(obj)/vdso32-syms.lds: $(vdso32.so-y:%=$(obj)/vdso32-%-syms.lds) FORCE
+ quiet_cmd_vdso = VDSO    $@
+       cmd_vdso = $(CC) -nostdlib -o $@ \
+ 		       $(VDSO_LDFLAGS) $(VDSO_LDFLAGS_$(filter %.lds,$(^F))) \
+-		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) && \
+-		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
++		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) \
++		$(if $(AFTER_LINK),; $(AFTER_LINK)) && \
++		sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
+ 
+ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
+ GCOV_PROFILE := n
 diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
 index cd9c6c6..3edf048 100644
 --- a/scripts/link-vmlinux.sh
