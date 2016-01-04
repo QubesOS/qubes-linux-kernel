@@ -111,7 +111,7 @@ index d6abf19..2af5100 100644
 +		if (unlikely(rx.status < 0 ||
 +			     rx.offset + rx.status > PAGE_SIZE)) {
  			if (net_ratelimit())
- 				dev_warn(dev, "rx->offset: %x, size: %u\n",
+ 				dev_warn(dev, "rx->offset: %u, size: %d\n",
 -					 rx->offset, rx->status);
 +					 rx.offset, rx.status);
  			xennet_move_rx_slot(queue, skb, ref);
