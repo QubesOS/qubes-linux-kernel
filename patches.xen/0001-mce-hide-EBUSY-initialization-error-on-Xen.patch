@@ -1,0 +1,72 @@
+From 26df8496fdb73e9ae2bdf9d1684484196260a8f3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Tue, 5 Jan 2016 02:44:04 +0100
+Subject: [PATCH] mce: hide EBUSY initialization error on Xen
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+In case of Xen, the device is already registered by xen mcelog (in
+xen_late_init_mcelog), so fail here is expected. Note that
+mcheck_init_device call is still expected to initialize mce_device. Comment
+from threshold_init_device explaining the situation:
+
+/*
+ * there are 3 funcs which need to be _initcalled in a logic sequence:
+ * 1. xen_late_init_mcelog
+ * 2. mcheck_init_device
+ * 3. threshold_init_device
+ *
+ * xen_late_init_mcelog must register xen_mce_chrdev_device before
+ * native mce_chrdev_device registration if running under xen platform;
+ *
+ * mcheck_init_device should be inited before threshold_init_device to
+ * initialize mce_device, otherwise a NULL ptr dereference will cause panic.
+ *
+ * so we use following _initcalls
+ * 1. device_initcall(xen_late_init_mcelog);
+ * 2. device_initcall_sync(mcheck_init_device);
+ * 3. late_initcall(threshold_init_device);
+ *
+ * when running under xen, the initcall order is 1,2,3;
+ * on baremetal, we skip 1 and we do only 2 and 3.
+ */
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index c5b0d56..69b0b4b 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -48,6 +48,10 @@
+ #include <asm/mce.h>
+ #include <asm/msr.h>
+ 
++#ifdef CONFIG_XEN_MCE_LOG
++#include <xen/xen.h>
++#endif
++
+ #include "mce-internal.h"
+ 
+ static DEFINE_MUTEX(mce_chrdev_read_mutex);
+@@ -2512,6 +2516,11 @@ err_out_mem:
+ 	free_cpumask_var(mce_device_initialized);
+ 
+ err_out:
++#ifdef CONFIG_XEN_MCE_LOG
++	/* in case of Xen, the character device was already registered, so do not
++	 * treat this as an error */
++	if (!xen_initial_domain() || err != -EBUSY)
++#endif
+ 	pr_err("Unable to init device /dev/mcelog (rc: %d)\n", err);
+ 
+ 	return err;
+-- 
+2.1.0
+
