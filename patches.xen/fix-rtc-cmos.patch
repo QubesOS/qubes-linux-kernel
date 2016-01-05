@@ -1,0 +1,153 @@
+Adding the rtc platform device in non-privileged Xen PV guests causes
+an IRQ conflict because these guests do not have legacy PIC and may
+allocate irqs in the legacy range.
+
+In a single VCPU Xen PV guest we should have:
+
+/proc/interrupts:
+           CPU0
+  0:       4934  xen-percpu-virq      timer0
+  1:          0  xen-percpu-ipi       spinlock0
+  2:          0  xen-percpu-ipi       resched0
+  3:          0  xen-percpu-ipi       callfunc0
+  4:          0  xen-percpu-virq      debug0
+  5:          0  xen-percpu-ipi       callfuncsingle0
+  6:          0  xen-percpu-ipi       irqwork0
+  7:        321   xen-dyn-event     xenbus
+  8:         90   xen-dyn-event     hvc_console
+  ...
+
+But hvc_console cannot get its interrupt because it is already in use
+by rtc0 and the console does not work.
+
+  genirq: Flags mismatch irq 8. 00000000 (hvc_console) vs. 00000000 (rtc0)
+
+We can avoid this problem by realizing that unprivileged PV guests (both
+Xen and lguests) are not supposed to have rtc_cmos device and so
+adding it is not necessary.
+
+Privileged guests (i.e. Xen's dom0) do use it but they should not have
+irq conflicts since they allocate irqs above legacy range (above
+gsi_top, in fact).
+
+Instead of explicitly testing whether the guest is privileged we can
+extend pv_info structure to include information about guest's RTC
+support.
+
+Reported-by: Sander Eikelenboom &lt;linux@xxxxxxxxxxxxxx&gt;
+Signed-off-by: David Vrabel &lt;david.vrabel@xxxxxxxxxx&gt;
+Signed-off-by: Boris Ostrovsky &lt;boris.ostrovsky@xxxxxxxxxx&gt;
+Tested-by: Sander Eikelenboom &lt;linux@xxxxxxxxxxxxxx&gt;
+Cc: stable@xxxxxxxxxxxxxxx # 4.2+
+---
+
+v2: Xen dom0 still should have access to cmos_rts. Extend pv_info structure to
+allow specifying which PV-enabled guests are allowed to access RTC
+
+ arch/x86/include/asm/paravirt.h       | 6 ++++++
+ arch/x86/include/asm/paravirt_types.h | 5 +++++
+ arch/x86/include/asm/processor.h      | 1 +
+ arch/x86/kernel/rtc.c                 | 3 +++
+ arch/x86/lguest/boot.c                | 1 +
+ arch/x86/xen/enlighten.c              | 4 +++-
+ 6 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 10d0596..c759b3c 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -19,6 +19,12 @@ static inline int paravirt_enabled(void)
+ 	return pv_info.paravirt_enabled;
+ }
+ 
++static inline int paravirt_has_feature(unsigned int feature)
++{
++	WARN_ON_ONCE(!pv_info.paravirt_enabled);
++	return (pv_info.features & feature);
++}
++
+ static inline void load_sp0(struct tss_struct *tss,
+ 			     struct thread_struct *thread)
+ {
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 31247b5..3d44191 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -70,9 +70,14 @@ struct pv_info {
+ #endif
+ 
+ 	int paravirt_enabled;
++	unsigned int features;	  /* valid only if paravirt_enabled is set */
+ 	const char *name;
+ };
+ 
++#define paravirt_has(x) paravirt_has_feature(PV_SUPPORTED_##x)
++/* Supported features */
++#define PV_SUPPORTED_RTC        (1<<0)
++
+ struct pv_init_ops {
+ 	/*
+ 	 * Patch may replace one of the defined code sequences with
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 6752225..2d5a50c 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -472,6 +472,7 @@ static inline unsigned long current_top_of_stack(void)
+ #else
+ #define __cpuid			native_cpuid
+ #define paravirt_enabled()	0
++#define paravirt_has(x) 	0
+ 
+ static inline void load_sp0(struct tss_struct *tss,
+ 			    struct thread_struct *thread)
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index cd96852..4af8d06 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -200,6 +200,9 @@ static __init int add_rtc_cmos(void)
+ 	}
+ #endif
+ 
++	if (paravirt_enabled() && !paravirt_has(RTC))
++		return -ENODEV;
++
+ 	platform_device_register(&rtc_device);
+ 	dev_info(&rtc_device.dev,
+ 		 "registered platform RTC device (no PNP device found)\n");
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index a0d09f6..a43b2ea 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1414,6 +1414,7 @@ __init void lguest_init(void)
+ 	pv_info.kernel_rpl = 1;
+ 	/* Everyone except Xen runs with this set. */
+ 	pv_info.shared_kernel_pmd = 1;
++	pv_info.features = 0;
+ 
+ 	/*
+ 	 * We set up all the lguest overrides for sensitive operations.  These
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index d315151..b7de78b 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1192,7 +1192,7 @@ static const struct pv_info xen_info __initconst = {
+ #ifdef CONFIG_X86_64
+ 	.extra_user_64bit_cs = FLAT_USER_CS64,
+ #endif
+-
++	.features = 0,
+ 	.name = "Xen",
+ };
+ 
+@@ -1535,6 +1535,8 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 
+ 	/* Install Xen paravirt ops */
+ 	pv_info = xen_info;
++	if (xen_initial_domain())
++		pv_info.features |= PV_SUPPORTED_RTC;
+ 	pv_init_ops = xen_init_ops;
+ 	pv_apic_ops = xen_apic_ops;
+ 	if (!xen_pvh_domain()) {
+-- 
+1.8.1.4
+
