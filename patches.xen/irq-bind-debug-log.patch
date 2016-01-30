@@ -1,0 +1,13 @@
+diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+index 524c221..acb29f4 100644
+--- a/drivers/xen/events/events_base.c
++++ b/drivers/xen/events/events_base.c
+@@ -519,7 +519,7 @@ static unsigned int __startup_pirq(unsigned int irq)
+ 					BIND_PIRQ__WILL_SHARE : 0;
+ 	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
+ 	if (rc != 0) {
+-		pr_warn("Failed to obtain physical IRQ %d\n", irq);
++		pr_warn("Failed to obtain physical IRQ %d (error %d)\n", irq, rc);
+ 		return 0;
+ 	}
+ 	evtchn = bind_pirq.port;
