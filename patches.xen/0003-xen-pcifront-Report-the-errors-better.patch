@@ -1,0 +1,54 @@
+From 3a0d57b60a61eb461504f8ed1845afd5084b7889 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 3 Feb 2016 16:39:21 -0500
+Subject: [PATCH 3/4] xen/pcifront: Report the errors better.
+
+The messages should be different depending on the type of error.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/include/asm/xen/pci.h | 4 ++--
+ arch/x86/pci/xen.c             | 5 ++++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/xen/pci.h b/arch/x86/include/asm/xen/pci.h
+index 968d57d..f320ee3 100644
+--- a/arch/x86/include/asm/xen/pci.h
++++ b/arch/x86/include/asm/xen/pci.h
+@@ -57,7 +57,7 @@ static inline int xen_pci_frontend_enable_msi(struct pci_dev *dev,
+ {
+ 	if (xen_pci_frontend && xen_pci_frontend->enable_msi)
+ 		return xen_pci_frontend->enable_msi(dev, vectors);
+-	return -ENODEV;
++	return -ENOSYS;
+ }
+ static inline void xen_pci_frontend_disable_msi(struct pci_dev *dev)
+ {
+@@ -69,7 +69,7 @@ static inline int xen_pci_frontend_enable_msix(struct pci_dev *dev,
+ {
+ 	if (xen_pci_frontend && xen_pci_frontend->enable_msix)
+ 		return xen_pci_frontend->enable_msix(dev, vectors, nvec);
+-	return -ENODEV;
++	return -ENOSYS;
+ }
+ static inline void xen_pci_frontend_disable_msix(struct pci_dev *dev)
+ {
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index ff31ab4..beac4df 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -196,7 +196,10 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 	return 0;
+ 
+ error:
+-	dev_err(&dev->dev, "Xen PCI frontend has not registered MSI/MSI-X support!\n");
++	if (ret == -ENOSYS)
++		dev_err(&dev->dev, "Xen PCI frontend has not registered MSI/MSI-X support!\n");
++	else if (ret)
++		dev_err(&dev->dev, "Xen PCI frontend error: %d!\n", ret);
+ free:
+ 	kfree(v);
+ 	return ret;
+-- 
+2.1.0
+

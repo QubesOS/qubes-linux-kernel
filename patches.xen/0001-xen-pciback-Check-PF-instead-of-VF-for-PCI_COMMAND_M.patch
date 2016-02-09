@@ -1,0 +1,46 @@
+From 9b8c92f9535ca9af672facd05360570730a33e05 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 3 Feb 2016 10:18:18 -0500
+Subject: [PATCH 1/4] xen/pciback: Check PF instead of VF for
+ PCI_COMMAND_MEMORY
+
+c/s 408fb0e5aa7fda0059db282ff58c3b2a4278baa0
+"xen/pciback: Don't allow MSI-X ops if PCI_COMMAND_MEMORY is not set."
+would check the device for PCI_COMMAND_MEMORY which is great.
+Except that VF devices are unique - for example they have no
+legacy interrupts, and also any writes to PCI_COMMAND_MEMORY
+are silently ignored (by the hardware).
+
+CC: stable@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/xen-pciback/pciback_ops.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
+index 73dafdc..8c86a53 100644
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -213,6 +213,7 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
+ 	int i, result;
+ 	struct msix_entry *entries;
+ 	u16 cmd;
++	struct pci_dev *phys_dev;
+ 
+ 	if (unlikely(verbose_request))
+ 		printk(KERN_DEBUG DRV_NAME ": %s: enable MSI-X\n",
+@@ -227,8 +228,10 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
+ 	/*
+ 	 * PCI_COMMAND_MEMORY must be enabled, otherwise we may not be able
+ 	 * to access the BARs where the MSI-X entries reside.
++	 * But VF devices are unique in which the PF needs to be checked.
+ 	 */
+-	pci_read_config_word(dev, PCI_COMMAND, &cmd);
++	phys_dev = pci_physfn(dev);
++	pci_read_config_word(phys_dev, PCI_COMMAND, &cmd);
+ 	if (dev->msi_enabled || !(cmd & PCI_COMMAND_MEMORY))
+ 		return -ENXIO;
+ 
+-- 
+2.1.0
+

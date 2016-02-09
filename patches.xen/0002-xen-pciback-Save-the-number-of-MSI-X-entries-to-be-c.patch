@@ -1,0 +1,56 @@
+From 0f8901117800fc2f1a87cc5468f1ab7e4288cc5f Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 3 Feb 2016 10:22:02 -0500
+Subject: [PATCH 2/4] xen/pciback: Save the number of MSI-X entries to be
+ copied later.
+
+c/s  8135cf8b092723dbfcc611fe6fdcb3a36c9951c5
+"xen/pciback: Save xen_pci_op commands before processing it"
+would copyback the processed values - which was great.
+
+However it missed the case that xen_pcibk_enable_msix - when
+completing would overwrite op->value (which had the number
+of MSI-X vectors requested) with the return value (which for
+success was zero). Hence the copy-back routine (which would use
+op->value) would copy exactly zero MSI-X vectors back.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/xen-pciback/pciback_ops.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
+index 8c86a53..2fc5880 100644
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -335,7 +335,9 @@ void xen_pcibk_do_op(struct work_struct *data)
+ 	struct xen_pcibk_dev_data *dev_data = NULL;
+ 	struct xen_pci_op *op = &pdev->op;
+ 	int test_intx = 0;
+-
++#ifdef CONFIG_PCI_MSI
++	unsigned int nr = 0;
++#endif
+ 	*op = pdev->sh_info->op;
+ 	barrier();
+ 	dev = xen_pcibk_get_pci_dev(pdev, op->domain, op->bus, op->devfn);
+@@ -363,6 +365,7 @@ void xen_pcibk_do_op(struct work_struct *data)
+ 			op->err = xen_pcibk_disable_msi(pdev, dev, op);
+ 			break;
+ 		case XEN_PCI_OP_enable_msix:
++			nr = op->value;
+ 			op->err = xen_pcibk_enable_msix(pdev, dev, op);
+ 			break;
+ 		case XEN_PCI_OP_disable_msix:
+@@ -385,7 +388,7 @@ void xen_pcibk_do_op(struct work_struct *data)
+ 	if (op->cmd == XEN_PCI_OP_enable_msix && op->err == 0) {
+ 		unsigned int i;
+ 
+-		for (i = 0; i < op->value; i++)
++		for (i = 0; i < nr; i++)
+ 			pdev->sh_info->op.msix_entries[i].vector =
+ 				op->msix_entries[i].vector;
+ 	}
+-- 
+2.1.0
+

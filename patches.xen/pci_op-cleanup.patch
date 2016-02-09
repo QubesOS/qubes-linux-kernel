@@ -1,0 +1,104 @@
+From xen-devel-bounces@lists.xen.org Tue Feb  9 06:00:36 2016
+Date: Mon, 8 Feb 2016 23:59:27 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Marek =?iso-8859-1?Q?Marczykowski-G=F3recki?=
+	<marmarek@invisiblethingslab.com>
+Message-ID: <20160209045927.GC3853@localhost.localdomain>
+References: <CANQMFx4YULqKctKZqeESesTQjLQun7rQ0ZjGzq96TXTtUw6VWA@mail.gmail.com>
+	<20160127183005.GB3134@char.us.oracle.com>
+	<CANQMFx5macG2AbNWtrKjs6o445_Jo7+twMaDg6ozE=0DSD_n7A@mail.gmail.com>
+	<1454323426.28781.73.camel@citrix.com>
+	<20160201145053.GA21826@char.us.oracle.com>
+	<20160203142230.GC24446@mail-itl>
+	<20160203152657.GE20732@char.us.oracle.com>
+	<20160208173917.GD24446@mail-itl>
+MIME-Version: 1.0
+Content-Disposition: inline
+In-Reply-To: <20160208173917.GD24446@mail-itl>
+User-Agent: Mutt/1.5.24 (2015-08-30)
+Cc: Tommi Airikka <tommi@airikka.net>, Ian Campbell <ian.campbell@citrix.com>,
+	810379@bugs.debian.org, xen-devel@lists.xen.org
+Subject: Re: [Xen-devel] [BUG] pci-passthrough generates "xen:events: Failed
+ to obtain physical IRQ" for some devices
+
+I posted it at some point. It was that the MSI-X enable op stashes the
+error value in op->value. But 'op->value' is an unsigned int so the
+value ends up being 0xfffffe or such. And the other PV frontends only
+check for !0 - and manufacture their own value (-EINVAL).
+
+Hence I want to update the pciff.h .. Oh here is the patch:
+Oh man. A year?!
+
+Anyhow this can be posted as a cleanup patch seperately of the
+bug-fixes.
+
+commit 393be47782bca7a24d3e365448d4d3d1a303abfe
+Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date:   Wed Apr 1 17:01:26 2015 -0400
+
+    xen/pcifront/pciback: Update pciif.h with ->err and ->result values.
+
+    The '->err' should contain only the XEN_PCI_ERR_* type values.
+    The '->result' may contain -EXX values or any other value
+    that the XEN_PCI_OP_* deems appropiate.
+
+    As such update the header and also the implementations.
+
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+    Conflicts:
+    	drivers/xen/xen-pciback/pciback_ops.c
+
+    Conflicts:
+    	drivers/xen/xen-pciback/pciback_ops.c
+
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index b1ffebe..353c8a2 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -297,7 +297,7 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
+ 	} else {
+ 		dev_err(&dev->dev, "enable msix get err %x\n", err);
+ 	}
+-	return err;
++	return err ? -EINVAL : 0;
+ }
+
+ static void pci_frontend_disable_msix(struct pci_dev *dev)
+diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
+index fa2b222..4db6c19 100644
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -266,7 +266,7 @@ error:
+ 	if (dev_data)
+ 		dev_data->ack_intr = 0;
+ 
+-	return result > 0 ? 0 : result;
++	return result >= 0 ? 0 : XEN_PCI_ERR_op_failed;
+ }
+
+ static
+diff --git a/include/xen/interface/io/pciif.h b/include/xen/interface/io/pciif.h
+index d9922ae..c8b674f 100644
+--- a/include/xen/interface/io/pciif.h
++++ b/include/xen/interface/io/pciif.h
+@@ -70,7 +70,7 @@ struct xen_pci_op {
+ 	/* IN: what action to perform: XEN_PCI_OP_* */
+ 	uint32_t cmd;
+
+-	/* OUT: will contain an error number (if any) from errno.h */
++	/* OUT: will contain an XEN_PCI_ERR_* number. */
+ 	int32_t err;
+
+ 	/* IN: which device to touch */
+@@ -82,7 +82,9 @@ struct xen_pci_op {
+ 	int32_t offset;
+ 	int32_t size;
+
+-	/* IN/OUT: Contains the result after a READ or the value to WRITE */
++	/* IN/OUT: Contains the result after a READ or the value to WRITE.
++	 * If the err does not have XEN_PCI_ERR_success, depending on
++	 * XEN_PCI_OP_* might have the errno value. */
+ 	uint32_t value;
+ 	/* IN: Contains extra infor for this operation */
+ 	uint32_t info;
