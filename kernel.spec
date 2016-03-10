@@ -322,7 +322,7 @@ mv  %buildroot/lib/firmware-all %buildroot/lib/firmware/%kernelrelease
 
 # Prepare initramfs for Qubes VM
 mkdir -p %buildroot/%vm_install_dir
-/sbin/dracut --nomdadmconf --nolvmconf \
+PATH="/sbin:$PATH" dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
     --modules "kernel-modules qubes-vm-simple" \
     --conf /dev/null --confdir /var/empty \
