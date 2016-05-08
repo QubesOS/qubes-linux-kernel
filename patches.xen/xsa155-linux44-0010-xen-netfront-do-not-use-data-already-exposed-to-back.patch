@@ -26,28 +26,15 @@ diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
 index 2af5100..959e479 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
-@@ -452,17 +452,19 @@ static struct xen_netif_tx_request *xenn
- 	struct sk_buff *skb, struct page *page,
- 	unsigned int offset, unsigned int len)
- {
-+	unsigned int this_len;
- 	/* Skip unused frames from start of page */
- 	page += offset >> PAGE_SHIFT;
- 	offset &= ~PAGE_MASK;
+@@ -453,7 +453,7 @@ static void xennet_tx_setup_grant(unsign
+ 	tx->flags = 0;
  
- 	while (len) {
- 		tx->flags |= XEN_NETTXF_more_data;
-+		this_len = min_t(unsigned int, PAGE_SIZE - offset, len);
- 		tx = xennet_make_one_txreq(queue, skb_get(skb),
--					   page, offset, len);
-+					   page, offset, this_len);
- 		page++;
- 		offset = 0;
--		len -= tx->size;
-+		len -= this_len;
- 	}
+ 	info->tx = tx;
+-	info->size += tx->size;
++	info->size += len;
+ }
  
- 	return tx;
+ static struct xen_netif_tx_request *xennet_make_first_txreq(
 @@ -522,7 +524,7 @@ static int xennet_start_xmit(struct sk_b
  	int slots;
  	struct page *page;
@@ -57,15 +44,19 @@ index 2af5100..959e479 100644
  	unsigned long flags;
  	struct netfront_queue *queue = NULL;
  	unsigned int num_queues = dev->real_num_tx_queues;
-@@ -567,11 +569,12 @@ static int xennet_start_xmit(struct sk_b
+@@ -614,14 +614,15 @@ static int xennet_start_xmit(struct sk_b
  	}
  
  	/* First request for the linear area. */
-+	this_len = min_t(unsigned int, PAGE_SIZE - offset, len);
- 	first_tx = tx = xennet_make_one_txreq(queue, skb,
- 					      page, offset, len);
- 	page++;
- 	offset = 0;
++	this_len = min_t(unsigned int, XEN_PAGE_SIZE - offset, len);
+ 	first_tx = tx = xennet_make_first_txreq(queue, skb,
+ 						page, offset, len);
+-	offset += tx->size;
++	offset += this_len;
+ 	if (offset == PAGE_SIZE) {
+ 		page++;
+ 		offset = 0;
+ 	}
 -	len -= tx->size;
 +	len -= this_len;
  
