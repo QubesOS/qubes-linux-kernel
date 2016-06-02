@@ -49,6 +49,7 @@ BuildRequires:  qubes-kernel-vm-support
 BuildRequires:  dracut
 BuildRequires:  busybox
 BuildRequires:  bc
+BuildRequires:  openssl-devel
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
