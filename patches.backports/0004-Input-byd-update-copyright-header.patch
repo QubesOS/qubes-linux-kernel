@@ -1,0 +1,35 @@
+From 82aaa086019ce0e6fcd3a44c0a2e4329afe988b6 Mon Sep 17 00:00:00 2001
+From: Chris Diamand <chris@diamand.org>
+Date: Mon, 9 May 2016 09:30:39 -0700
+Subject: [PATCH] Input: byd - update copyright header
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+As pointed out by Richard, the changes to the comment got missed off
+the absolute mode patch somehow.
+
+Signed-off-by: Chris Diamand <chris@diamand.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/mouse/byd.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/input/mouse/byd.c b/drivers/input/mouse/byd.c
+index fdc243c..e583f8b 100644
+--- a/drivers/input/mouse/byd.c
++++ b/drivers/input/mouse/byd.c
+@@ -2,6 +2,10 @@
+  * BYD TouchPad PS/2 mouse driver
+  *
+  * Copyright (C) 2015 Chris Diamand <chris@diamand.org>
++ * Copyright (C) 2015 Richard Pospesel
++ * Copyright (C) 2015 Tai Chi Minh Ralph Eastwood
++ * Copyright (C) 2015 Martin Wimpress
++ * Copyright (C) 2015 Jay Kuri
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License version 2 as published by
+-- 
+2.5.5
+
