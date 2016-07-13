@@ -1,0 +1,49 @@
+From 19cb7d4e4efe39ef6ec8b216a254d83a1257846c Mon Sep 17 00:00:00 2001
+From: Rusty Bird <rustybird@openmailbox.org>
+Date: Mon, 11 Jul 2016 13:05:38 +0000
+Subject: [PATCH] block: add no_part_scan module parameter
+
+Define a boolean module parameter named "no_part_scan" defaulting to N,
+which, if set to Y, always causes the GENHD_FL_NO_PART_SCAN flag to be
+added to subsequently created block devices, thereby disabling the
+kernel's various partition table parsers for them.
+
+The parameter's current value can be changed at any time by writing to
+the /sys/module/block/parameters/no_part_scan file.
+---
+ block/genhd.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/block/genhd.c b/block/genhd.c
+index 9f42526..85b71f5 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -572,6 +572,15 @@ exit:
+ 	disk_part_iter_exit(&piter);
+ }
+ 
++/* copied (not moved) from far down below, to have fewer patch hunks */
++#undef MODULE_PARAM_PREFIX
++#define MODULE_PARAM_PREFIX     "block."
++
++/* partition scanning policy */
++static bool disk_no_part_scan = 0;
++module_param_named(no_part_scan, disk_no_part_scan, bool, S_IRUGO|S_IWUSR);
++MODULE_PARM_DESC(no_part_scan, "When adding block devices, always mark them as not to be scanned for partitions");
++
+ /**
+  * add_disk - add partitioning information to kernel list
+  * @disk: per-device partitioning information
+@@ -587,6 +596,9 @@ void add_disk(struct gendisk *disk)
+ 	dev_t devt;
+ 	int retval;
+ 
++	if (disk_no_part_scan)
++		disk->flags |= GENHD_FL_NO_PART_SCAN;
++
+ 	/* minors == 0 indicates to use ext devt from part0 and should
+ 	 * be accompanied with EXT_DEVT flag.  Make sure all
+ 	 * parameters make sense.
+-- 
+2.5.5
+
