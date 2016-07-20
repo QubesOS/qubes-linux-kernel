@@ -42,7 +42,7 @@ index 7e89288..16c2c66 100644
   * Search linux-kernel and linux-usb-devel archives for "hid-core extract".
   */
  
--__u32 hid_field_extract(const struct hid_device *hid, __u8 *report,
+-static __u32 extract(const struct hid_device *hid, __u8 *report,
 -		     unsigned offset, unsigned n)
 -{
 -	u64 x;
@@ -68,11 +68,11 @@ index 7e89288..16c2c66 100644
 +}
  
 -	if (n > 32)
-+u32 hid_field_extract(const struct hid_device *hid, u8 *report,
++static u32 extract(const struct hid_device *hid, u8 *report,
 +			unsigned offset, unsigned n)
 +{
 +	if (n > 32) {
- 		hid_warn(hid, "hid_field_extract() called with n (%d) > 32! (%s)\n",
+ 		hid_warn(hid, "extract() called with n (%d) > 32! (%s)\n",
  			 n, current->comm);
 +		n = 32;
 +	}
@@ -84,8 +84,8 @@ index 7e89288..16c2c66 100644
 -	return (u32) x;
 +	return __extract(report, offset, n);
  }
- EXPORT_SYMBOL_GPL(hid_field_extract);
  
+ /*
 @@ -1106,31 +1123,56 @@ EXPORT_SYMBOL_GPL(hid_field_extract);
   * The data mangled in the bit stream remains in little endian
   * order the whole time. It make more sense to talk about
