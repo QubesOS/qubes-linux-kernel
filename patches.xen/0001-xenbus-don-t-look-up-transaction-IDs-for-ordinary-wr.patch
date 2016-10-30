@@ -1,0 +1,40 @@
+From 9a035a40f7f3f6708b79224b86c5777a3334f7ea Mon Sep 17 00:00:00 2001
+From: Jan Beulich <JBeulich@suse.com>
+Date: Mon, 15 Aug 2016 09:02:38 -0600
+Subject: [PATCH] xenbus: don't look up transaction IDs for ordinary writes
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+This should really only be done for XS_TRANSACTION_END messages, or
+else at least some of the xenstore-* tools don't work anymore.
+
+Fixes: 0beef634b8 ("xenbus: don't BUG() on user mode induced condition")
+Reported-by: Richard Schütz <rschuetz@uni-koblenz.de>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Tested-by: Richard Schütz <rschuetz@uni-koblenz.de>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/xen/xenbus/xenbus_dev_frontend.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/xen/xenbus/xenbus_dev_frontend.c b/drivers/xen/xenbus/xenbus_dev_frontend.c
+index 7487971..c1010f01 100644
+--- a/drivers/xen/xenbus/xenbus_dev_frontend.c
++++ b/drivers/xen/xenbus/xenbus_dev_frontend.c
+@@ -316,7 +316,7 @@ static int xenbus_write_transaction(unsigned msg_type,
+ 			rc = -ENOMEM;
+ 			goto out;
+ 		}
+-	} else {
++	} else if (msg_type == XS_TRANSACTION_END) {
+ 		list_for_each_entry(trans, &u->transactions, list)
+ 			if (trans->handle.id == u->u.msg.tx_id)
+ 				break;
+-- 
+2.5.5
+
