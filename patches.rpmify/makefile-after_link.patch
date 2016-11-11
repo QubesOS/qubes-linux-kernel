@@ -16,8 +16,8 @@ index 9a7946c..28d6765 100644
  
  # actual build commands
  quiet_cmd_vdso32ld = VDSO32L $@
--      cmd_vdso32ld = $(CROSS32CC) $(c_flags) -Wl,-T $^ -o $@
-+      cmd_vdso32ld = $(CROSS32CC) $(c_flags) -Wl,-T $^ -o $@ \
+-      cmd_vdso32ld = $(CROSS32CC) $(c_flags) -o $@ -Wl,-T$(filter %.lds,$^) $(filter %.o,$^)
++      cmd_vdso32ld = $(CROSS32CC) $(c_flags) -o $@ -Wl,-T$(filter %.lds,$^) $(filter %.o,$^) \
 +		     $(if $(AFTER_LINK),; $(AFTER_LINK))
  quiet_cmd_vdso32as = VDSO32A $@
        cmd_vdso32as = $(CROSS32CC) $(a_flags) -c -o $@ $<
@@ -30,8 +30,8 @@ index 8c500d8..d27737b 100644
  
  # actual build commands
  quiet_cmd_vdso64ld = VDSO64L $@
--      cmd_vdso64ld = $(CC) $(c_flags) -Wl,-T $^ -o $@
-+      cmd_vdso64ld = $(CC) $(c_flags) -Wl,-T $^ -o $@ \
+-      cmd_vdso64ld = $(CC) $(c_flags) -o $@ -Wl,-T$(filter %.lds,$^) $(filter %.o,$^)
++      cmd_vdso64ld = $(CC) $(c_flags) -o $@ -Wl,-T$(filter %.lds,$^) $(filter %.o,$^) \
 +		     $(if $(AFTER_LINK),; $(AFTER_LINK))
  quiet_cmd_vdso64as = VDSO64A $@
        cmd_vdso64as = $(CC) $(a_flags) -c -o $@ $<

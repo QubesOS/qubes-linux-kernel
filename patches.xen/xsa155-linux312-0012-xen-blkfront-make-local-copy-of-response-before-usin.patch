@@ -34,19 +34,19 @@ index 2fee2ee..5d7eb04 100644
 +	struct blkif_response bret;
  	RING_IDX i, rp;
  	unsigned long flags;
- 	struct blkfront_info *info = (struct blkfront_info *)dev_id;
+ 	struct blkfront_ring_info *rinfo = (struct blkfront_ring_info *)dev_id;
 @@ -1316,8 +1316,8 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 	for (i = info->ring.rsp_cons; i != rp; i++) {
+ 	for (i = rinfo->ring.rsp_cons; i != rp; i++) {
  		unsigned long id;
  
--		bret = RING_GET_RESPONSE(&info->ring, i);
+-		bret = RING_GET_RESPONSE(&rinfo->ring, i);
 -		id   = bret->id;
-+		RING_COPY_RESPONSE(&info->ring, i, &bret);
++		RING_COPY_RESPONSE(&rinfo->ring, i, &bret);
 +		id   = bret.id;
  		/*
  		 * The backend has messed up and given us an id that we would
  		 * never have given to it (we stamp it up to BLK_RING_SIZE -
-@@ -1325,29 +1325,29 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1325,35 +1325,35 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  		 */
  		if (id >= BLK_RING_SIZE(info)) {
  			WARN(1, "%s: response to %s has incorrect id (%ld)\n",
@@ -56,14 +56,20 @@ index 2fee2ee..5d7eb04 100644
  			 * the id is busted. */
  			continue;
  		}
- 		req  = info->shadow[id].request;
+ 		req  = rinfo->shadow[id].request;
  
--		if (bret->operation != BLKIF_OP_DISCARD)
--			blkif_completion(&info->shadow[id], info, bret);
-+		if (bret.operation != BLKIF_OP_DISCARD)
-+			blkif_completion(&info->shadow[id], info, &bret);
+-		if (bret->operation != BLKIF_OP_DISCARD) {
++		if (bret.operation != BLKIF_OP_DISCARD) {
+ 			/*
+ 			 * We may need to wait for an extra response if the
+ 			 * I/O request is split in 2
+ 			 */
+-			if (!blkif_completion(&id, rinfo, bret))
++			if (!blkif_completion(&id, rinfo, &bret))
+ 				continue;
+ 		}
  
- 		if (add_id_to_freelist(info, id)) {
+ 		if (add_id_to_freelist(rinfo, id)) {
  			WARN(1, "%s: response to %s (id %ld) couldn't be recycled!\n",
 -			     info->gd->disk_name, op_name(bret->operation), id);
 +			     info->gd->disk_name, op_name(bret.operation), id);
@@ -97,7 +103,7 @@ index 2fee2ee..5d7eb04 100644
  			}
 -			if (unlikely(bret->status == BLKIF_RSP_ERROR &&
 +			if (unlikely(bret.status == BLKIF_RSP_ERROR &&
- 				     info->shadow[id].req.u.rw.nr_segments == 0)) {
+ 				     rinfo->shadow[id].req.u.rw.nr_segments == 0)) {
  				printk(KERN_WARNING "blkfront: %s: empty %s op failed\n",
 -				       info->gd->disk_name, op_name(bret->operation));
 +				       info->gd->disk_name, op_name(bret.operation));

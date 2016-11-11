@@ -5,13 +5,13 @@ index 4e86393..34493d7 100644
 @@ -1188,6 +1188,7 @@ static void blkfront_connect(struct blkfront_info *info)
  	unsigned int physical_sector_size;
  	unsigned int binfo;
- 	int err;
+ 	int err, i;
 +	int removable;
  
  	switch (info->connected) {
  	case BLKIF_STATE_CONNECTED:
 @@ -1266,6 +1266,12 @@ static void blkfront_connect(struct blkfront_info *info)
- 		return;
+ 		}
  	}
  
 +	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
