@@ -33,9 +33,9 @@ index 8c500d8..d27737b 100644
 -      cmd_vdso64ld = $(CC) $(c_flags) -o $@ -Wl,-T$(filter %.lds,$^) $(filter %.o,$^)
 +      cmd_vdso64ld = $(CC) $(c_flags) -o $@ -Wl,-T$(filter %.lds,$^) $(filter %.o,$^) \
 +		     $(if $(AFTER_LINK),; $(AFTER_LINK))
- quiet_cmd_vdso64as = VDSO64A $@
-       cmd_vdso64as = $(CC) $(a_flags) -c -o $@ $<
  
+ # install commands for the unstripped file
+ quiet_cmd_vdso_install = INSTALL $@
 diff --git a/arch/s390/kernel/vdso32/Makefile b/arch/s390/kernel/vdso32/Makefile
 index 8ad2b34..e153572 100644
 --- a/arch/s390/kernel/vdso32/Makefile
@@ -101,7 +101,7 @@ index cd9c6c6..3edf048 100644
 --- a/scripts/link-vmlinux.sh
 +++ b/scripts/link-vmlinux.sh
 @@ -65,6 +65,10 @@ vmlinux_link()
- 			-lutil -lrt -lpthread ${1}
+ 			-lutil -lrt -lpthread
  		rm -f linux
  	fi
 +	if [ -n "${AFTER_LINK}" ]; then
