@@ -34,7 +34,7 @@ endif
 
 all: help
 
-MIRROR := ftp.kernel.org
+MIRROR := cdn.kernel.org
 SRC_BASEURL := http://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/;s/^4\..*/4.x/')
 SRC_FILE := linux-${VERSION}.tar.xz
 ifeq ($(BUILD_FLAVOR),pvops)
