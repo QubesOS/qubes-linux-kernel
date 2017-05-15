@@ -50,6 +50,7 @@ BuildRequires:  dracut
 BuildRequires:  busybox
 BuildRequires:  bc
 BuildRequires:  openssl-devel
+BuildRequires:  gcc-plugin-devel
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
