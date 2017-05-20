@@ -450,12 +450,14 @@ Qubes domU kernel.
 %post qubes-vm
 
 mkdir /tmp/qubes-modules-%kernelrelease
-truncate -s 400M /tmp/qubes-modules-%kernelrelease.img
+truncate -s 500M /tmp/qubes-modules-%kernelrelease.img
 mkfs -t ext3 -F /tmp/qubes-modules-%kernelrelease.img > /dev/null
 mount /tmp/qubes-modules-%kernelrelease.img /tmp/qubes-modules-%kernelrelease -o loop
 cp -a -t /tmp/qubes-modules-%kernelrelease %vm_install_dir/modules/%kernelrelease
 mkdir /tmp/qubes-modules-%kernelrelease/firmware
 cp -a -t /tmp/qubes-modules-%kernelrelease/firmware %vm_install_dir/modules/firmware/%kernelrelease
+cp %vm_install_dir/vmlinuz /tmp/qubes-modules-%kernelrelease/
+cp %vm_install_dir/initramfs /tmp/qubes-modules-%kernelrelease/
 umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
