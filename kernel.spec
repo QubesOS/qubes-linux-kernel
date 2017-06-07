@@ -51,6 +51,7 @@ BuildRequires:  busybox
 BuildRequires:  bc
 BuildRequires:  openssl-devel
 BuildRequires:  gcc-plugin-devel
+BuildRequires:  elfutils-libelf-devel
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
