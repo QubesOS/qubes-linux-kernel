@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/x86 4.9.49 Kernel Configuration
+# Linux/x86 4.9.50 Kernel Configuration
 #
 CONFIG_64BIT=y
 CONFIG_X86_64=y
@@ -3116,7 +3116,7 @@ CONFIG_HISAX_TELES_CS=m
 # HiSax sub driver modules
 #
 CONFIG_HISAX_ST5481=m
-# CONFIG_HISAX_HFCUSB is not set
+CONFIG_HISAX_HFCUSB=m
 CONFIG_HISAX_HFC4S8S=m
 CONFIG_HISAX_FRITZ_PCIPNP=m
 CONFIG_ISDN_CAPI=m
