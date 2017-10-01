@@ -35,7 +35,7 @@
 # Otherwise debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
 %global debug_package %{nil}
 
-Name:           kernel
+Name:           kernel-latest
 Summary:        The Xen Kernel
 Version:        %{version}
 Epoch:          1000
