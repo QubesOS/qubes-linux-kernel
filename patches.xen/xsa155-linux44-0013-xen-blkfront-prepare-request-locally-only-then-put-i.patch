@@ -27,7 +27,7 @@ diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
 index e99ea22..7191800 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -520,19 +520,16 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
+@@ -528,19 +528,16 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
  
  static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
  					    struct request *req,
@@ -49,7 +49,7 @@ index e99ea22..7191800 100644
  
  	return id;
  }
-@@ -540,23 +537,28 @@ static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
+@@ -548,23 +545,28 @@ static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
  static int blkif_queue_discard_req(struct request *req, struct blkfront_ring_info *rinfo)
  {
  	struct blkfront_info *info = rinfo->dev_info;
@@ -86,7 +86,7 @@ index e99ea22..7191800 100644
  
  	return 0;
  }
-@@ -688,7 +690,7 @@ static void blkif_setup_extra_req(struct blkif_request *first,
+@@ -696,7 +698,7 @@ static void blkif_setup_extra_req(struct blkif_request *first,
  static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *rinfo)
  {
  	struct blkfront_info *info = rinfo->dev_info;
@@ -95,7 +95,7 @@ index e99ea22..7191800 100644
  	unsigned long id, extra_id = NO_ASSOCIATED_ID;
  	bool require_extra_req = false;
  	int i;
-@@ -750,16 +752,16 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -761,16 +763,16 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  		 * BLKIF_OP_WRITE
  		 */
  		BUG_ON(req_op(req) == REQ_OP_FLUSH || req->cmd_flags & REQ_FUA);
@@ -120,7 +120,7 @@ index e99ea22..7191800 100644
  			BLKIF_OP_WRITE : BLKIF_OP_READ;
  		if (req_op(req) == REQ_OP_FLUSH || req->cmd_flags & REQ_FUA) {
  			/*
-@@ -770,15 +772,15 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -781,15 +783,15 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  			 * since it is guaranteed ordered WRT previous writes.)
  			 */
  			if (info->feature_flush && info->feature_fua)
@@ -140,7 +140,7 @@ index e99ea22..7191800 100644
  		if (unlikely(require_extra_req)) {
  			extra_id = blkif_ring_get_request(rinfo, req,
  							  &extra_ring_req);
-@@ -788,7 +790,7 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -799,7 +801,7 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  			 */
  			rinfo->shadow[extra_id].num_sg = 0;
  
@@ -149,7 +149,7 @@ index e99ea22..7191800 100644
  
  			/* Link the 2 requests together */
  			rinfo->shadow[extra_id].associated_id = id;
-@@ -796,12 +798,12 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -807,12 +809,12 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  		}
  	}
  
@@ -164,7 +164,7 @@ index e99ea22..7191800 100644
  
  	for_each_sg(rinfo->shadow[id].sg, sg, num_sg, i) {
  		BUG_ON(sg->offset + sg->length > PAGE_SIZE);
-@@ -823,10 +825,20 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -834,10 +836,20 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  	if (setup.segments)
  		kunmap_atomic(setup.segments);
  
@@ -186,5 +186,5 @@ index e99ea22..7191800 100644
 +		rinfo->shadow[extra_id].req = extra_ring_req;
 +	}
  
- 	if (max_grefs > 0)
+ 	if (new_persistent_gnts)
  		gnttab_free_grant_references(setup.gref_head);

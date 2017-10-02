@@ -2,15 +2,15 @@ diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
 index 4e86393..34493d7 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -1188,6 +1188,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	unsigned int physical_sector_size;
+@@ -2317,6 +2317,7 @@ static void blkfront_connect(struct blkfront_info *info)
  	unsigned int binfo;
+ 	char *envp[] = { "RESIZE=1", NULL };
  	int err, i;
 +	int removable;
  
  	switch (info->connected) {
  	case BLKIF_STATE_CONNECTED:
-@@ -1266,6 +1266,12 @@ static void blkfront_connect(struct blkfront_info *info)
+@@ -2384,6 +2385,12 @@ static void blkfront_connect(struct blkfront_info *info)
  		}
  	}
  
@@ -21,5 +21,5 @@ index 4e86393..34493d7 100644
 +		binfo |= VDISK_REMOVABLE;
 +
  	err = xlvbd_alloc_gendisk(sectors, info, binfo, sector_size,
-				  physical_sector_size);
+ 				  physical_sector_size);
  	if (err) {

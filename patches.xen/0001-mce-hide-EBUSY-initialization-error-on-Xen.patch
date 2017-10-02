@@ -44,9 +44,9 @@ diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
 index c5b0d56..69b0b4b 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -48,6 +48,10 @@
- #include <asm/mce.h>
- #include <asm/msr.h>
+@@ -53,6 +53,10 @@
+ #include <asm/reboot.h>
+ #include <asm/set_memory.h>
  
 +#ifdef CONFIG_XEN_MCE_LOG
 +#include <xen/xen.h>
@@ -54,8 +54,8 @@ index c5b0d56..69b0b4b 100644
 +
  #include "mce-internal.h"
  
- static DEFINE_MUTEX(mce_chrdev_read_mutex);
-@@ -2512,6 +2516,11 @@ err_out_mem:
+ static DEFINE_MUTEX(mce_log_mutex);
+@@ -2355,6 +2359,11 @@ static __init int mcheck_init_device(void)
  	free_cpumask_var(mce_device_initialized);
  
  err_out:
@@ -64,7 +64,7 @@ index c5b0d56..69b0b4b 100644
 +	 * treat this as an error */
 +	if (!xen_initial_domain() || err != -EBUSY)
 +#endif
- 	pr_err("Unable to init device /dev/mcelog (rc: %d)\n", err);
+ 	pr_err("Unable to init MCE device (rc: %d)\n", err);
  
  	return err;
 -- 

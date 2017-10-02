@@ -21,14 +21,14 @@ diff --git a/drivers/xen/xenbus/xenbus_dev_frontend.c b/drivers/xen/xenbus/xenbu
 index 9433e46..3d333b13 100644
 --- a/drivers/xen/xenbus/xenbus_dev_frontend.c
 +++ b/drivers/xen/xenbus/xenbus_dev_frontend.c
-@@ -535,6 +535,7 @@ static int xenbus_file_open(struct inode *inode, struct file *filp)
+@@ -614,6 +614,7 @@ static int xenbus_file_open(struct inode *inode, struct file *filp)
  		return -ENOENT;
  
  	nonseekable_open(inode, filp);
 +	filp->f_mode &= ~FMODE_ATOMIC_POS;
  
- 	u = kzalloc(sizeof(*u), GFP_KERNEL);
- 	if (u == NULL)
+ 	filp->f_mode &= ~FMODE_ATOMIC_POS; /* cdev-style semantics */
+ 
 -- 
 2.1.0
 

@@ -26,7 +26,7 @@ diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
 index 2fee2ee..5d7eb04 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -1296,7 +1296,7 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
+@@ -1552,7 +1552,7 @@ static bool blkif_completion(unsigned long *id,
  static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  {
  	struct request *req;
@@ -35,7 +35,7 @@ index 2fee2ee..5d7eb04 100644
  	RING_IDX i, rp;
  	unsigned long flags;
  	struct blkfront_ring_info *rinfo = (struct blkfront_ring_info *)dev_id;
-@@ -1316,8 +1316,8 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1569,8 +1569,8 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  	for (i = rinfo->ring.rsp_cons; i != rp; i++) {
  		unsigned long id;
  
@@ -46,7 +46,7 @@ index 2fee2ee..5d7eb04 100644
  		/*
  		 * The backend has messed up and given us an id that we would
  		 * never have given to it (we stamp it up to BLK_RING_SIZE -
-@@ -1325,35 +1325,35 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1578,39 +1578,39 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  		 */
  		if (id >= BLK_RING_SIZE(info)) {
  			WARN(1, "%s: response to %s has incorrect id (%ld)\n",
@@ -76,9 +76,13 @@ index 2fee2ee..5d7eb04 100644
  			continue;
  		}
  
--		error = (bret->status == BLKIF_RSP_OKAY) ? 0 : -EIO;
+-		if (bret->status == BLKIF_RSP_OKAY)
++		if (bret.status == BLKIF_RSP_OKAY)
+ 			blkif_req(req)->error = BLK_STS_OK;
+ 		else
+ 			blkif_req(req)->error = BLK_STS_IOERR;
+ 
 -		switch (bret->operation) {
-+		error = (bret.status == BLKIF_RSP_OKAY) ? 0 : -EIO;
 +		switch (bret.operation) {
  		case BLKIF_OP_DISCARD:
 -			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
@@ -87,10 +91,10 @@ index 2fee2ee..5d7eb04 100644
  				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
 -					   info->gd->disk_name, op_name(bret->operation));
 +					   info->gd->disk_name, op_name(bret.operation));
- 				error = -EOPNOTSUPP;
+ 				blkif_req(req)->error = BLK_STS_NOTSUPP;
  				info->feature_discard = 0;
  				info->feature_secdiscard = 0;
-@@ -1358,15 +1358,15 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1620,15 +1620,15 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  			break;
  		case BLKIF_OP_FLUSH_DISKCACHE:
  		case BLKIF_OP_WRITE_BARRIER:
@@ -99,7 +103,7 @@ index 2fee2ee..5d7eb04 100644
  				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
 -				       info->gd->disk_name, op_name(bret->operation));
 +				       info->gd->disk_name, op_name(bret.operation));
- 				error = -EOPNOTSUPP;
+ 				blkif_req(req)->error = BLK_STS_NOTSUPP;
  			}
 -			if (unlikely(bret->status == BLKIF_RSP_ERROR &&
 +			if (unlikely(bret.status == BLKIF_RSP_ERROR &&
@@ -107,10 +111,10 @@ index 2fee2ee..5d7eb04 100644
  				printk(KERN_WARNING "blkfront: %s: empty %s op failed\n",
 -				       info->gd->disk_name, op_name(bret->operation));
 +				       info->gd->disk_name, op_name(bret.operation));
- 				error = -EOPNOTSUPP;
+ 				blkif_req(req)->error = BLK_STS_NOTSUPP;
  			}
- 			if (unlikely(error)) {
-@@ -1378,9 +1378,9 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+ 			if (unlikely(blkif_req(req)->error)) {
+@@ -1641,9 +1641,9 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  			/* fall through */
  		case BLKIF_OP_READ:
  		case BLKIF_OP_WRITE:
@@ -120,8 +124,8 @@ index 2fee2ee..5d7eb04 100644
 -					"request: %x\n", bret->status);
 +					"request: %x\n", bret.status);
  
- 			blk_mq_complete_request(req, error);
  			break;
+ 		default:
 -- 
 2.1.0
 
