@@ -44,8 +44,13 @@ SIGN_FILE := linux-${VERSION}.tar.bz2.sign
 endif
 HASH_FILE :=${SRC_FILE}.sha1sum
 
+ifneq ($(DISTFILES_MIRROR),)
+URL := $(DISTFILES_MIRROR)/$(SRC_FILE)
+URL_SIGN := $(DISTFILES_MIRROR)/$(SIGN_FILE)
+else
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
+endif
 
 get-sources: $(SRC_FILE) $(SIGN_FILE)
 
