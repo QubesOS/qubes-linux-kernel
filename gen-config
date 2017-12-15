@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# The Qubes OS Project, https://www.qubes-os.org
+#
+# Copyright (C) 2017 Simon Gaiser <simon@invisiblethingslab.com>
+# Copyright (c) 2009-2010 Wind River Systems, Inc.
+# Copyright 2011 Linaro
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+
+set -eu -o pipefail
+
+linux_merge_config="./scripts/kconfig/merge_config.sh"
+make_opts=""
+
+if [ -n "${RPM_PACKAGE_VERSION:-}" ]; then
+    linux_merge_config="../linux-$RPM_PACKAGE_VERSION/scripts/kconfig/merge_config.sh"
+    make_opts="-C ../linux-$RPM_PACKAGE_VERSION O=$PWD"
+fi
+
+if [ -z "$linux_merge_config" ]; then
+    printf 'Error: Could not find merge_config.sh from the linux source tree!\n'
+    exit 1
+fi
+
+sed_config_exp='s/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/p'
+
+if [ $# -ne 2 ]; then
+    printf 'Usage: gen-config base.config local.config\n'
+    exit 1
+fi
+
+base_config="$1"
+local_config="$2"
+
+grep -v '^##' "$local_config" > "$local_config.gen"
+
+$linux_merge_config -m "$base_config" "$local_config.gen"
+
+make $make_opts KCONFIG_ALLCONFIG=.config alldefconfig
+
+rc=0
+for cfg in $(sed -n "$sed_config_exp" "$local_config.gen"); do
+    requested="$(grep -w "$cfg" "$local_config.gen" || true)"
+    actual="$(grep -w "$cfg" .config || true)"
+    if [ "$requested" != "$actual" ]; then
+        printf 'Local config setting for %s didn'\''t make it into the final config\n' "$cfg"
+        rc=1
+    fi
+done
+
+rm "$local_config.gen"
+
+exit $rc

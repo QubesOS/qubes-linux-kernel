@@ -19,11 +19,9 @@ guest (or stubdom) can already generate MSIs through other ways, see
  drivers/xen/xen-pciback/pciback.h               |  1 +
  3 files changed, 105 insertions(+)
 
-diff --git a/drivers/xen/xen-pciback/conf_space_capability.c b/drivers/xen/xen-pciback/conf_space_capability.c
-index 7f83e9083e9d..793635238267 100644
 --- a/drivers/xen/xen-pciback/conf_space_capability.c
 +++ b/drivers/xen/xen-pciback/conf_space_capability.c
-@@ -189,6 +189,40 @@ static const struct config_field caplist_pm[] = {
+@@ -190,6 +190,40 @@ static const struct config_field caplist
  	{}
  };
  
@@ -64,7 +62,7 @@ index 7f83e9083e9d..793635238267 100644
  static struct xen_pcibk_config_capability xen_pcibk_config_capability_pm = {
  	.capability = PCI_CAP_ID_PM,
  	.fields = caplist_pm,
-@@ -197,11 +231,16 @@ static struct xen_pcibk_config_capability xen_pcibk_config_capability_vpd = {
+@@ -198,11 +232,16 @@ static struct xen_pcibk_config_capabilit
  	.capability = PCI_CAP_ID_VPD,
  	.fields = caplist_vpd,
  };
@@ -81,11 +79,9 @@ index 7f83e9083e9d..793635238267 100644
  
  	return 0;
  }
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 6331a95691a4..953866285ac1 100644
 --- a/drivers/xen/xen-pciback/pci_stub.c
 +++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -303,6 +303,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+@@ -303,6 +303,8 @@ void pcistub_put_pci_dev(struct pci_dev
  	xen_pcibk_config_reset_dev(dev);
  	xen_pcibk_config_free_dyn_fields(dev);
  
@@ -94,12 +90,12 @@ index 6331a95691a4..953866285ac1 100644
  	xen_unregister_device_domain_owner(dev);
  
  	spin_lock_irqsave(&found_psdev->lock, flags);
-@@ -1434,6 +1436,64 @@ static ssize_t permissive_show(struct device_driver *drv, char *buf)
- static DRIVER_ATTR(permissive, S_IRUSR | S_IWUSR, permissive_show,
- 		   permissive_add);
+@@ -1430,6 +1432,63 @@ static ssize_t permissive_show(struct de
+ }
+ static DRIVER_ATTR_RW(permissive);
  
-+static ssize_t allow_msi_enable_add(struct device_driver *drv, const char *buf,
-+				    size_t count)
++static ssize_t allow_msi_enable_store(struct device_driver *drv, const char *buf,
++				      size_t count)
 +{
 +	int domain, bus, slot, func;
 +	int err;
@@ -153,22 +149,21 @@ index 6331a95691a4..953866285ac1 100644
 +	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
 +	return count;
 +}
-+static DRIVER_ATTR(allow_msi_enable, S_IRUSR | S_IWUSR, allow_msi_enable_show,
-+		   allow_msi_enable_add);
++static DRIVER_ATTR_RW(allow_msi_enable);
 +
  static void pcistub_exit(void)
  {
  	driver_remove_file(&xen_pcibk_pci_driver.driver, &driver_attr_new_slot);
-@@ -1443,6 +1503,8 @@ static void pcistub_exit(void)
- 	driver_remove_file(&xen_pcibk_pci_driver.driver, &driver_attr_quirks);
+@@ -1440,6 +1499,8 @@ static void pcistub_exit(void)
  	driver_remove_file(&xen_pcibk_pci_driver.driver,
  			   &driver_attr_permissive);
-+	driver_remove_file(&xen_pcibk_pci_driver.driver,
-+			   &driver_attr_allow_msi_enable);
  	driver_remove_file(&xen_pcibk_pci_driver.driver,
++			   &driver_attr_allow_msi_enable);
++	driver_remove_file(&xen_pcibk_pci_driver.driver,
  			   &driver_attr_irq_handlers);
  	driver_remove_file(&xen_pcibk_pci_driver.driver,
-@@ -1533,6 +1595,9 @@ static int __init pcistub_init(void)
+ 			   &driver_attr_irq_handler_state);
+@@ -1529,6 +1590,9 @@ static int __init pcistub_init(void)
  	if (!err)
  		err = driver_create_file(&xen_pcibk_pci_driver.driver,
  					 &driver_attr_permissive);
@@ -178,11 +173,9 @@ index 6331a95691a4..953866285ac1 100644
  
  	if (!err)
  		err = driver_create_file(&xen_pcibk_pci_driver.driver,
-diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
-index 7af369b6aaa2..32006bb4dad1 100644
 --- a/drivers/xen/xen-pciback/pciback.h
 +++ b/drivers/xen/xen-pciback/pciback.h
-@@ -44,6 +44,7 @@ struct xen_pcibk_dev_data {
+@@ -45,6 +45,7 @@ struct xen_pcibk_dev_data {
  	struct list_head config_fields;
  	struct pci_saved_state *pci_saved_state;
  	unsigned int permissive:1;
@@ -190,6 +183,3 @@ index 7af369b6aaa2..32006bb4dad1 100644
  	unsigned int warned_on_write:1;
  	unsigned int enable_intx:1;
  	unsigned int isr_on:1; /* Whether the IRQ handler is installed. */
--- 
-2.14.1
-

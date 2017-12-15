@@ -1,0 +1,119 @@
+## Qubes specific config settings.
+##
+## Lines starting with ## are comments.
+
+
+################################################################################
+## Enable expert options
+
+CONFIG_EXPERT=y
+
+
+################################################################################
+## Use xz to save space on /boot
+
+# CONFIG_KERNEL_GZIP is not set
+CONFIG_KERNEL_XZ=y
+
+
+################################################################################
+## Enable /proc/config.gz to help debugging etc.
+
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+
+
+################################################################################
+## Enable some more hardening options
+
+CONFIG_GCC_PLUGINS=y
+CONFIG_GCC_PLUGIN_LATENT_ENTROPY=y
+CONFIG_GCC_PLUGIN_STRUCTLEAK=y
+## XXX: What's about RANDSTRUCT?
+
+## Those depend on CONFIG_EXPERT
+CONFIG_ARCH_MMAP_RND_BITS=32
+CONFIG_ARCH_MMAP_RND_COMPAT_BITS=16
+
+CONFIG_REFCOUNT_FULL=y
+
+# CONFIG_KEXEC is not set
+
+# CONFIG_LEGACY_VSYSCALL_EMULATE is not set
+CONFIG_LEGACY_VSYSCALL_NONE=y
+
+# CONFIG_ACPI_CUSTOM_METHOD is not set
+
+CONFIG_SECURITY_DMESG_RESTRICT=y
+
+CONFIG_INTEL_IOMMU_DEFAULT_ON=y
+
+# CONFIG_PROC_KCORE is not set
+
+CONFIG_PAGE_POISONING=y
+# CONFIG_PAGE_POISONING_NO_SANITY is not set
+CONFIG_PAGE_POISONING_ZERO=y
+
+CONFIG_PANIC_ON_OOPS=y
+CONFIG_PANIC_ON_OOPS_VALUE=1
+CONFIG_PANIC_TIMEOUT=-1
+
+CONFIG_SCHED_STACK_END_CHECK=y
+CONFIG_DEBUG_TIMEKEEPING=y
+
+CONFIG_IO_STRICT_DEVMEM=y
+
+CONFIG_SECURITY_YAMA=y
+
+# CONFIG_HIBERNATION is not set
+
+
+################################################################################
+## Disable PCI hotplug to prevent DMA attacks via ExpressCard or Thunderbolt
+## ports. QubesOS/qubes-issues#1673
+
+# CONFIG_HOTPLUG_PCI is not set
+
+
+################################################################################
+## We don't use singed modules
+
+# CONFIG_MODULE_SIG is not set
+
+
+################################################################################
+## Deactivate selinux by default
+
+# CONFIG_DEFAULT_SECURITY_SELINUX is not set
+CONFIG_DEFAULT_SECURITY_DAC=y
+
+CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0
+
+
+################################################################################
+## Enable paravirt spinlocks. This should be more performant.
+
+CONFIG_PARAVIRT_SPINLOCKS=y
+
+
+################################################################################
+## Disable atomisp support. It's broken.
+## https://lists.xen.org/archives/html/xen-devel/2017-09/msg00793.html
+
+# CONFIG_INTEL_ATOMISP is not set
+
+
+################################################################################
+## TODO: from diff to old config
+
+## CONFIG_X86_AMD_PLATFORM_DEVICE=y
+##
+## # CONFIG_X86_MCELOG_LEGACY is not set
+## # CONFIG_X86_MCE_INJECT is not set
+##
+## CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+##
+## CONFIG_SECURITY_APPARMOR=y
+## sensors from 0f976d972a1671a303fad30a5e690304b0b82ee0
+##
+## Intel ME driver e0f8e9ca81b80d897b190f48a4af80eff3198cb1

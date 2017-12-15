@@ -79,7 +79,9 @@ Source14:       series.conf
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
-Source100:      config
+Source34:       gen-config
+Source100:      config-base
+Source101:      config-qubes
 # FIXME: Including dirs this way does NOT produce proper src.rpms
 Source204:      patches.rpmify
 Source205:      patches.xen
@@ -114,11 +116,7 @@ fi
 
 cd %kernel_build_dir
 
-if [ -f %_sourcedir/config-%{version} ]; then
-    cp %_sourcedir/config-%{version} .config
-else
-    cp %_sourcedir/config .config
-fi
+%_sourcedir/gen-config %_sourcedir/config-base %_sourcedir/config-qubes
 
 %build_src_dir/scripts/config \
         --set-str CONFIG_LOCALVERSION -%release.%cpu_arch \
@@ -128,14 +126,6 @@ fi
 # Enabling CONFIG_DEBUG_INFO produces *huge* packages!
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD"
-if test -e %_sourcedir/TOLERATE-UNKNOWN-NEW-CONFIG-OPTIONS; then
-    yes '' | make oldconfig $MAKE_ARGS
-else
-    cp .config .config.orig
-    make silentoldconfig $MAKE_ARGS < /dev/null
-    %_sourcedir/check-for-config-changes .config.orig .config
-    rm .config.orig
-fi
 
 make prepare $MAKE_ARGS
 make scripts $MAKE_ARGS
