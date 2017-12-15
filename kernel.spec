@@ -458,10 +458,6 @@ umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 
-# If qubes-prefs isn't installed yet, the default kernel will be set by %post
-# of qubes-core-dom0
-type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %version-%plainrel
-
 exit 0
 
 %preun qubes-vm
