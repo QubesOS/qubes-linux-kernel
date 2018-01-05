@@ -11,6 +11,7 @@
 %define plainrel %(cat rel)
 %define rel %{plainrel}.%{variant}
 %define version %(cat version)
+%define name_suffix %(cat suffix)
 
 %define _buildshell /bin/bash
 %define build_xen       1
@@ -35,7 +36,7 @@
 # Otherwise debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
 %global debug_package %{nil}
 
-Name:           kernel-latest
+Name:           kernel%{name_suffix}
 Summary:        The Xen Kernel
 Version:        %{version}
 Epoch:          1000
@@ -457,6 +458,14 @@ cp %vm_install_dir/initramfs /tmp/qubes-modules-%kernelrelease/
 umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
+
+%if "%{name_suffix}" == ""
+# Set kernel as default VM kernel if we are the default package.
+
+# If qubes-prefs isn't installed yet, the default kernel will be set by %post
+# of qubes-core-dom0
+type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %version-%plainrel
+%endif
 
 exit 0
 
