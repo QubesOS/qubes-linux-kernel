@@ -40,7 +40,7 @@ fi
 base_config="$1"
 local_config="$2"
 
-grep -v '^##' "$local_config" > "$local_config.gen"
+grep -v '^##' "$local_config" > "$local_config.gen" || [ $? -le 1 ]
 
 $linux_merge_config -m "$base_config" "$local_config.gen"
 
