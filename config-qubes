@@ -104,6 +104,13 @@ CONFIG_PARAVIRT_SPINLOCKS=y
 
 
 ################################################################################
+## Disable DEBUG_WX. Xen PV guests currently have some WX pages, so suppress
+## the useless Warning.
+
+# CONFIG_DEBUG_WX is not set
+
+
+################################################################################
 ## TODO: from diff to old config
 
 ## CONFIG_X86_AMD_PLATFORM_DEVICE=y
