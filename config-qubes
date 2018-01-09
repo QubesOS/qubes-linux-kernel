@@ -111,6 +111,16 @@ CONFIG_PARAVIRT_SPINLOCKS=y
 
 
 ################################################################################
+## Set USB drivers to module to allow attaching PCI devices to pciback before
+## those get loaded.
+
+CONFIG_USB_UHCI_HCD=m
+CONFIG_USB_OHCI_HCD=m
+CONFIG_USB_EHCI_HCD=m
+CONFIG_USB_XHCI_HCD=m
+
+
+################################################################################
 ## TODO: from diff to old config
 
 ## CONFIG_X86_AMD_PLATFORM_DEVICE=y
