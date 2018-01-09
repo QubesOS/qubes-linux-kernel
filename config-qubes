@@ -121,6 +121,14 @@ CONFIG_USB_XHCI_HCD=m
 
 
 ################################################################################
+## USB gadget driver support for testing qvm-usb
+
+CONFIG_USB_GADGET=m
+CONFIG_USB_CONFIGFS=m
+CONFIG_USB_CONFIGFS_MASS_STORAGE=y
+
+
+################################################################################
 ## TODO: from diff to old config
 
 ## CONFIG_X86_AMD_PLATFORM_DEVICE=y
