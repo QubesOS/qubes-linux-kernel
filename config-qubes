@@ -126,6 +126,7 @@ CONFIG_USB_XHCI_HCD=m
 CONFIG_USB_GADGET=m
 CONFIG_USB_CONFIGFS=m
 CONFIG_USB_CONFIGFS_MASS_STORAGE=y
+CONFIG_USB_DUMMY_HCD=m
 
 
 ################################################################################
