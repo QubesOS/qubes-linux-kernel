@@ -1,0 +1,41 @@
+From patchwork Mon Oct 16 14:48:55 2017
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: Input: synaptics - add Intertouch support on X1 Carbon 6th and X280
+From: Aaron Ma <aaron.ma@canonical.com>
+X-Patchwork-Id: 10008513
+Message-Id: <1508165335-16738-1-git-send-email-aaron.ma@canonical.com>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+ dmitry.torokhov@gmail.com, aaron.ma@canonical.com
+Date: Mon, 16 Oct 2017 22:48:55 +0800
+
+Synaptics devices reported it has Intertouch support,
+and it fails via PS/2 as following logs:
+
+psmouse serio2: Failed to reset mouse on synaptics-pt/serio0
+psmouse serio2: Failed to enable mouse on synaptics-pt/serio0
+
+Set these new devices to use SMBus to fix this issue,
+then they report SMBus version 3 is using,
+patch: https://patchwork.kernel.org/patch/9989547/ enabled SMBus ver 3 and
+makes synaptics devices work fine on SMBus mode.
+
+Signed-off-by: Aaron Ma <aaron.ma@canonical.com>
+---
+ drivers/input/mouse/synaptics.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 5af0b7d200bc..da3a5e40e80c 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -173,6 +173,8 @@ static const char * const smbus_pnp_ids[] = {
+ 	"LEN004a", /* W541 */
+ 	"LEN0073", /* X1 Carbon 5 */
+ 	"LEN200f", /* T450s */
++	"LEN0092", /* X1 Carbon 6 */
++	"LEN0096", /* X280 */
+ 	NULL
+ };
+ 
