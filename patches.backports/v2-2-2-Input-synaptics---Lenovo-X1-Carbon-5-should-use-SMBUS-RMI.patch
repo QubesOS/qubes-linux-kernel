@@ -1,0 +1,28 @@
+From patchwork Fri Oct  6 14:06:30 2017
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: [v2,2/2] Input: synaptics - Lenovo X1 Carbon 5 should use SMBUS/RMI
+From: Yiannis Marangos <yiannis.marangos@gmail.com>
+X-Patchwork-Id: 9989549
+Message-Id: <20171006140630.6398-3-yiannis.marangos@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Yiannis Marangos <yiannis.marangos@gmail.com>
+Date: Fri,  6 Oct 2017 17:06:30 +0300
+
+---
+ drivers/input/mouse/synaptics.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 5af0b7d200bc..eecb8872c1a5 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -172,6 +172,7 @@ static const char * const smbus_pnp_ids[] = {
+ 	"LEN0048", /* X1 Carbon 3 */
+ 	"LEN0046", /* X250 */
+ 	"LEN004a", /* W541 */
++	"LEN0073", /* X1 Carbon 5 */
+ 	"LEN200f", /* T450s */
+ 	NULL
+ };
