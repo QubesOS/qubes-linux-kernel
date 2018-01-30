@@ -1,0 +1,30 @@
+From 9622a541f049137fef086e45cc6ddf4dd56bb99e Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Tue, 30 Jan 2018 07:38:17 +0100
+Subject: [PATCH 3/4] Revert "xenbus: remove transaction holder from list
+ before freeing"
+
+This reverts commit ac4cde398a96c1d28b1c28a0f69b6efd892a1c8a.
+---
+ drivers/xen/xenbus/xenbus_dev_frontend.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/xen/xenbus/xenbus_dev_frontend.c b/drivers/xen/xenbus/xenbus_dev_frontend.c
+index f3b089b7c0b6..1f4733b80c87 100644
+--- a/drivers/xen/xenbus/xenbus_dev_frontend.c
++++ b/drivers/xen/xenbus/xenbus_dev_frontend.c
+@@ -442,10 +442,8 @@ static int xenbus_write_transaction(unsigned msg_type,
+ 		return xenbus_command_reply(u, XS_ERROR, "ENOENT");
+ 
+ 	rc = xenbus_dev_request_and_reply(&u->u.msg, u);
+-	if (rc && trans) {
+-		list_del(&trans->list);
++	if (rc)
+ 		kfree(trans);
+-	}
+ 
+ out:
+ 	return rc;
+-- 
+2.15.1
+
