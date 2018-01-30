@@ -1,0 +1,52 @@
+From 7eed8836d3046a93848b891399ebbeee1d56e4f5 Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Tue, 30 Jan 2018 07:34:49 +0100
+Subject: [PATCH 2/4] Revert "xen: avoid deadlock in xenbus driver"
+
+This reverts commit 1a3fc2c402810bf336882e695abd1678dbc8d279.
+---
+ drivers/xen/xenbus/xenbus_comms.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/xen/xenbus/xenbus_comms.c b/drivers/xen/xenbus/xenbus_comms.c
+index 5b081a01779d..856ada5d39c9 100644
+--- a/drivers/xen/xenbus/xenbus_comms.c
++++ b/drivers/xen/xenbus/xenbus_comms.c
+@@ -299,7 +299,17 @@ static int process_msg(void)
+ 		mutex_lock(&xb_write_mutex);
+ 		list_for_each_entry(req, &xs_reply_list, list) {
+ 			if (req->msg.req_id == state.msg.req_id) {
+-				list_del(&req->list);
++				if (req->state == xb_req_state_wait_reply) {
++					req->msg.type = state.msg.type;
++					req->msg.len = state.msg.len;
++					req->body = state.body;
++					req->state = xb_req_state_got_reply;
++					list_del(&req->list);
++					req->cb(req);
++				} else {
++					list_del(&req->list);
++					kfree(req);
++				}
+ 				err = 0;
+ 				break;
+ 			}
+@@ -307,15 +317,6 @@ static int process_msg(void)
+ 		mutex_unlock(&xb_write_mutex);
+ 		if (err)
+ 			goto out;
+-
+-		if (req->state == xb_req_state_wait_reply) {
+-			req->msg.type = state.msg.type;
+-			req->msg.len = state.msg.len;
+-			req->body = state.body;
+-			req->state = xb_req_state_got_reply;
+-			req->cb(req);
+-		} else
+-			kfree(req);
+ 	}
+ 
+ 	mutex_unlock(&xs_response_mutex);
+-- 
+2.15.1
+
