@@ -87,8 +87,6 @@ CONFIG_SECURITY_YAMA=y
 # CONFIG_DEFAULT_SECURITY_SELINUX is not set
 CONFIG_DEFAULT_SECURITY_DAC=y
 
-CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0
-
 
 ################################################################################
 ## Enable paravirt spinlocks. This should be more performant.
