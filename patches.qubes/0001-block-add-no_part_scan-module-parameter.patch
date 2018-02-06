@@ -19,7 +19,7 @@ index 9f42526..85b71f5 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
 @@ -572,6 +572,15 @@ exit:
- 	disk_part_iter_exit(&piter);
+ 	WARN_ON(err);
  }
  
 +/* copied (not moved) from far down below, to have fewer patch hunks */

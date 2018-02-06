@@ -36,6 +36,6 @@ index 5af0b7d200bc..da3a5e40e80c 100644
  	"LEN200f", /* T450s */
 +	"LEN0092", /* X1 Carbon 6 */
 +	"LEN0096", /* X280 */
+ 	"LEN2018", /* T460p */
  	NULL
  };
- 
