@@ -130,6 +130,13 @@ CONFIG_USB_DUMMY_HCD=m
 
 
 ################################################################################
+## Enable AppArmor
+## It's optionally used by Whonix (https://www.whonix.org/wiki/AppArmor).
+
+CONFIG_SECURITY_APPARMOR=y
+
+
+################################################################################
 ## TODO: from diff to old config
 
 ## CONFIG_X86_AMD_PLATFORM_DEVICE=y
@@ -139,7 +146,6 @@ CONFIG_USB_DUMMY_HCD=m
 ##
 ## CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
 ##
-## CONFIG_SECURITY_APPARMOR=y
 ## sensors from 0f976d972a1671a303fad30a5e690304b0b82ee0
 ##
 ## Intel ME driver e0f8e9ca81b80d897b190f48a4af80eff3198cb1
