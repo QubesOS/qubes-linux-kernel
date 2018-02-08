@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-4.14.16-300.fc27.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-4.14.18-300.fc27.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 
