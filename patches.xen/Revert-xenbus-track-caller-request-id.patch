@@ -1,0 +1,60 @@
+From 137e4287ebd6ccdc0982c622825c90bba940f7cf Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Tue, 27 Feb 2018 18:14:15 +0100
+Subject: [PATCH] Revert "xenbus: track caller request id"
+
+This reverts commit 54de83d07a18bfa30bd90294bebced839bb7132f.
+---
+ drivers/xen/xenbus/xenbus.h       | 1 -
+ drivers/xen/xenbus/xenbus_comms.c | 1 -
+ drivers/xen/xenbus/xenbus_xs.c    | 3 ---
+ 3 files changed, 5 deletions(-)
+
+diff --git a/drivers/xen/xenbus/xenbus.h b/drivers/xen/xenbus/xenbus.h
+index 092981171df1..149c5e7efc89 100644
+--- a/drivers/xen/xenbus/xenbus.h
++++ b/drivers/xen/xenbus/xenbus.h
+@@ -76,7 +76,6 @@ struct xb_req_data {
+ 	struct list_head list;
+ 	wait_queue_head_t wq;
+ 	struct xsd_sockmsg msg;
+-	uint32_t caller_req_id;
+ 	enum xsd_sockmsg_type type;
+ 	char *body;
+ 	const struct kvec *vec;
+diff --git a/drivers/xen/xenbus/xenbus_comms.c b/drivers/xen/xenbus/xenbus_comms.c
+index d239fc3c5e3d..5b081a01779d 100644
+--- a/drivers/xen/xenbus/xenbus_comms.c
++++ b/drivers/xen/xenbus/xenbus_comms.c
+@@ -309,7 +309,6 @@ static int process_msg(void)
+ 			goto out;
+ 
+ 		if (req->state == xb_req_state_wait_reply) {
+-			req->msg.req_id = req->caller_req_id;
+ 			req->msg.type = state.msg.type;
+ 			req->msg.len = state.msg.len;
+ 			req->body = state.body;
+diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
+index 3f3b29398ab8..3e59590c7254 100644
+--- a/drivers/xen/xenbus/xenbus_xs.c
++++ b/drivers/xen/xenbus/xenbus_xs.c
+@@ -227,8 +227,6 @@ static void xs_send(struct xb_req_data *req, struct xsd_sockmsg *msg)
+ 	req->state = xb_req_state_queued;
+ 	init_waitqueue_head(&req->wq);
+ 
+-	/* Save the caller req_id and restore it later in the reply */
+-	req->caller_req_id = req->msg.req_id;
+ 	req->msg.req_id = xs_request_enter(req);
+ 
+ 	mutex_lock(&xb_write_mutex);
+@@ -312,7 +310,6 @@ static void *xs_talkv(struct xenbus_transaction t,
+ 	req->num_vecs = num_vecs;
+ 	req->cb = xs_wake_up;
+ 
+-	msg.req_id = 0;
+ 	msg.tx_id = t.id;
+ 	msg.type = type;
+ 	msg.len = 0;
+-- 
+2.16.1
+
