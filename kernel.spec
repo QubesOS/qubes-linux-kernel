@@ -53,6 +53,14 @@ BuildRequires:  bc
 BuildRequires:  openssl-devel
 BuildRequires:  gcc-plugin-devel
 BuildRequires:  elfutils-libelf-devel
+
+# gcc with support for BTI mitigation
+%if 0%{?fedora} == 23
+BuildRequires:  gcc >= 5.3.1-6.qubes1
+%else
+BuildRequires:  gcc >= 6.4.1-1.qubes1
+%endif
+
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
