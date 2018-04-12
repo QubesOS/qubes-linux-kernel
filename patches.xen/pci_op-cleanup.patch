@@ -53,12 +53,12 @@ Date:   Wed Apr 1 17:01:26 2015 -0400
     	drivers/xen/xen-pciback/pciback_ops.c
 
 diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index b1ffebe..353c8a2 100644
+index 8785014..d458e53 100644
 --- a/drivers/pci/xen-pcifront.c
 +++ b/drivers/pci/xen-pcifront.c
-@@ -297,7 +297,7 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
+@@ -298,7 +298,7 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
  	} else {
- 		dev_err(&dev->dev, "enable msix get err %x\n", err);
+		pci_err(dev, "enable msix get err %x\n", err);
  	}
 -	return err;
 +	return err ? -EINVAL : 0;
@@ -66,13 +66,13 @@ index b1ffebe..353c8a2 100644
 
  static void pci_frontend_disable_msix(struct pci_dev *dev)
 diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
-index fa2b222..4db6c19 100644
+index ee2c891..573590b 100644
 --- a/drivers/xen/xen-pciback/pciback_ops.c
 +++ b/drivers/xen/xen-pciback/pciback_ops.c
-@@ -266,7 +266,7 @@ error:
+@@ -268,7 +268,7 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
  	if (dev_data)
  		dev_data->ack_intr = 0;
- 
+
 -	return result > 0 ? 0 : result;
 +	return result >= 0 ? 0 : XEN_PCI_ERR_op_failed;
  }
