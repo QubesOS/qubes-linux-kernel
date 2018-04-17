@@ -31,11 +31,11 @@ index 5af0b7d200bc..da3a5e40e80c 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
 @@ -173,6 +173,8 @@ static const char * const smbus_pnp_ids[] = {
+ 	"LEN0046", /* X250 */
  	"LEN004a", /* W541 */
  	"LEN0073", /* X1 Carbon 5 */
- 	"LEN200f", /* T450s */
 +	"LEN0092", /* X1 Carbon 6 */
 +	"LEN0096", /* X280 */
- 	"LEN2018", /* T460p */
+ 	"LEN200f", /* T450s */
  	NULL
  };

@@ -18,7 +18,7 @@ diff --git a/block/genhd.c b/block/genhd.c
 index 9f42526..85b71f5 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -572,6 +572,15 @@ exit:
+@@ -628,6 +628,15 @@
  	WARN_ON(err);
  }
  
@@ -32,9 +32,9 @@ index 9f42526..85b71f5 100644
 +MODULE_PARM_DESC(no_part_scan, "When adding block devices, always mark them as not to be scanned for partitions");
 +
  /**
-  * device_add_disk - add partitioning information to kernel list
+  * __device_add_disk - add disk information to kernel list
   * @parent: parent device for the disk
-@@ -587,6 +596,9 @@ void device_add_disk(struct device *parent, struct gendisk *disk)
+@@ -645,6 +654,9 @@
  	dev_t devt;
  	int retval;
  
