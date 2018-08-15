@@ -53,6 +53,8 @@ BuildRequires:  bc
 BuildRequires:  openssl-devel
 BuildRequires:  gcc-plugin-devel
 BuildRequires:  elfutils-libelf-devel
+BuildRequires:  bison
+BuildRequires:  flex
 
 # gcc with support for BTI mitigation
 %if 0%{?fedora} == 23
