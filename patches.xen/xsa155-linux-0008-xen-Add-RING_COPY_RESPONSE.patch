@@ -1,13 +1,11 @@
-From 8322f4eddaf1fe5a9bdf5252c8140daa8bad60fd Mon Sep 17 00:00:00 2001
+From bf0b3f33476360b5d72f87d749409b0a2b1a57cb Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 15 Dec 2015 21:35:14 +0100
-Subject: [PATCH 08/13] xen: Add RING_COPY_RESPONSE()
+Subject: [PATCH] xen: Add RING_COPY_RESPONSE()
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Using RING_GET_RESPONSE() on a shared ring is easy to use incorrectly
 (i.e., by not considering that the other end may alter the data in the
@@ -31,10 +29,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/include/xen/interface/io/ring.h b/include/xen/interface/io/ring.h
-index 7dc685b..312415c 100644
+index 3f40501fc60b..03702f6874df 100644
 --- a/include/xen/interface/io/ring.h
 +++ b/include/xen/interface/io/ring.h
-@@ -198,6 +198,20 @@ struct __name##_back_ring {						\
+@@ -201,6 +201,20 @@ struct __name##_back_ring {						\
  #define RING_GET_RESPONSE(_r, _idx)					\
      (&((_r)->sring->ring[((_idx) & (RING_SIZE(_r) - 1))].rsp))
  
@@ -56,5 +54,5 @@ index 7dc685b..312415c 100644
  #define RING_REQUEST_CONS_OVERFLOW(_r, _cons)				\
      (((_cons) - (_r)->rsp_prod_pvt) >= RING_SIZE(_r))
 -- 
-2.1.0
+2.17.1
 
