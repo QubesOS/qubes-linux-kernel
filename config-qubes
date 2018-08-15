@@ -95,13 +95,6 @@ CONFIG_PARAVIRT_SPINLOCKS=y
 
 
 ################################################################################
-## Disable atomisp support. It's broken.
-## https://lists.xen.org/archives/html/xen-devel/2017-09/msg00793.html
-
-# CONFIG_INTEL_ATOMISP is not set
-
-
-################################################################################
 ## Disable DEBUG_WX. Xen PV guests currently have some WX pages, so suppress
 ## the useless Warning.
 
