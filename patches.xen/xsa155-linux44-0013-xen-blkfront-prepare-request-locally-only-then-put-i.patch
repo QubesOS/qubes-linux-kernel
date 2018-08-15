@@ -1,14 +1,12 @@
-From 74aaa42e1f25309a163acd00083ecbbc186fbb47 Mon Sep 17 00:00:00 2001
+From 5c574ee1c388258969b2c66d46db20be16c3aeb3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 06:07:14 +0100
-Subject: [PATCH 13/13] xen-blkfront: prepare request locally, only then put it
- on the shared ring
+Subject: [PATCH] xen-blkfront: prepare request locally, only then put it on
+ the shared ring
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Do not reuse data which theoretically might be already modified by the
 backend. This is mostly about private copy of the request
@@ -20,14 +18,14 @@ This is part of XSA155.
 CC: stable@vger.kernel.org
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- drivers/block/xen-blkfront.c | 56 ++++++++++++++++++++++++--------------------
- 1 file changed, 30 insertions(+), 26 deletions(-)
+ drivers/block/xen-blkfront.c | 76 +++++++++++++++++++++---------------
+ 1 file changed, 44 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index e99ea22..7191800 100644
+index 87781c076733..3da0f6be24c9 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -528,19 +528,16 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
+@@ -524,19 +524,16 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
  
  static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
  					    struct request *req,
@@ -49,7 +47,7 @@ index e99ea22..7191800 100644
  
  	return id;
  }
-@@ -548,23 +545,28 @@ static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
+@@ -544,23 +541,28 @@ static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
  static int blkif_queue_discard_req(struct request *req, struct blkfront_ring_info *rinfo)
  {
  	struct blkfront_info *info = rinfo->dev_info;
@@ -86,7 +84,7 @@ index e99ea22..7191800 100644
  
  	return 0;
  }
-@@ -696,7 +698,7 @@ static void blkif_setup_extra_req(struct blkif_request *first,
+@@ -692,7 +694,7 @@ static void blkif_setup_extra_req(struct blkif_request *first,
  static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *rinfo)
  {
  	struct blkfront_info *info = rinfo->dev_info;
@@ -95,7 +93,7 @@ index e99ea22..7191800 100644
  	unsigned long id, extra_id = NO_ASSOCIATED_ID;
  	bool require_extra_req = false;
  	int i;
-@@ -761,16 +763,16 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -757,16 +759,16 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  		 * BLKIF_OP_WRITE
  		 */
  		BUG_ON(req_op(req) == REQ_OP_FLUSH || req->cmd_flags & REQ_FUA);
@@ -120,7 +118,7 @@ index e99ea22..7191800 100644
  			BLKIF_OP_WRITE : BLKIF_OP_READ;
  		if (req_op(req) == REQ_OP_FLUSH || req->cmd_flags & REQ_FUA) {
  			/*
-@@ -781,15 +783,15 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -777,15 +779,15 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  			 * since it is guaranteed ordered WRT previous writes.)
  			 */
  			if (info->feature_flush && info->feature_fua)
@@ -140,7 +138,7 @@ index e99ea22..7191800 100644
  		if (unlikely(require_extra_req)) {
  			extra_id = blkif_ring_get_request(rinfo, req,
  							  &extra_ring_req);
-@@ -799,7 +801,7 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -795,7 +797,7 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  			 */
  			rinfo->shadow[extra_id].num_sg = 0;
  
@@ -149,7 +147,7 @@ index e99ea22..7191800 100644
  
  			/* Link the 2 requests together */
  			rinfo->shadow[extra_id].associated_id = id;
-@@ -807,12 +809,12 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -803,12 +805,12 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  		}
  	}
  
@@ -164,7 +162,7 @@ index e99ea22..7191800 100644
  
  	for_each_sg(rinfo->shadow[id].sg, sg, num_sg, i) {
  		BUG_ON(sg->offset + sg->length > PAGE_SIZE);
-@@ -834,10 +836,20 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -830,10 +832,20 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  	if (setup.segments)
  		kunmap_atomic(setup.segments);
  
@@ -188,3 +186,6 @@ index e99ea22..7191800 100644
  
  	if (new_persistent_gnts)
  		gnttab_free_grant_references(setup.gref_head);
+-- 
+2.17.1
+
