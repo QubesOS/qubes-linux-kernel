@@ -6,7 +6,6 @@
 %define _sourcedir %(pwd)
 %endif
 
-#%define _unpackaged_files_terminate_build 0
 %define variant pvops.qubes
 %define plainrel %(cat rel)
 %define rel %{plainrel}.%{variant}
@@ -32,9 +31,15 @@
 %define install_vdso 1
 %define debuginfodir /usr/lib/debug
 
-# If you want to build debuginfo package, enable also CONFIG_DEBUG_INFO in %%setup section
-# Otherwise debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
+# debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
+%define with_debuginfo 0
+
+%if !%{with_debuginfo}
 %global debug_package %{nil}
+%define setup_config --disable CONFIG_DEBUG_INFO
+%else
+%define setup_config --enable CONFIG_DEBUG_INFO --disable CONFIG_DEBUG_INFO_REDUCED
+%endif
 
 Name:           kernel%{name_suffix}
 Summary:        The Xen Kernel
@@ -130,11 +135,7 @@ cd %kernel_build_dir
 %_sourcedir/gen-config %_sourcedir/config-base %_sourcedir/config-qubes
 
 %build_src_dir/scripts/config \
-        --set-str CONFIG_LOCALVERSION -%release.%cpu_arch \
-        --disable CONFIG_DEBUG_INFO
-#       --enable  CONFIG_DEBUG_INFO \
-#       --disable  CONFIG_DEBUG_INFO_REDUCED
-# Enabling CONFIG_DEBUG_INFO produces *huge* packages!
+        --set-str CONFIG_LOCALVERSION -%release.%cpu_arch %{setup_config}
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD"
 
@@ -261,8 +262,10 @@ fi
 #
 # save the vmlinux file for kernel debugging into the kernel-debuginfo rpm
 #
+%if %{with_debuginfo}
 mkdir -p %buildroot%{debuginfodir}/lib/modules/%kernelrelease
 cp vmlinux %buildroot%{debuginfodir}/lib/modules/%kernelrelease
+%endif
 
 find %buildroot/lib/modules/%kernelrelease -name "*.ko" -type f >modnames
 
