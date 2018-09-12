@@ -244,6 +244,19 @@ rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*/*.o
 cp -a scripts/* %buildroot/lib/modules/%kernelrelease/build/scripts/
 cp -a include/* %buildroot/lib/modules/%kernelrelease/build/include/
 cp -a --parents arch/x86/include/* %buildroot/lib/modules/%kernelrelease/build/
+if [ -f tools/objtool/objtool ]; then
+    cp -a --parents tools/objtool %buildroot/lib/modules/%kernelrelease/build/
+    pushd %build_src_dir
+    cp -a --parents tools/objtool %buildroot/lib/modules/%kernelrelease/build/
+    cp -a --parents tools/build/Build.include %buildroot/lib/modules/%kernelrelease/build/
+    cp -a --parents tools/build/Build %buildroot/lib/modules/%kernelrelease/build/
+    cp -a --parents tools/build/fixdep.c %buildroot/lib/modules/%kernelrelease/build/
+    cp -a --parents tools/scripts/utilities.mak %buildroot/lib/modules/%kernelrelease/build/
+    cp -a --parents tools/lib/str_error_r.c %buildroot/lib/modules/%kernelrelease/build/
+    cp -a --parents tools/lib/string.c %buildroot/lib/modules/%kernelrelease/build/
+    cp -a --parents tools/lib/subcmd/* %buildroot/lib/modules/%kernelrelease/build/
+    popd
+fi
 
 # Copy .config to include/config/auto.conf so "make prepare" is unnecessary.
 cp %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
