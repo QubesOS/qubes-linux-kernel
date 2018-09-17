@@ -417,7 +417,11 @@ License:        GPL v2 only
 Group:          Development/Sources
 Provides:       multiversion(kernel)
 Provides:       %name-devel = %kernelrelease
+%if "%{name_suffix}" != ""
+Provides:       kernel-devel = %kernelrelease
+%endif
 Provides:       kernel-devel-uname-r = %kernelrelease
+Requires:       elfutils-libelf-devel
 AutoReqProv:    on
 
 %description devel
