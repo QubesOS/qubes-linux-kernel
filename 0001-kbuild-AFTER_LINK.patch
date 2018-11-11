@@ -1,4 +1,4 @@
-From 649d991ca7737dd227f2a1ca4f30247daf6a7b4b Mon Sep 17 00:00:00 2001
+From ca7615cf7944d9b233b7cfad8f0465b4dfc87fba Mon Sep 17 00:00:00 2001
 From: Roland McGrath <roland@redhat.com>
 Date: Mon, 6 Oct 2008 23:03:03 -0700
 Subject: [PATCH] kbuild: AFTER_LINK
@@ -11,20 +11,16 @@ Upstream-status: ??
 
 Signed-off-by: Roland McGrath <roland@redhat.com>
 ---
- arch/arm64/kernel/vdso/Makefile     | 3 ++-
- arch/powerpc/kernel/vdso32/Makefile | 3 ++-
- arch/powerpc/kernel/vdso64/Makefile | 3 ++-
- arch/s390/kernel/vdso32/Makefile    | 3 ++-
- arch/s390/kernel/vdso64/Makefile    | 3 ++-
- arch/x86/entry/vdso/Makefile        | 5 +++--
- scripts/link-vmlinux.sh             | 4 ++++
- 7 files changed, 17 insertions(+), 7 deletions(-)
+ arch/arm64/kernel/vdso/Makefile | 3 ++-
+ arch/x86/entry/vdso/Makefile    | 5 +++--
+ scripts/link-vmlinux.sh         | 4 ++++
+ 3 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm64/kernel/vdso/Makefile b/arch/arm64/kernel/vdso/Makefile
-index 62c84f7..f44236a 100644
+index b215c712d897..e18cd2a3ea53 100644
 --- a/arch/arm64/kernel/vdso/Makefile
 +++ b/arch/arm64/kernel/vdso/Makefile
-@@ -54,7 +54,8 @@ $(obj-vdso): %.o: %.S FORCE
+@@ -55,7 +55,8 @@ $(obj-vdso): %.o: %.S FORCE
  
  # Actual build commands
  quiet_cmd_vdsold = VDSOL   $@
@@ -35,26 +31,26 @@ index 62c84f7..f44236a 100644
        cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
  
 diff --git a/arch/x86/entry/vdso/Makefile b/arch/x86/entry/vdso/Makefile
-index d540966..eeb47b6 100644
+index 141d415a8c80..771cc7e399dc 100644
 --- a/arch/x86/entry/vdso/Makefile
 +++ b/arch/x86/entry/vdso/Makefile
 @@ -167,8 +167,9 @@ $(obj)/vdso32.so.dbg: FORCE \
  quiet_cmd_vdso = VDSO    $@
-       cmd_vdso = $(CC) -nostdlib -o $@ \
+       cmd_vdso = $(LD) -nostdlib -o $@ \
  		       $(VDSO_LDFLAGS) $(VDSO_LDFLAGS_$(filter %.lds,$(^F))) \
--		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) && \
+-		       -T $(filter %.lds,$^) $(filter %.o,$^) && \
 -		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
-+		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) \
++		       -T $(filter %.lds,$^) $(filter %.o,$^) \
 +		$(if $(AFTER_LINK),; $(AFTER_LINK)) && \
 +		sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
  
- VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=both) \
- 	$(call cc-ldoption, -Wl$(comma)--build-id) -Wl,-Bsymbolic $(LTO_CFLAGS)
+ VDSO_LDFLAGS = -shared $(call ld-option, --hash-style=both) \
+ 	$(call ld-option, --build-id) -Bsymbolic
 diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index f742c65..526eee4 100755
+index c8cf45362bd6..ee9c4d8e1ddf 100755
 --- a/scripts/link-vmlinux.sh
 +++ b/scripts/link-vmlinux.sh
-@@ -111,6 +111,10 @@ vmlinux_link()
+@@ -112,6 +112,10 @@ vmlinux_link()
  			-lutil -lrt -lpthread
  		rm -f linux
  	fi
@@ -66,5 +62,5 @@ index f742c65..526eee4 100755
  
  
 -- 
-2.7.4
+2.17.1
 

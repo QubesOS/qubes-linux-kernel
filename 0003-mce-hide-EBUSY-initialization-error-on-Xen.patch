@@ -1,4 +1,4 @@
-From 26df8496fdb73e9ae2bdf9d1684484196260a8f3 Mon Sep 17 00:00:00 2001
+From 2d71f4d315dfcaaa9e4c1e3693e391f9d2b0a8b4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 5 Jan 2016 02:44:04 +0100
@@ -6,8 +6,6 @@ Subject: [PATCH] mce: hide EBUSY initialization error on Xen
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 In case of Xen, the device is already registered by xen mcelog (in
 xen_late_init_mcelog), so fail here is expected. Note that
@@ -41,12 +39,12 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 9 insertions(+)
 
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index c5b0d56..69b0b4b 100644
+index 953b3ce92dcc..e0bb9b52d8d1 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -53,6 +53,10 @@
+@@ -52,6 +52,10 @@
+ #include <asm/msr.h>
  #include <asm/reboot.h>
- #include <asm/set_memory.h>
  
 +#ifdef CONFIG_XEN_MCE_LOG
 +#include <xen/xen.h>
@@ -55,7 +53,7 @@ index c5b0d56..69b0b4b 100644
  #include "mce-internal.h"
  
  static DEFINE_MUTEX(mce_log_mutex);
-@@ -2355,6 +2359,11 @@ static __init int mcheck_init_device(void)
+@@ -2395,6 +2399,11 @@ static __init int mcheck_init_device(void)
  	free_cpumask_var(mce_device_initialized);
  
  err_out:
@@ -68,5 +66,5 @@ index c5b0d56..69b0b4b 100644
  
  	return err;
 -- 
-2.1.0
+2.17.1
 

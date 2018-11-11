@@ -1,0 +1,39 @@
+From 6bec01bac2a0b1b8d7639de2c7fd646363f57d2d Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Mon, 11 Jun 2012 22:49:31 +0200
+Subject: [PATCH] pvops: respect 'removable' xenstore flag for block devices
+
+Especially this is needed by pmount to allow mount qvm-block attached devices
+by normal user.
+---
+ drivers/block/xen-blkfront.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 429d20131c7e..2541d8c38336 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -2338,6 +2338,7 @@ static void blkfront_connect(struct blkfront_info *info)
+ 	unsigned int binfo;
+ 	char *envp[] = { "RESIZE=1", NULL };
+ 	int err, i;
++	int removable;
+ 
+ 	switch (info->connected) {
+ 	case BLKIF_STATE_CONNECTED:
+@@ -2405,6 +2406,12 @@ static void blkfront_connect(struct blkfront_info *info)
+ 		}
+ 	}
+ 
++	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
++			    "removable", "%d", &removable,
++			    NULL);
++	if (!err && removable)
++		binfo |= VDISK_REMOVABLE;
++
+ 	err = xlvbd_alloc_gendisk(sectors, info, binfo, sector_size,
+ 				  physical_sector_size);
+ 	if (err) {
+-- 
+2.17.1
+

@@ -1,4 +1,4 @@
-From f8bc4b3be49e47dcf005ce12ef25071fe16bd45b Mon Sep 17 00:00:00 2001
+From 91bac2da855a018b8ffd1bed9694e9c962340f08 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:22:24 +0100
@@ -19,10 +19,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 026d39702217..4150128ab893 100644
+index 88578e5aeaaf..69e1c3aebe71 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
-@@ -395,6 +395,7 @@ static void xennet_tx_buf_gc(struct netfront_queue *queue)
+@@ -394,6 +394,7 @@ static void xennet_tx_buf_gc(struct netfront_queue *queue)
  				continue;
  
  			id  = txrsp.id;

@@ -1,3 +1,9 @@
+From 702adf2c9c1536d5cb10b4be1340ba52654a05b5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 6 Sep 2018 15:09:44 +0200
+Subject: [PATCH] xen-netfront-detach-crash
+
 When it get to free_page(queue->grant_tx_page[i]), the use counter on this page
 is already 0, which cause a crash. Not sure if this is the proper fix
 (according to git log this may introduce some memory leak), but at least it
@@ -5,12 +11,15 @@ prevent the crash.
 
 Details in this thread:
 http://xen.markmail.org/thread/pw5edbtqienjx4q5
+---
+ drivers/net/xen-netfront.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index f821a97..a5efbb0 100644
+index f17f602e6171..61298526aee3 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
-@@ -1065,9 +1069,10 @@ static void xennet_release_tx_bufs(struct netfront_queue *queue)
+@@ -1140,9 +1140,10 @@ static void xennet_release_tx_bufs(struct netfront_queue *queue)
  
  		skb = queue->tx_skbs[i].skb;
  		get_page(queue->grant_tx_page[i]);
@@ -24,3 +33,6 @@ index f821a97..a5efbb0 100644
  		queue->grant_tx_page[i] = NULL;
  		queue->grant_tx_ref[i] = GRANT_INVALID_REF;
  		add_id_to_freelist(&queue->tx_skb_freelist, queue->tx_skbs, i);
+-- 
+2.17.1
+

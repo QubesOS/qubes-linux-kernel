@@ -1,4 +1,4 @@
-From c7c1661d1b265ea620939bb5da4958eb0fb1385b Mon Sep 17 00:00:00 2001
+From 2d7190695574d4a39597a65d3ba3858098f22da4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:09:55 +0100
@@ -18,10 +18,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 25 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 9dd2ca62d84a..1b6c319d74f1 100644
+index 61298526aee3..08ea5004e86b 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
-@@ -388,13 +388,13 @@ static void xennet_tx_buf_gc(struct netfront_queue *queue)
+@@ -387,13 +387,13 @@ static void xennet_tx_buf_gc(struct netfront_queue *queue)
  		rmb(); /* Ensure we see responses up to 'rp'. */
  
  		for (cons = queue->tx.rsp_cons; cons != prod; cons++) {
@@ -154,7 +154,7 @@ index 9dd2ca62d84a..1b6c319d74f1 100644
  
  		if (skb_shinfo(skb)->nr_frags == MAX_SKB_FRAGS) {
  			unsigned int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
-@@ -912,7 +911,7 @@ static RING_IDX xennet_fill_frags(struct netfront_queue *queue,
+@@ -916,7 +915,7 @@ static RING_IDX xennet_fill_frags(struct netfront_queue *queue,
  
  		skb_add_rx_frag(skb, skb_shinfo(skb)->nr_frags,
  				skb_frag_page(nfrag),
@@ -163,7 +163,7 @@ index 9dd2ca62d84a..1b6c319d74f1 100644
  
  		skb_shinfo(nskb)->nr_frags = 0;
  		kfree_skb(nskb);
-@@ -1008,7 +1007,7 @@ static int xennet_poll(struct napi_struct *napi, int budget)
+@@ -1012,7 +1011,7 @@ static int xennet_poll(struct napi_struct *napi, int budget)
  	i = queue->rx.rsp_cons;
  	work_done = 0;
  	while ((i != rp) && (work_done < budget)) {
