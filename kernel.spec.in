@@ -2,15 +2,11 @@
 # Based on the Open SUSE kernel-spec & Fedora kernel-spec.
 #
 
-%if 0%{?qubes_builder}
-%define _sourcedir %(pwd)
-%endif
-
 %define variant pvops.qubes
-%define plainrel %(cat rel)
+%define plainrel @REL@
 %define rel %{plainrel}.%{variant}
-%define version %(cat version)
-%define name_suffix %(cat suffix)
+%define version @VERSION@
+%define name_suffix -latest
 
 %define _buildshell /bin/bash
 %define build_xen       1
@@ -25,8 +21,6 @@
 %define src_install_dir /usr/src/kernels/%kernelrelease
 %define kernel_build_dir %my_builddir/linux-obj
 %define vm_install_dir /var/lib/qubes/vm-kernels/%version-%{plainrel}
-
-%(chmod +x %_sourcedir/{guards,apply-patches,check-for-config-changes})
 
 %define install_vdso 1
 %define debuginfodir /usr/lib/debug
@@ -90,20 +84,32 @@ Conflicts:      lvm2 < 2.02.33
 Provides:       kernel = %kernelrelease
 Provides:       kernel-uname-r = %kernelrelease
 
+BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+ExclusiveArch:  x86_64
+
 Source0:        linux-%version.tar.xz
-Source14:       series.conf
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
 Source34:       gen-config
 Source100:      config-base
 Source101:      config-qubes
-# FIXME: Including dirs this way does NOT produce proper src.rpms
-Source204:      patches.rpmify
-Source205:      patches.xen
-Source300:      patches.qubes
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-ExclusiveArch:  x86_64
+
+Patch0: 0001-kbuild-AFTER_LINK.patch
+Patch1: 0002-xen-netfront-detach-crash.patch
+Patch2: 0003-mce-hide-EBUSY-initialization-error-on-Xen.patch
+Patch3: 0004-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
+Patch4: 0005-pvops-respect-removable-xenstore-flag-for-block-devi.patch
+Patch5: 0006-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
+Patch6: 0007-block-add-no_part_scan-module-parameter.patch
+Patch7: 0008-xen-Add-RING_COPY_RESPONSE.patch
+Patch8: 0009-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
+Patch9: 0010-xen-netfront-do-not-use-data-already-exposed-to-back.patch
+Patch10: 0011-xen-netfront-add-range-check-for-Tx-response-id.patch
+Patch11: 0012-xen-blkfront-make-local-copy-of-response-before-usin.patch
+Patch12: 0013-xen-blkfront-prepare-request-locally-only-then-put-i.patch
+Patch13: 0014-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
+Patch14: 0015-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 
 %description
 Qubes Dom0 kernel.
@@ -118,21 +124,17 @@ fi
 SYMBOLS="xen-dom0 pvops"
 
 # Unpack all sources and patches
-%setup -q -c -T -a 0
+%autosetup -N -c -T -a 0
 
 mkdir -p %kernel_build_dir
 
 cd linux-%version
-
-if [ -r %_sourcedir/series-%{version}.conf ]; then
-    %_sourcedir/apply-patches %_sourcedir/series-%{version}.conf %_sourcedir $SYMBOLS
-else
-    %_sourcedir/apply-patches %_sourcedir/series.conf %_sourcedir $SYMBOLS
-fi
+%autopatch -p1
 
 cd %kernel_build_dir
 
-%_sourcedir/gen-config %_sourcedir/config-base %_sourcedir/config-qubes
+# Create QubesOS config kernel
+%{SOURCE34} %{SOURCE100} %{SOURCE101}
 
 %build_src_dir/scripts/config \
         --set-str CONFIG_LOCALVERSION -%release.%cpu_arch %{setup_config}
@@ -520,5 +522,5 @@ exit 0
 %attr(0644, root, root) %vm_install_dir/vmlinuz
 %vm_install_dir/modules
 
-
 %changelog
+@CHANGELOG@
