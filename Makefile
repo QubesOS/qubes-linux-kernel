@@ -20,16 +20,14 @@ RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "_rpmdir $(RPMDIR)" \
 		--define "build_flavor $(BUILD_FLAVOR)"
 
-VER_REL := $(shell rpm $(RPM_DEFINES) -q --qf "%{VERSION} %{RELEASE}\n" --specfile $(SPECFILE)| head -1)
-
 ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
 endif
 ifndef VERSION
-VERSION := $(word 1, $(VER_REL))
+VERSION := $(shell cat version)
 endif
 ifndef RELEASE
-RELEASE := $(word 2, $(VER_REL))
+RELEASE := $(shell cat rel)
 endif
 
 all: help
