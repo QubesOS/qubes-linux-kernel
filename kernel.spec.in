@@ -35,7 +35,7 @@
 %define setup_config --enable CONFIG_DEBUG_INFO --disable CONFIG_DEBUG_INFO_REDUCED
 %endif
 
-Name:           kernel%{name_suffix}
+Name:           kernel%{?name_suffix}
 Summary:        The Xen Kernel
 Version:        %{version}
 Epoch:          1000
