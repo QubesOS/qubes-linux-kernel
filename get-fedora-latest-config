@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -e
+if [ "${VERBOSE:-0}" -ge 2 ] || [ "${DEBUG:-0}" -eq 1 ]; then
+    set -x
+fi
+
+localdir="$(dirname "$(readlink -f "$0")")"
+releasever="$1"
+
+kernelver="$(cat "$localdir/version")"
+kernelsrc="linux-$kernelver"
+
+[[ "x$releasever" == "x" ]] && { echo "Please provide Fedora release version as first argument, e.g. '29'."; exit 1; }
+
+# baseurl for latest kernel rpm
+url="https://dl.fedoraproject.org/pub/fedora/linux/updates/$releasever/Everything/x86_64/Packages/k"
+
+# get the latest kernel rpm
+content="$(curl "$url/")"
+latestrpm="$(echo "$content" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -E "kernel-core-[0-9]+.[0-9]+.[0-9]+-[0-9]+.fc29.x86_64.rpm")"
+latestver="$(echo "$latestrpm" | sed 's/kernel-core-//; s/\.rpm//')"
+
+if [ "x$latestrpm" != "x" ]; then
+    tmpdir=$(mktemp -d)
+    # download latest kernel rpm
+    wget -q -O "$tmpdir/$latestrpm" "$url/$latestrpm"
+
+    # extract kernel sources in qubes-linux-kernel
+    tar xf "$localdir/$kernelsrc.tar.xz" -C "$tmpdir"
+
+    # get latest config and put it in extracted sources
+    rpm2cpio "$tmpdir/$latestrpm" | cpio -iv --to-stdout "./lib/modules/$latestver/config" > "$tmpdir/$kernelsrc/.config"
+
+    # generate new config with: yes '' | make oldconfig
+    cd "$tmpdir/$kernelsrc/"
+    ## drop config settings which depend on Fedora patches and adjust for the small version difference
+    yes '' | make oldconfig
+    ## remove comments in header
+    sed -i '1,4d' "$tmpdir/$kernelsrc/.config"
+
+    # create final config
+cat - "$tmpdir/$kernelsrc/.config" > "$localdir/config-base-$latestver" << EOF
+# Base config based on Fedora's config ($latestrpm)
+# Only modification is \`yes '' | make oldconfig\` to drop config settings which
+# depend on Fedora patches and adjust for the small version difference.
+EOF
+    rm -rf "$tmpdir"
+else
+    echo "Unable to find the latest kernel rpm for Fedora $releasever"; exit 1
+fi
