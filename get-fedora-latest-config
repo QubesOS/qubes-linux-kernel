@@ -11,6 +11,8 @@ releasever="$1"
 kernelver="$(cat "$localdir/version")"
 kernelsrc="linux-$kernelver"
 
+key="$localdir/keys/RPM-GPG-KEY-fedora-$releasever-primary"
+
 [[ "x$releasever" == "x" ]] && { echo "Please provide Fedora release version as first argument, e.g. '29'."; exit 1; }
 
 # baseurl for latest kernel rpm
@@ -24,7 +26,13 @@ latestver="$(echo "$latestrpm" | sed 's/kernel-core-//; s/\.rpm//')"
 if [ "x$latestrpm" != "x" ]; then
     tmpdir=$(mktemp -d)
     # download latest kernel rpm
-    wget -q -O "$tmpdir/$latestrpm" "$url/$latestrpm"
+    wget -q -O "$tmpdir/$latestrpm.untrusted" "$url/$latestrpm"
+
+    # check signature
+    mkdir -p "$tmpdir/rpmdb"
+    rpmkeys --dbpath="$tmpdir/rpmdb" --import "$key"
+    { rpmkeys --dbpath="$tmpdir/rpmdb" --checksig "$tmpdir/$latestrpm.untrusted" | grep 'signatures OK' ; } || { echo "Failed to check signature"; exit 1; }
+    mv "$tmpdir/$latestrpm.untrusted" "$tmpdir/$latestrpm"
 
     # extract kernel sources in qubes-linux-kernel
     tar xf "$localdir/$kernelsrc.tar.xz" -C "$tmpdir"
