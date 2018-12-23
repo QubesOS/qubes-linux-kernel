@@ -58,9 +58,14 @@ BuildRequires:  flex
 # gcc with support for BTI mitigation
 %if 0%{?fedora} == 23
 BuildRequires:  gcc >= 5.3.1-6.qubes1
-%else
+%elif 0%{?fedora} == 25
 BuildRequires:  gcc >= 6.4.1-1.qubes1
+%else
+BuildRequires:  gcc
 %endif
+
+# Needed for building GCC hardened plugins
+BuildRequires: gcc-c++
 
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
