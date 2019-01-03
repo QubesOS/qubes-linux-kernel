@@ -1,4 +1,4 @@
-From ca7615cf7944d9b233b7cfad8f0465b4dfc87fba Mon Sep 17 00:00:00 2001
+From 234f2726089c1b655b0efe975a988ac6fc857b2a Mon Sep 17 00:00:00 2001
 From: Roland McGrath <roland@redhat.com>
 Date: Mon, 6 Oct 2008 23:03:03 -0700
 Subject: [PATCH] kbuild: AFTER_LINK
@@ -31,7 +31,7 @@ index b215c712d897..e18cd2a3ea53 100644
        cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
  
 diff --git a/arch/x86/entry/vdso/Makefile b/arch/x86/entry/vdso/Makefile
-index 141d415a8c80..771cc7e399dc 100644
+index c3d7ccd25381..7c03993ea881 100644
 --- a/arch/x86/entry/vdso/Makefile
 +++ b/arch/x86/entry/vdso/Makefile
 @@ -167,8 +167,9 @@ $(obj)/vdso32.so.dbg: FORCE \
@@ -45,7 +45,7 @@ index 141d415a8c80..771cc7e399dc 100644
 +		sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
  
  VDSO_LDFLAGS = -shared $(call ld-option, --hash-style=both) \
- 	$(call ld-option, --build-id) -Bsymbolic
+ 	$(call ld-option, --build-id) $(call ld-option, --eh-frame-hdr) \
 diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
 index c8cf45362bd6..ee9c4d8e1ddf 100755
 --- a/scripts/link-vmlinux.sh
@@ -62,5 +62,5 @@ index c8cf45362bd6..ee9c4d8e1ddf 100755
  
  
 -- 
-2.17.1
+2.20.1
 

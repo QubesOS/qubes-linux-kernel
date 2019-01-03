@@ -6,7 +6,6 @@
 %define plainrel @REL@
 %define rel %{plainrel}.%{variant}
 %define version @VERSION@
-%define name_suffix -latest
 
 %define _buildshell /bin/bash
 %define build_xen       1
