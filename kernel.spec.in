@@ -372,9 +372,12 @@ if [ -z "$modules_dep" ]; then
     depmod -F %buildroot/boot/System.map-%kernelrelease \
         -b "$tmpdir" -a %kernelrelease || exit 1
     pushd "$tmpdir"
+    if [ -n "$SOURCE_DATE_EPOCH" ]; then
+        find . -exec touch --no-dereferece --date="@${SOURCE_DATE_EPOCH}" {} +
+    fi
     find . -print0 | sort -z \
-      | cpio --null -R 0:0 -H newc -o --quiet \
-      | gzip > %buildroot/%vm_install_dir/initramfs || exit 1
+      | cpio --null -R 0:0 -H newc -o --reproducible --quiet \
+      | gzip -n > %buildroot/%vm_install_dir/initramfs || exit 1
     popd
 fi
 
