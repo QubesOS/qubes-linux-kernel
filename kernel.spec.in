@@ -382,6 +382,16 @@ fi
 
 cp -p arch/x86/boot/bzImage %buildroot/%vm_install_dir/vmlinuz
 
+# default kernel options for this kernel
+def_kernelopts="root=/dev/mapper/dmroot ro nomodeset console=hvc0"
+def_kernelopts="$def_kernelopts rd_NO_PLYMOUTH rd.plymouth.enable=0 plymouth.enable=0"
+if [ -e /usr/lib/dracut/modules.d/90qubes-vm-simple/xen-scrub-pages-supported ]; then
+    # set xen_scrub_pages=0 _only_ when included initramfs does support
+    # re-enabling it
+    def_kernelopts="$def_kernelopts xen_scrub_pages=0"
+fi
+echo "$def_kernelopts " > %buildroot/%vm_install_dir/default-kernelopts-common.txt
+
 # Modules for Qubes VM
 mkdir -p %buildroot%vm_install_dir/modules
 cp -a %buildroot/lib/modules/%kernelrelease %buildroot%vm_install_dir/modules/
@@ -530,6 +540,7 @@ exit 0
 %attr(0644, root, root) %vm_install_dir/modules.img
 %attr(0644, root, root) %vm_install_dir/initramfs
 %attr(0644, root, root) %vm_install_dir/vmlinuz
+%attr(0644, root, root) %vm_install_dir/default-kernelopts-common.txt
 
 %changelog
 @CHANGELOG@
