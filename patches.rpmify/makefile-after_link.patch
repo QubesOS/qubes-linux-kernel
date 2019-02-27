@@ -70,8 +70,8 @@ index 6cc9478..94fb536 100644
  
  # actual build commands
  quiet_cmd_vdso32ld = VDSO32L $@
--      cmd_vdso32ld = $(CC) $(c_flags) -Wl,-T $^ -o $@
-+      cmd_vdso32ld = $(CC) $(c_flags) -Wl,-T $^ -o $@ \
+-      cmd_vdso32ld = $(CC) $(c_flags) -Wl,-T $(filter %.lds %.o,$^) -o $@
++      cmd_vdso32ld = $(CC) $(c_flags) -Wl,-T $(filter %.lds %.o,$^) -o $@ \
 +		     $(if $(AFTER_LINK),; $(AFTER_LINK))
  quiet_cmd_vdso32as = VDSO32A $@
        cmd_vdso32as = $(CC) $(a_flags) -c -o $@ $<
@@ -84,8 +84,8 @@ index 2d54c18..a0e3e9d 100644
  
  # actual build commands
  quiet_cmd_vdso64ld = VDSO64L $@
--      cmd_vdso64ld = $(CC) $(c_flags) -Wl,-T $^ -o $@
-+      cmd_vdso64ld = $(CC) $(c_flags) -Wl,-T $^ -o $@ \
+-      cmd_vdso64ld = $(CC) $(c_flags) -Wl,-T $(filter %.lds %.o,$^) -o $@
++      cmd_vdso64ld = $(CC) $(c_flags) -Wl,-T $(filter %.lds %.o,$^) -o $@ \
 +		     $(if $(AFTER_LINK),; $(AFTER_LINK))
  quiet_cmd_vdso64as = VDSO64A $@
        cmd_vdso64as = $(CC) $(a_flags) -c -o $@ $<
