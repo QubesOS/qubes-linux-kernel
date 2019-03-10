@@ -404,13 +404,15 @@ done
 
 # with kernel-4.14+ plymouth detects hvc0 serial console and forces text boot
 # we simply make plymouth ignore it to recover the splash screen
-if ! grep -q '^GRUB_CMDLINE_LINUX.*plymouth.ignore-serial-consoles' /etc/default/grub; then
-    sed -i 's/^GRUB_CMDLINE_LINUX="[^"]*/& plymouth.ignore-serial-consoles/' /etc/default/grub
+if [ -f /etc/default/grub ]; then
+    if ! grep -q plymouth.ignore-serial-consoles /etc/default/grub; then
+        echo 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX plymouth.ignore-serial-consoles"' >> /etc/default/grub
+    fi
 fi
 
 # grubby (used by new-kernel-pkg) do not understand xen entries in grub2 config
 if [ -x /sbin/new-kernel-pkg -a -e /boot/grub2/grub.cfg ]; then
-        grub2-mkconfig > /boot/grub2/grub.cfg
+    grub2-mkconfig > /boot/grub2/grub.cfg
 fi
 
 %preun
