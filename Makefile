@@ -34,7 +34,7 @@ all: help
 
 MIRROR := cdn.kernel.org
 ifeq (,$(DISTFILES_MIRROR))
-SRC_BASEURL := https://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/;s/^4\..*/4.x/')
+SRC_BASEURL := https://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/;s/^4\..*/4.x/;s/^5\..*/5.x/')
 else
 SRC_BASEURL := $(DISTFILES_MIRROR)
 endif
