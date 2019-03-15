@@ -20,7 +20,7 @@ url="https://dl.fedoraproject.org/pub/fedora/linux/updates/$releasever/Everythin
 
 # get the latest kernel rpm
 content="$(curl "$url/")"
-latestrpm="$(echo "$content" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -E "kernel-core-[0-9]+.[0-9]+.[0-9]+-[0-9]+.fc29.x86_64.rpm")"
+latestrpm="$(echo "$content" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -E "kernel-core-[0-9]+.[0-9]+.[0-9]+-[0-9]+.fc$releasever.x86_64.rpm")"
 latestver="$(echo "$latestrpm" | sed 's/kernel-core-//; s/\.rpm//')"
 
 if [ "x$latestrpm" != "x" ]; then
