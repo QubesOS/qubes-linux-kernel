@@ -427,11 +427,25 @@ done
 /sbin/depmod -a %{kernelrelease}
 
 %posttrans
+# with kernel-4.14+ plymouth detects hvc0 serial console and forces text boot
+# we simply make plymouth ignore it to recover the splash screen
+if [ -f /etc/default/grub ]; then
+    if ! grep -q plymouth.ignore-serial-consoles /etc/default/grub; then
+        echo 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX plymouth.ignore-serial-consoles"' >> /etc/default/grub
+    fi
+fi
+
+if [ -f /boot/efi/EFI/qubes/xen.cfg ]; then
+    if ! grep -q plymouth.ignore-serial-consoles /boot/efi/EFI/qubes/xen.cfg; then
+        sed -i 's/kernel=.*/& plymouth.ignore-serial-consoles/g' /boot/efi/EFI/qubes/xen.cfg
+    fi
+fi
+
 /bin/kernel-install add %{kernelrelease} /boot/vmlinuz-%{kernelrelease} || exit $?
 
 # grubby (used by new-kernel-pkg) do not understand xen entries in grub2 config
 if [ -x /sbin/new-kernel-pkg -a -e /boot/grub2/grub.cfg ]; then
-        grub2-mkconfig > /boot/grub2/grub.cfg
+    grub2-mkconfig > /boot/grub2/grub.cfg
 fi
 
 %preun
