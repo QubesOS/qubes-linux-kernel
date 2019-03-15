@@ -1,4 +1,4 @@
-From 234f2726089c1b655b0efe975a988ac6fc857b2a Mon Sep 17 00:00:00 2001
+From 59ee809914574cb2f858e94755fa17be86f34844 Mon Sep 17 00:00:00 2001
 From: Roland McGrath <roland@redhat.com>
 Date: Mon, 6 Oct 2008 23:03:03 -0700
 Subject: [PATCH] kbuild: AFTER_LINK
@@ -31,7 +31,7 @@ index b215c712d897..e18cd2a3ea53 100644
        cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
  
 diff --git a/arch/x86/entry/vdso/Makefile b/arch/x86/entry/vdso/Makefile
-index c3d7ccd25381..7c03993ea881 100644
+index 5bfe2243a08f..b6ec22f85266 100644
 --- a/arch/x86/entry/vdso/Makefile
 +++ b/arch/x86/entry/vdso/Makefile
 @@ -167,8 +167,9 @@ $(obj)/vdso32.so.dbg: FORCE \
