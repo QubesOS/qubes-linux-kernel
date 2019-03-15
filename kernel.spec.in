@@ -434,6 +434,12 @@ if [ -f /etc/default/grub ]; then
     fi
 fi
 
+if [ -f /boot/efi/EFI/qubes/xen.cfg ]; then
+    if ! grep -q plymouth.ignore-serial-consoles /boot/efi/EFI/qubes/xen.cfg; then
+        sed -i 's/kernel=.*/& plymouth.ignore-serial-consoles/g' /boot/efi/EFI/qubes/xen.cfg
+    fi
+fi
+
 /bin/kernel-install add %{kernelrelease} /boot/vmlinuz-%{kernelrelease} || exit $?
 
 # grubby (used by new-kernel-pkg) do not understand xen entries in grub2 config
