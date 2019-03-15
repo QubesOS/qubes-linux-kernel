@@ -373,7 +373,7 @@ if [ -z "$modules_dep" ]; then
         -b "$tmpdir" -a %kernelrelease || exit 1
     pushd "$tmpdir"
     if [ -n "$SOURCE_DATE_EPOCH" ]; then
-        find . -exec touch --no-dereferece --date="@${SOURCE_DATE_EPOCH}" {} +
+        find . -exec touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" {} +
     fi
     find . -print0 | sort -z \
       | cpio --null -R 0:0 -H newc -o --reproducible --quiet \
