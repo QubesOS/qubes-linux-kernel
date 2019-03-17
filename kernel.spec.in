@@ -411,7 +411,7 @@ cp %buildroot%vm_install_dir/vmlinuz %buildroot%vm_install_dir/modules/
 cp %buildroot%vm_install_dir/initramfs %buildroot%vm_install_dir/modules/
 if [ -n "$SOURCE_DATE_EPOCH" ]; then
     find %buildroot%vm_install_dir/modules \
-       -exec touch --no-dereferece --date="@${SOURCE_DATE_EPOCH}" {} +
+       -exec touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" {} +
 fi
 PATH="/sbin:$PATH" mkfs.ext3 -d %buildroot%vm_install_dir/modules \
       -U dcee2318-92bd-47a5-a15d-e79d1412cdce \
