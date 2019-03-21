@@ -1,4 +1,4 @@
-From 7cea4f1e3e43d8fc20e2605495d6ed24bfeeeb9b Mon Sep 17 00:00:00 2001
+From 38e59128707d1efda6ccba7e5ad548f5c2118926 Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Tue, 12 Sep 2017 00:49:02 +0200
 Subject: [PATCH] xen-pciback: add attribute to allow MSI enable flag writes
@@ -82,10 +82,10 @@ index 73427d8e0116..a277ddc7f7b4 100644
  	return 0;
  }
 diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 59661db144e5..51a116f37b95 100644
+index 097410a7cdb7..fb6a4a43c11d 100644
 --- a/drivers/xen/xen-pciback/pci_stub.c
 +++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -303,6 +303,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+@@ -304,6 +304,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
  	xen_pcibk_config_reset_dev(dev);
  	xen_pcibk_config_free_dyn_fields(dev);
  
@@ -94,7 +94,7 @@ index 59661db144e5..51a116f37b95 100644
  	xen_unregister_device_domain_owner(dev);
  
  	spin_lock_irqsave(&found_psdev->lock, flags);
-@@ -1430,6 +1432,63 @@ static ssize_t permissive_show(struct device_driver *drv, char *buf)
+@@ -1431,6 +1433,63 @@ static ssize_t permissive_show(struct device_driver *drv, char *buf)
  }
  static DRIVER_ATTR_RW(permissive);
  
@@ -158,7 +158,7 @@ index 59661db144e5..51a116f37b95 100644
  static void pcistub_exit(void)
  {
  	driver_remove_file(&xen_pcibk_pci_driver.driver, &driver_attr_new_slot);
-@@ -1439,6 +1498,8 @@ static void pcistub_exit(void)
+@@ -1440,6 +1499,8 @@ static void pcistub_exit(void)
  	driver_remove_file(&xen_pcibk_pci_driver.driver, &driver_attr_quirks);
  	driver_remove_file(&xen_pcibk_pci_driver.driver,
  			   &driver_attr_permissive);
@@ -167,7 +167,7 @@ index 59661db144e5..51a116f37b95 100644
  	driver_remove_file(&xen_pcibk_pci_driver.driver,
  			   &driver_attr_irq_handlers);
  	driver_remove_file(&xen_pcibk_pci_driver.driver,
-@@ -1529,6 +1590,9 @@ static int __init pcistub_init(void)
+@@ -1530,6 +1591,9 @@ static int __init pcistub_init(void)
  	if (!err)
  		err = driver_create_file(&xen_pcibk_pci_driver.driver,
  					 &driver_attr_permissive);
@@ -190,5 +190,5 @@ index 263c059bff90..796f949c92be 100644
  	unsigned int enable_intx:1;
  	unsigned int isr_on:1; /* Whether the IRQ handler is installed. */
 -- 
-2.17.1
+2.20.1
 

@@ -7,6 +7,7 @@ fi
 
 localdir="$(dirname "$(readlink -f "$0")")"
 releasever="$1"
+testing="$2"
 
 kernelver="$(cat "$localdir/version")"
 kernelsrc="linux-$kernelver"
@@ -16,11 +17,15 @@ key="$localdir/keys/RPM-GPG-KEY-fedora-$releasever-primary"
 [[ "x$releasever" == "x" ]] && { echo "Please provide Fedora release version as first argument, e.g. '29'."; exit 1; }
 
 # baseurl for latest kernel rpm
-url="https://dl.fedoraproject.org/pub/fedora/linux/updates/$releasever/Everything/x86_64/Packages/k"
+if [ "$testing" == "1" ]; then
+    url="https://dl.fedoraproject.org/pub/fedora/linux/development/$releasever/Everything/x86_64/os/Packages/k"
+else
+    url="https://dl.fedoraproject.org/pub/fedora/linux/updates/$releasever/Everything/x86_64/Packages/k"
+fi
 
 # get the latest kernel rpm
 content="$(curl "$url/")"
-latestrpm="$(echo "$content" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -E "kernel-core-[0-9]+.[0-9]+.[0-9]+-[0-9]+.fc29.x86_64.rpm")"
+latestrpm="$(echo "$content" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -E "kernel-core-[0-9]+.[0-9]+.[0-9]+-[0-9]+.fc$releasever.x86_64.rpm")"
 latestver="$(echo "$latestrpm" | sed 's/kernel-core-//; s/\.rpm//')"
 
 if [ "x$latestrpm" != "x" ]; then
