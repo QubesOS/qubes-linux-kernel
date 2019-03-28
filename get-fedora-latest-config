@@ -1,64 +1,83 @@
 #!/bin/bash
+# vim: set ts=4 sw=4 sts=4 et :
 
 set -e
 if [ "${VERBOSE:-0}" -ge 2 ] || [ "${DEBUG:-0}" -eq 1 ]; then
+    debug=1
     set -x
 fi
 
 localdir="$(dirname "$(readlink -f "$0")")"
 releasever="$1"
-testing="$2"
 
 kernelver="$(cat "$localdir/version")"
 kernelsrc="linux-$kernelver"
 
-key="$localdir/keys/RPM-GPG-KEY-fedora-$releasever-primary"
+errecho() {
+    >&2 echo "$@"
+}
 
-[[ "x$releasever" == "x" ]] && { echo "Please provide Fedora release version as first argument, e.g. '29'."; exit 1; }
-
-# baseurl for latest kernel rpm
-if [ "$testing" == "1" ]; then
-    url="https://dl.fedoraproject.org/pub/fedora/linux/development/$releasever/Everything/x86_64/os/Packages/k"
-else
-    url="https://dl.fedoraproject.org/pub/fedora/linux/updates/$releasever/Everything/x86_64/Packages/k"
+# example of releasever: '29' or 'rawhide'
+if [ "x$releasever" != "x" ]; then
+    if [[ ! "$releasever" =~ ^[1-9][0-9]$ ]] && [ "$releasever" != "rawhide" ]; then
+        errecho "Invalid release format"
+        exit 1
+    fi
+elif [ "x$releasever" == "x" ]; then
+    listver="$(curl -s -L https://dl.fedoraproject.org/pub/fedora/linux/releases 2> /dev/null)"
+    releasever="$(echo "$listver" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -o "[1-9][0-9]" | tail -1)"
+    if ! [[ "$releasever" =~ ^[1-9][0-9]$ ]]; then
+        errecho "An error occurred while trying to determine latest Fedora version"
+        exit 1
+    fi
 fi
 
 # get the latest kernel rpm
-content="$(curl "$url/")"
-latestrpm="$(echo "$content" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -E "kernel-core-[0-9]+.[0-9]+.[0-9]+-[0-9]+.fc$releasever.x86_64.rpm")"
-latestver="$(echo "$latestrpm" | sed 's/kernel-core-//; s/\.rpm//')"
+latestver=$(dnf -q repoquery kernel-core --disablerepo=*modular* --releasever="$releasever" | tail -1 | cut -d ':' -f2)
+latestrpm="kernel-core-$latestver.rpm"
 
-if [ "x$latestrpm" != "x" ]; then
+if [ "$releasever" == 'rawhide' ]; then
+    releasever="$(echo "$latestver" | grep -o "fc[1-9][0-9]" | sed 's/fc//')"
+fi
+
+if [ "x$latestrpm" != "x" ] && [ "x$releasever" != "x" ]; then
+    key="$localdir/keys/RPM-GPG-KEY-fedora-$releasever-primary"
+
     tmpdir=$(mktemp -d)
     # download latest kernel rpm
-    wget -q -O "$tmpdir/$latestrpm.untrusted" "$url/$latestrpm"
+    dnf -q download kernel-core --disablerepo=*modular* --releasever="$releasever"
+    mv "$latestrpm" "$tmpdir/$latestrpm.untrusted"
 
     # check signature
     mkdir -p "$tmpdir/rpmdb"
     rpmkeys --dbpath="$tmpdir/rpmdb" --import "$key"
-    { rpmkeys --dbpath="$tmpdir/rpmdb" --checksig "$tmpdir/$latestrpm.untrusted" | grep 'signatures OK' ; } || { echo "Failed to check signature"; exit 1; }
+    { rpmkeys --dbpath="$tmpdir/rpmdb" --checksig "$tmpdir/$latestrpm.untrusted" | grep -q 'signatures OK' ; } || { errecho "Failed to check signature"; exit 1; }
     mv "$tmpdir/$latestrpm.untrusted" "$tmpdir/$latestrpm"
 
     # extract kernel sources in qubes-linux-kernel
     tar xf "$localdir/$kernelsrc.tar.xz" -C "$tmpdir"
 
     # get latest config and put it in extracted sources
-    rpm2cpio "$tmpdir/$latestrpm" | cpio -iv --to-stdout "./lib/modules/$latestver/config" > "$tmpdir/$kernelsrc/.config"
+    rpm2cpio "$tmpdir/$latestrpm" | cpio --quiet -i --to-stdout "./lib/modules/$latestver/config" > "$tmpdir/$kernelsrc/.config"
 
     # generate new config with: yes '' | make oldconfig
     cd "$tmpdir/$kernelsrc/"
     ## drop config settings which depend on Fedora patches and adjust for the small version difference
-    yes '' | make oldconfig
+    if [ "$debug" == "1" ]; then
+        yes '' | make oldconfig
+    else
+        yes '' | make oldconfig > /dev/null 2>&1
+    fi
     ## remove comments in header
     sed -i '1,4d' "$tmpdir/$kernelsrc/.config"
 
     # create final config
-cat - "$tmpdir/$kernelsrc/.config" > "$localdir/config-base-$latestver" << EOF
+    cat - "$tmpdir/$kernelsrc/.config" > "$localdir/config-base-$(echo "$latestver" | cut -d '-' -f1)" << EOF
 # Base config based on Fedora's config ($latestrpm)
 # Only modification is \`yes '' | make oldconfig\` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 EOF
     rm -rf "$tmpdir"
 else
-    echo "Unable to find the latest kernel rpm for Fedora $releasever"; exit 1
+    errecho "Unable to find the latest kernel rpm for Fedora $releasever"; exit 1
 fi
