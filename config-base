@@ -1,12 +1,12 @@
-# Base config based on Fedora's config (kernel-core-5.0.0-300.fc30.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.0.4-200.fc29.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 
 #
-# Compiler: gcc (GCC) 8.2.1 20181215 (Red Hat 8.2.1-6)
+# Compiler: gcc (GCC) 8.3.1 20190223 (Red Hat 8.3.1-2)
 #
 CONFIG_CC_IS_GCC=y
-CONFIG_GCC_VERSION=80201
+CONFIG_GCC_VERSION=80301
 CONFIG_CLANG_VERSION=0
 CONFIG_CC_HAS_ASM_GOTO=y
 CONFIG_IRQ_WORK=y
@@ -20,7 +20,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 # CONFIG_COMPILE_TEST is not set
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.0.0-300.fc30.x86_64"
+CONFIG_BUILD_SALT="5.0.4-200.fc29.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -2982,7 +2982,7 @@ CONFIG_MICROSEMI_PHY=m
 CONFIG_NATIONAL_PHY=m
 CONFIG_QSEMI_PHY=m
 CONFIG_REALTEK_PHY=y
-CONFIG_RENESAS_PHY=m
+# CONFIG_RENESAS_PHY is not set
 # CONFIG_ROCKCHIP_PHY is not set
 CONFIG_SMSC_PHY=m
 CONFIG_STE10XP=m
@@ -3993,7 +3993,7 @@ CONFIG_SPI_PXA2XX_PCI=m
 #
 # SPI Protocol Masters
 #
-# CONFIG_SPI_SPIDEV is not set
+CONFIG_SPI_SPIDEV=m
 # CONFIG_SPI_LOOPBACK_TEST is not set
 # CONFIG_SPI_TLE62X0 is not set
 # CONFIG_SPI_SLAVE is not set
