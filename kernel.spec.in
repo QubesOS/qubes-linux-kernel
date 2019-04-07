@@ -163,9 +163,11 @@ make clean $MAKE_ARGS
 
 rm -f source
 find . ! -type d -printf '%%P\n' > %my_builddir/obj-files
-u2mfn_ver=`dkms status u2mfn|tail -n 1|cut -f 2 -d ' '|tr -d ':,:'`
 rm -rf %_builddir/u2mfn
-cp -r /usr/src/u2mfn-$u2mfn_ver %_builddir/u2mfn
+u2mfn_ver=`dkms status u2mfn|tail -n 1|cut -f 2 -d ' '|tr -d ':,:'`
+if [ -n "$u2mfn_ver" ]; then
+    cp -r /usr/src/u2mfn-$u2mfn_ver %_builddir/u2mfn
+fi
 
 %build
 
@@ -184,7 +186,9 @@ export AFTER_LINK=\
 make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
 
 # Build u2mfn module
-make -C %kernel_build_dir M=%_builddir/u2mfn modules
+if [ -d "%_builddir/u2mfn" ]; then
+    make -C %kernel_build_dir M=%_builddir/u2mfn modules
+fi
 
 %install
 
@@ -219,7 +223,9 @@ dd if=/dev/zero of=%buildroot/boot/initramfs-%kernelrelease.img \
 gzip -c9 < Module.symvers > %buildroot/boot/symvers-%kernelrelease.gz
 
 make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
-make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
+if [ -d "%_builddir/u2mfn" ]; then
+    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
+fi
 
 mkdir -p %buildroot/%src_install_dir
 
