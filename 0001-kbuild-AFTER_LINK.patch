@@ -1,4 +1,4 @@
-From 59ee809914574cb2f858e94755fa17be86f34844 Mon Sep 17 00:00:00 2001
+From 73ea910506e9e59f7262fc5c94ebdddd4526fed9 Mon Sep 17 00:00:00 2001
 From: Roland McGrath <roland@redhat.com>
 Date: Mon, 6 Oct 2008 23:03:03 -0700
 Subject: [PATCH] kbuild: AFTER_LINK
@@ -47,10 +47,10 @@ index 5bfe2243a08f..b6ec22f85266 100644
  VDSO_LDFLAGS = -shared $(call ld-option, --hash-style=both) \
  	$(call ld-option, --build-id) $(call ld-option, --eh-frame-hdr) \
 diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index c8cf45362bd6..ee9c4d8e1ddf 100755
+index dc0e8c5a1402..78056cc98fc4 100755
 --- a/scripts/link-vmlinux.sh
 +++ b/scripts/link-vmlinux.sh
-@@ -112,6 +112,10 @@ vmlinux_link()
+@@ -89,6 +89,10 @@ vmlinux_link()
  			-lutil -lrt -lpthread
  		rm -f linux
  	fi

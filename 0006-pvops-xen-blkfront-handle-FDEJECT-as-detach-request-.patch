@@ -1,4 +1,4 @@
-From fea008c8237d8d1aa6ecf6e8bc16fbcf12da2b09 Mon Sep 17 00:00:00 2001
+From eac56ff23482839805609d61ae8a7c1e325b4fe0 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 15 Jul 2012 19:57:47 +0200
 Subject: [PATCH] pvops/xen-blkfront: handle FDEJECT as detach request (#630)
@@ -8,7 +8,7 @@ Subject: [PATCH] pvops/xen-blkfront: handle FDEJECT as detach request (#630)
  1 file changed, 4 insertions(+)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 2054a3e9e435..132723c0b337 100644
+index a8df7688673a..b71f03a684ee 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
 @@ -47,6 +47,7 @@
