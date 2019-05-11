@@ -33,7 +33,7 @@ elif [ "x$releasever" == "x" ]; then
 fi
 
 # get the latest kernel rpm
-latestver=$(dnf -q repoquery kernel-core --disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever="$releasever" | tail -1 | cut -d ':' -f2)
+latestver=$(dnf -q repoquery kernel-core --disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever="$releasever" | sort -V | tail -1 | cut -d ':' -f2)
 latestrpm="kernel-core-$latestver.rpm"
 
 if [ "$releasever" == 'rawhide' ]; then
