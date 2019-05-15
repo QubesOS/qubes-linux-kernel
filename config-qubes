@@ -86,6 +86,7 @@ CONFIG_SECURITY_YAMA=y
 
 # CONFIG_DEFAULT_SECURITY_SELINUX is not set
 CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_LSM="yama,loadpin,safesetid,integrity"
 
 
 ################################################################################
