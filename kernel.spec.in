@@ -468,7 +468,7 @@ License:        GPL v2 only
 Group:          Development/Sources
 Provides:       multiversion(kernel)
 Provides:       %name-devel = %kernelrelease
-%if "%{name_suffix}" != ""
+%if "%{?name_suffix}" != ""
 Provides:       kernel-devel = %kernelrelease
 %endif
 Provides:       kernel-devel-uname-r = %kernelrelease
@@ -542,7 +542,7 @@ rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 %endif
 
-%if "%{name_suffix}" == ""
+%if "%{?name_suffix}" == ""
 # Set kernel as default VM kernel if we are the default package.
 
 # If qubes-prefs isn't installed yet, the default kernel will be set by %post
