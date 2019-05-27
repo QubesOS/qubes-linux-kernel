@@ -1,0 +1,165 @@
+From 4fcb87529a644016dc00459681efafc542e7c202 Mon Sep 17 00:00:00 2001
+From: Michael D Labriola <michael.d.labriola@gmail.com>
+Date: Tue, 19 Feb 2019 18:08:12 -0500
+Subject: [PATCH] drm: change func to better detect wether swiotlb is needed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This commit fixes DRM failures on Xen PV systems that were introduced in
+v4.17 by the following commits:
+
+82626363 drm: add func to get max iomem address v2
+fd5fd480 drm/amdgpu: only enable swiotlb alloc when need v2
+1bc3d3cc drm/radeon: only enable swiotlb path when need v2
+
+The introduction of ->need_swiotlb to the ttm_dma_populate() conditionals
+in the radeon and amdgpu device drivers causes Gnome to immediately crash
+on Xen PV systems, returning the user to the login screen.  The following
+kernel errors get logged:
+
+[   28.554259] radeon_dp_aux_transfer_native: 200 callbacks suppressed
+[   31.219821] radeon 0000:01:00.0: swiotlb buffer is full (sz: 2097152 bytes)
+[   31.220030] [drm:radeon_gem_object_create [radeon]] *ERROR* Failed to allocate GEM object (16384000, 2, 4096, -14)
+[   31.226109] radeon 0000:01:00.0: swiotlb buffer is full (sz: 2097152 bytes)
+[   31.226300] [drm:radeon_gem_object_create [radeon]] *ERROR* Failed to allocate GEM object (16384000, 2, 4096, -14)
+[   31.300734] gnome-shell[1935]: segfault at 88 ip 00007f39151cd904 sp 00007ffc97611ad8 error 4 in libmutter-cogl.so[7f3915178000+aa000]
+[   31.300745] Code: 5f c3 0f 1f 40 00 48 8b 47 78 48 8b 40 40 ff e0 66 0f 1f 44 00 00 48 8b 47 78 48 8b 40 48 ff e0 66 0f 1f 44 00 00 48 8b 47 78 <48> 8b 80 88 00 00 00 ff e0 0f 1f 00 48 8b 47 78 48 8b 40 68 ff e0
+[   38.193302] radeon_dp_aux_transfer_native: 116 callbacks suppressed
+[   40.009317] radeon 0000:01:00.0: swiotlb buffer is full (sz: 2097152 bytes)
+[   40.009488] [drm:radeon_gem_object_create [radeon]] *ERROR* Failed to allocate GEM object (16384000, 2, 4096, -14)
+[   40.015114] radeon 0000:01:00.0: swiotlb buffer is full (sz: 2097152 bytes)
+[   40.015297] [drm:radeon_gem_object_create [radeon]] *ERROR* Failed to allocate GEM object (16384000, 2, 4096, -14)
+[   40.028302] gnome-shell[2431]: segfault at 2dadf40 ip 0000000002dadf40 sp 00007ffcd24ea5f8 error 15
+[   40.028306] Code: 20 6e 31 00 00 00 00 00 00 00 00 37 e3 3d 2d 7f 00 00 80 f4 e6 3d 2d 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <00> 00 00 00 00 00 00 00 c1 00 00 00 00 00 00 00 80 e1 d2 03 00 00
+
+This commit renames drm_get_max_iomem() to drm_need_swiotlb(), adds a
+xen_pv_domain() check to it, and moves the bit shifting comparison that
+always follows its usage into the function (simplifying the drm driver
+code).
+
+Signed-off-by: Michael D Labriola <michael.d.labriola@gmail.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Link: https://patchwork.freedesktop.org/patch/286987/
+(cherry picked from commit 913b2cb727b7a47ccf8842d54c89f1b873c6deed)
+---
+ drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c  |  2 +-
+ drivers/gpu/drm/amd/amdgpu/gmc_v8_0.c  |  2 +-
+ drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c  |  2 +-
+ drivers/gpu/drm/drm_memory.c           | 19 ++++++++++++++++---
+ drivers/gpu/drm/radeon/radeon_device.c |  2 +-
+ include/drm/drm_cache.h                |  2 +-
+ 6 files changed, 21 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+index f8d8a3a73e42..cd5bb3e248dc 100644
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v7_0.c
+@@ -1024,7 +1024,7 @@ static int gmc_v7_0_sw_init(void *handle)
+ 		pci_set_consistent_dma_mask(adev->pdev, DMA_BIT_MASK(32));
+ 		pr_warn("amdgpu: No coherent DMA available\n");
+ 	}
+-	adev->need_swiotlb = drm_get_max_iomem() > ((u64)1 << dma_bits);
++	adev->need_swiotlb = drm_need_swiotlb(dma_bits);
+ 
+ 	r = gmc_v7_0_init_microcode(adev);
+ 	if (r) {
+diff --git a/drivers/gpu/drm/amd/amdgpu/gmc_v8_0.c b/drivers/gpu/drm/amd/amdgpu/gmc_v8_0.c
+index 1a744f964b30..831f72b26d3b 100644
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v8_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v8_0.c
+@@ -1150,7 +1150,7 @@ static int gmc_v8_0_sw_init(void *handle)
+ 		pci_set_consistent_dma_mask(adev->pdev, DMA_BIT_MASK(32));
+ 		pr_warn("amdgpu: No coherent DMA available\n");
+ 	}
+-	adev->need_swiotlb = drm_get_max_iomem() > ((u64)1 << dma_bits);
++	adev->need_swiotlb = drm_need_swiotlb(dma_bits);
+ 
+ 	r = gmc_v8_0_init_microcode(adev);
+ 	if (r) {
+diff --git a/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c b/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c
+index 72f8018fa2a8..9ec47e726d78 100644
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c
+@@ -911,7 +911,7 @@ static int gmc_v9_0_sw_init(void *handle)
+ 		pci_set_consistent_dma_mask(adev->pdev, DMA_BIT_MASK(32));
+ 		printk(KERN_WARNING "amdgpu: No coherent DMA available.\n");
+ 	}
+-	adev->need_swiotlb = drm_get_max_iomem() > ((u64)1 << dma_bits);
++	adev->need_swiotlb = drm_need_swiotlb(dma_bits);
+ 
+ 	r = gmc_v9_0_mc_init(adev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/drm_memory.c b/drivers/gpu/drm/drm_memory.c
+index d69e4fc1ee77..6af59a61f9b0 100644
+--- a/drivers/gpu/drm/drm_memory.c
++++ b/drivers/gpu/drm/drm_memory.c
+@@ -35,6 +35,7 @@
+ 
+ #include <linux/highmem.h>
+ #include <linux/export.h>
++#include <xen/xen.h>
+ #include <drm/drmP.h>
+ #include "drm_legacy.h"
+ 
+@@ -150,15 +151,27 @@ void drm_legacy_ioremapfree(struct drm_local_map *map, struct drm_device *dev)
+ }
+ EXPORT_SYMBOL(drm_legacy_ioremapfree);
+ 
+-u64 drm_get_max_iomem(void)
++bool drm_need_swiotlb(int dma_bits)
+ {
+ 	struct resource *tmp;
+ 	resource_size_t max_iomem = 0;
+ 
++	/*
++	 * Xen paravirtual hosts require swiotlb regardless of requested dma
++	 * transfer size.
++	 *
++	 * NOTE: Really, what it requires is use of the dma_alloc_coherent
++	 *       allocator used in ttm_dma_populate() instead of
++	 *       ttm_populate_and_map_pages(), which bounce buffers so much in
++	 *       Xen it leads to swiotlb buffer exhaustion.
++	 */
++	if (xen_pv_domain())
++		return true;
++
+ 	for (tmp = iomem_resource.child; tmp; tmp = tmp->sibling) {
+ 		max_iomem = max(max_iomem,  tmp->end);
+ 	}
+ 
+-	return max_iomem;
++	return max_iomem > ((u64)1 << dma_bits);
+ }
+-EXPORT_SYMBOL(drm_get_max_iomem);
++EXPORT_SYMBOL(drm_need_swiotlb);
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 59c8a6647ff2..a1d3c628c352 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -1387,7 +1387,7 @@ int radeon_device_init(struct radeon_device *rdev,
+ 		pci_set_consistent_dma_mask(rdev->pdev, DMA_BIT_MASK(32));
+ 		pr_warn("radeon: No coherent DMA available\n");
+ 	}
+-	rdev->need_swiotlb = drm_get_max_iomem() > ((u64)1 << dma_bits);
++	rdev->need_swiotlb = drm_need_swiotlb(dma_bits);
+ 
+ 	/* Registers mapping */
+ 	/* TODO: block userspace mapping of io register */
+diff --git a/include/drm/drm_cache.h b/include/drm/drm_cache.h
+index 97fc498dc767..987ff16b9420 100644
+--- a/include/drm/drm_cache.h
++++ b/include/drm/drm_cache.h
+@@ -38,7 +38,7 @@
+ void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
+ void drm_clflush_sg(struct sg_table *st);
+ void drm_clflush_virt_range(void *addr, unsigned long length);
+-u64 drm_get_max_iomem(void);
++bool drm_need_swiotlb(int dma_bits);
+ 
+ 
+ static inline bool drm_arch_can_wc_memory(void)
+-- 
+2.17.2
+
