@@ -117,6 +117,7 @@ Patch11: 0012-xen-blkfront-make-local-copy-of-response-before-usin.patch
 Patch12: 0013-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch13: 0014-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch14: 0015-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
+Patch15: 0016-drm-change-func-to-better-detect-wether-swiotlb-is-n.patch
 
 %description
 Qubes Dom0 kernel.
