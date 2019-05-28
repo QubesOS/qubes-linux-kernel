@@ -1,0 +1,36 @@
+From 559355f62291c332163dad1627a9f837d0df1dd8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Date: Wed, 20 Feb 2019 13:46:24 +0100
+Subject: [PATCH] drm/amdgpu: fix dma mask check in gmc_v6_0.c
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This got messed up by "drm: change func to better detect wether swiotlb
+is needed".
+
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michael D Labriola <michael.d.labriola@gmail.com>
+Link: https://patchwork.freedesktop.org/patch/287070/
+(cherry picked from commit 1fdafbd023793e754aa6ca73c877a375e83b8239)
+---
+ drivers/gpu/drm/amd/amdgpu/gmc_v6_0.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/amd/amdgpu/gmc_v6_0.c b/drivers/gpu/drm/amd/amdgpu/gmc_v6_0.c
+index db406a35808f..fb8433958f85 100644
+--- a/drivers/gpu/drm/amd/amdgpu/gmc_v6_0.c
++++ b/drivers/gpu/drm/amd/amdgpu/gmc_v6_0.c
+@@ -880,7 +880,7 @@ static int gmc_v6_0_sw_init(void *handle)
+ 		pci_set_consistent_dma_mask(adev->pdev, DMA_BIT_MASK(32));
+ 		dev_warn(adev->dev, "amdgpu: No coherent DMA available.\n");
+ 	}
+-	adev->need_swiotlb = drm_get_max_iomem() > ((u64)1 << dma_bits);
++	adev->need_swiotlb = drm_need_swiotlb(dma_bits);
+ 
+ 	r = gmc_v6_0_init_microcode(adev);
+ 	if (r) {
+-- 
+2.17.2
+
