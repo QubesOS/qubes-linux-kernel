@@ -47,10 +47,17 @@ SIGN_FILE := linux-${VERSION}.tar.bz2.sign
 endif
 HASH_FILE :=${SRC_FILE}.sha1sum
 
+WG_BASE_URL := https://git.zx2c4.com/WireGuard/snapshot
+WG_SRC_FILE := WireGuard-0.0.20190406.tar.xz
+
+WG_SRC_URL := $(WG_BASE_URL)/$(WG_SRC_FILE)
+WG_SIG_FILE := $(shell echo $(WG_SRC_FILE) | sed 's/\.xz/.asc/')
+WG_SIG_URL := $(WG_BASE_URL)/$(WG_SIG_FILE)
+
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
 
-get-sources: $(SRC_FILE) $(SIGN_FILE)
+get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE)
 
 $(SRC_FILE):
 	@wget -q -N $(URL)
@@ -58,11 +65,20 @@ $(SRC_FILE):
 $(SIGN_FILE):
 	@wget -q -N $(URL_SIGN)
 
+$(WG_SRC_FILE):
+	@wget -q -N $(WG_SRC_URL)
+
+$(WG_SIG_FILE):
+	@wget -q -N $(WG_SIG_URL)
+
 import-keys:
 	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
-	@gpg --no-auto-check-trustdb --no-default-keyring --keyring linux-kernel-trustedkeys.gpg -q --import *-key.asc
+	@gpg --no-auto-check-trustdb --no-default-keyring --keyring linux-kernel-trustedkeys.gpg -q --import kernel*-key.asc
+	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/wireguard-trustedkeys.gpg"; fi
+	@gpg --no-auto-check-trustdb --no-default-keyring --keyring wireguard-trustedkeys.gpg -q --import wireguard*-key.asc
 
 verify-sources: import-keys
+	@xzcat $(WG_SRC_FILE) | gpgv --keyring wireguard-trustedkeys.gpg $(WG_SIG_FILE) - 2>/dev/null
 ifeq ($(BUILD_FLAVOR),pvops)
 	@xzcat $(SRC_FILE) | gpgv --keyring linux-kernel-trustedkeys.gpg $(SIGN_FILE) - 2>/dev/null
 else
@@ -76,7 +92,10 @@ endif
 .PHONY: clean-sources
 clean-sources:
 ifneq ($(SRC_FILE), None)
-	-rm $(SRC_FILE)
+	-rm $(SRC_FILE) $(SIGN_FILE)
+endif
+ifneq ($(WG_SRC_FILE), None)
+	-rm $(WG_SRC_FILE) $(WG_SIG_FILE)
 endif
 
 

@@ -96,6 +96,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
 Source0:        linux-%version.tar.xz
+Source5:	WireGuard-0.0.20190406.tar.xz
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
@@ -169,6 +170,11 @@ if [ -n "$u2mfn_ver" ]; then
     cp -r /usr/src/u2mfn-$u2mfn_ver %_builddir/u2mfn
 fi
 
+rm -rf %_builddir/wireguard
+tar x -C %_builddir -Jpf %{SOURCE5}
+mv %_builddir/$(basename %{SOURCE5} .tar.xz) %_builddir/wireguard
+
+
 %build
 
 cd %kernel_build_dir
@@ -188,6 +194,10 @@ make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
 # Build u2mfn module
 if [ -d "%_builddir/u2mfn" ]; then
     make -C %kernel_build_dir M=%_builddir/u2mfn modules
+fi
+
+if [ -d "%_builddir/wireguard" ]; then
+    make -C %kernel_build_dir M=%_builddir/wireguard/src modules
 fi
 
 %install
@@ -225,6 +235,9 @@ gzip -c9 < Module.symvers > %buildroot/boot/symvers-%kernelrelease.gz
 make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
 if [ -d "%_builddir/u2mfn" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
+fi
+if [ -d "%_builddir/wireguard" ]; then
+    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/wireguard/src
 fi
 
 mkdir -p %buildroot/%src_install_dir
