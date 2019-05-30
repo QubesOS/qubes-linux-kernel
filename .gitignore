@@ -1,5 +1,7 @@
 linux-*.tar.bz2
 linux-*.tar.xz
 linux-*.sign
+WireGuard-*.tar.xz
+WireGuard-*.tar.asc
 kernel-*/
 config-base-*
