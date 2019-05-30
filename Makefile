@@ -51,7 +51,7 @@ WG_BASE_URL := https://git.zx2c4.com/WireGuard/snapshot
 WG_SRC_FILE := WireGuard-0.0.20190406.tar.xz
 
 WG_SRC_URL := $(WG_BASE_URL)/$(WG_SRC_FILE)
-WG_SIG_FILE := $(shell echo $(WG_SRC_FILE) | sed 's/\.xz/.asc/')
+WG_SIG_FILE := $(WG_SRC_FILE:%.xz=%.asc)
 WG_SIG_URL := $(WG_BASE_URL)/$(WG_SIG_FILE)
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
