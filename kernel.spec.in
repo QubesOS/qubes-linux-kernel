@@ -253,7 +253,11 @@ cp Module.markers %buildroot/lib/modules/%kernelrelease/build
 fi
 
 rm -rf %buildroot/lib/modules/%kernelrelease/build/Documentation
-cp .config %buildroot/lib/modules/%kernelrelease/build
+
+# disable GCC plugins for external modules build, to not fail if different gcc
+# version is used
+sed -e 's/^\(CONFIG_GCC_PLUGIN.*\)=y/# \1 is not set/' .config > \
+        %buildroot/lib/modules/%kernelrelease/build/.config
 
 rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*.o
 rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/*/*.o
