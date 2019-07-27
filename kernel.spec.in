@@ -96,7 +96,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
 Source0:        linux-%version.tar.xz
-Source5:	WireGuard-0.0.20190406.tar.xz
+Source5:	WireGuard-0.0.20190702.tar.xz
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
