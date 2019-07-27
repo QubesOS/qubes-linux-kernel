@@ -1,4 +1,4 @@
-From 73ea910506e9e59f7262fc5c94ebdddd4526fed9 Mon Sep 17 00:00:00 2001
+From f06e0fe77c3518568bcf4755981acd24c1a993c2 Mon Sep 17 00:00:00 2001
 From: Roland McGrath <roland@redhat.com>
 Date: Mon, 6 Oct 2008 23:03:03 -0700
 Subject: [PATCH] kbuild: AFTER_LINK
@@ -17,21 +17,21 @@ Signed-off-by: Roland McGrath <roland@redhat.com>
  3 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm64/kernel/vdso/Makefile b/arch/arm64/kernel/vdso/Makefile
-index b215c712d897..e18cd2a3ea53 100644
+index fa230ff09aa1..ab668b5e07cd 100644
 --- a/arch/arm64/kernel/vdso/Makefile
 +++ b/arch/arm64/kernel/vdso/Makefile
-@@ -55,7 +55,8 @@ $(obj-vdso): %.o: %.S FORCE
+@@ -48,7 +48,8 @@ $(obj-vdso): %.o: %.S FORCE
  
  # Actual build commands
- quiet_cmd_vdsold = VDSOL   $@
--      cmd_vdsold = $(CC) $(c_flags) -Wl,-n -Wl,-T $^ -o $@
-+      cmd_vdsold = $(CC) $(c_flags) -Wl,-n -Wl,-T $^ -o $@ \
-+				    $(if $(AFTER_LINK),;$(AFTER_LINK))
  quiet_cmd_vdsoas = VDSOA   $@
-       cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
+-      cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
++      cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $< \
++			$(if $(AFTER_LINK),;$(AFTER_LINK))
  
+ # Install commands for the unstripped file
+ quiet_cmd_vdso_install = INSTALL $@
 diff --git a/arch/x86/entry/vdso/Makefile b/arch/x86/entry/vdso/Makefile
-index 5bfe2243a08f..b6ec22f85266 100644
+index 42fe42e82baf..c38a827a7c90 100644
 --- a/arch/x86/entry/vdso/Makefile
 +++ b/arch/x86/entry/vdso/Makefile
 @@ -167,8 +167,9 @@ $(obj)/vdso32.so.dbg: FORCE \
@@ -47,7 +47,7 @@ index 5bfe2243a08f..b6ec22f85266 100644
  VDSO_LDFLAGS = -shared $(call ld-option, --hash-style=both) \
  	$(call ld-option, --build-id) $(call ld-option, --eh-frame-hdr) \
 diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index dc0e8c5a1402..78056cc98fc4 100755
+index a7124f895b24..8a3f116a7d86 100755
 --- a/scripts/link-vmlinux.sh
 +++ b/scripts/link-vmlinux.sh
 @@ -89,6 +89,10 @@ vmlinux_link()
@@ -60,7 +60,7 @@ index dc0e8c5a1402..78056cc98fc4 100755
 +	fi
  }
  
- 
+ # generate .BTF typeinfo from DWARF debuginfo
 -- 
 2.20.1
 
