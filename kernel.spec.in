@@ -104,21 +104,20 @@ Source34:       gen-config
 Source100:      config-base
 Source101:      config-qubes
 
-Patch0: 0001-kbuild-AFTER_LINK.patch
-Patch1: 0002-xen-netfront-detach-crash.patch
-Patch2: 0003-mce-hide-EBUSY-initialization-error-on-Xen.patch
-Patch3: 0004-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
-Patch4: 0005-pvops-respect-removable-xenstore-flag-for-block-devi.patch
-Patch5: 0006-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
-Patch6: 0007-block-add-no_part_scan-module-parameter.patch
-Patch7: 0008-xen-Add-RING_COPY_RESPONSE.patch
-Patch8: 0009-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
-Patch9: 0010-xen-netfront-do-not-use-data-already-exposed-to-back.patch
-Patch10: 0011-xen-netfront-add-range-check-for-Tx-response-id.patch
-Patch11: 0012-xen-blkfront-make-local-copy-of-response-before-usin.patch
-Patch12: 0013-xen-blkfront-prepare-request-locally-only-then-put-i.patch
-Patch13: 0014-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
-Patch14: 0015-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
+Patch0: 0001-xen-netfront-detach-crash.patch
+Patch1: 0002-mce-hide-EBUSY-initialization-error-on-Xen.patch
+Patch2: 0003-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
+Patch3: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
+Patch4: 0005-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
+Patch5: 0006-block-add-no_part_scan-module-parameter.patch
+Patch6: 0007-xen-Add-RING_COPY_RESPONSE.patch
+Patch7: 0008-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
+Patch8: 0009-xen-netfront-do-not-use-data-already-exposed-to-back.patch
+Patch9: 0010-xen-netfront-add-range-check-for-Tx-response-id.patch
+Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
+Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
+Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
+Patch13: 0014-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 
 %description
 Qubes Dom0 kernel.
@@ -178,16 +177,6 @@ mv %_builddir/$(basename %{SOURCE5} .tar.xz) %_builddir/wireguard
 %build
 
 cd %kernel_build_dir
-
-# This override tweaks the kernel makefiles so that we run debugedit on an
-# object before embedding it.  When we later run find-debuginfo.sh, it will
-# run debugedit again.  The edits it does change the build ID bits embedded
-# in the stripped object, but repeating debugedit is a no-op.  We do it
-# beforehand to get the proper final build ID bits into the embedded image.
-# This affects the vDSO images in vmlinux, and the vmlinux image in bzImage.
-export AFTER_LINK=\
-'sh -xc "/usr/lib/rpm/debugedit -b $$RPM_BUILD_DIR -d /usr/src/debug \
-                    -i $@ > $@.id"'
 
 make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
 

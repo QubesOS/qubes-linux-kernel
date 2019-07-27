@@ -1,4 +1,4 @@
-From 447afa1fafa01e66cabb4d42a5ffe3d851f8989f Mon Sep 17 00:00:00 2001
+From 5fa9a8629bacf9c61e236f517ae67e18f0f4b5d4 Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Tue, 12 Sep 2017 00:49:02 +0200
 Subject: [PATCH] xen-pciback: add attribute to allow MSI enable flag writes

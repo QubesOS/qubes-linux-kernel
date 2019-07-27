@@ -1,4 +1,4 @@
-From d4a2de0378cb95512e61a6f6af542b92ec4fda76 Mon Sep 17 00:00:00 2001
+From 7a3613a04ae9fc5d4e454ef50bffc11128409be2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 30 Jan 2016 01:53:26 +0100
@@ -10,10 +10,10 @@ Ease debugging of PCI passthrough problems.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index 117e76b2f939..34f380be2b34 100644
+index 2e8570c09789..7494ff7b238a 100644
 --- a/drivers/xen/events/events_base.c
 +++ b/drivers/xen/events/events_base.c
-@@ -521,7 +521,7 @@ static unsigned int __startup_pirq(unsigned int irq)
+@@ -522,7 +522,7 @@ static unsigned int __startup_pirq(unsigned int irq)
  					BIND_PIRQ__WILL_SHARE : 0;
  	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
  	if (rc != 0) {

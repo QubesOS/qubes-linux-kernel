@@ -1,4 +1,4 @@
-From 412a7ffe316ed4803553cef9cf4fb7a0a02b7f31 Mon Sep 17 00:00:00 2001
+From ae98e33fcffb88d43732018c3a7427c41f6acd5c Mon Sep 17 00:00:00 2001
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Date: Wed, 1 Apr 2015 17:01:26 -0400
 Subject: [PATCH] xen/pcifront/pciback: Update pciif.h with ->err and ->result
@@ -21,10 +21,10 @@ https://patchwork.kernel.org/patch/8258431/
  3 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index eba6e33147a2..cc6dcb13f1a8 100644
+index d1b16cf3403f..4d6f2513b104 100644
 --- a/drivers/pci/xen-pcifront.c
 +++ b/drivers/pci/xen-pcifront.c
-@@ -298,7 +298,7 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
+@@ -297,7 +297,7 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
  	} else {
  		pci_err(dev, "enable msix get err %x\n", err);
  	}

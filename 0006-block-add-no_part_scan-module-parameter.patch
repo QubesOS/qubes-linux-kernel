@@ -1,4 +1,4 @@
-From e6678551bfaed27e7c22877afd15a542c1d5d13f Mon Sep 17 00:00:00 2001
+From 10a2635f42ee839b3ffa6d67f5ae622ca9a09f60 Mon Sep 17 00:00:00 2001
 From: Rusty Bird <rustybird@openmailbox.org>
 Date: Mon, 11 Jul 2016 13:05:38 +0000
 Subject: [PATCH] block: add no_part_scan module parameter
@@ -15,10 +15,10 @@ the /sys/module/block/parameters/no_part_scan file.
  1 file changed, 12 insertions(+)
 
 diff --git a/block/genhd.c b/block/genhd.c
-index 703267865f14..d23df3adf080 100644
+index 24654e1d83e6..ce06da45aecd 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -663,6 +663,15 @@ static void register_disk(struct device *parent, struct gendisk *disk,
+@@ -676,6 +676,15 @@ static void register_disk(struct device *parent, struct gendisk *disk,
  	}
  }
  
@@ -34,7 +34,7 @@ index 703267865f14..d23df3adf080 100644
  /**
   * __device_add_disk - add disk information to kernel list
   * @parent: parent device for the disk
-@@ -682,6 +691,9 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
+@@ -695,6 +704,9 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
  	dev_t devt;
  	int retval;
  

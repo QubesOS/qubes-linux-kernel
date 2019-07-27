@@ -1,4 +1,4 @@
-From bdda44ef5cc1ed1929e4ae193a1cc85cf5db45df Mon Sep 17 00:00:00 2001
+From 9dac7f65e7ce9ba42a3edfa24a87b18bd484ef43 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:19:37 +0100
@@ -20,7 +20,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 4d8d53862d1b..834a7950bea1 100644
+index b981a17f2edd..66e972918f5b 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
 @@ -456,7 +456,7 @@ static void xennet_tx_setup_grant(unsigned long gfn, unsigned int offset,
@@ -32,7 +32,7 @@ index 4d8d53862d1b..834a7950bea1 100644
  }
  
  static struct xen_netif_tx_request *xennet_make_first_txreq(
-@@ -573,7 +573,7 @@ static netdev_tx_t xennet_start_xmit(struct sk_buff *skb, struct net_device *dev
+@@ -572,7 +572,7 @@ static netdev_tx_t xennet_start_xmit(struct sk_buff *skb, struct net_device *dev
  	int slots;
  	struct page *page;
  	unsigned int offset;
@@ -41,7 +41,7 @@ index 4d8d53862d1b..834a7950bea1 100644
  	unsigned long flags;
  	struct netfront_queue *queue = NULL;
  	unsigned int num_queues = dev->real_num_tx_queues;
-@@ -633,14 +633,15 @@ static netdev_tx_t xennet_start_xmit(struct sk_buff *skb, struct net_device *dev
+@@ -632,14 +632,15 @@ static netdev_tx_t xennet_start_xmit(struct sk_buff *skb, struct net_device *dev
  	}
  
  	/* First request for the linear area. */

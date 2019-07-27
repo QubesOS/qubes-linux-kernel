@@ -1,4 +1,4 @@
-From f65e1229bf1ad7925618d195fa1b79a7d5ec2c51 Mon Sep 17 00:00:00 2001
+From e0da6b06520aafefa2809098f4b993a04e70abee Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:51:10 +0100
@@ -20,7 +20,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 17 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index b71f03a684ee..8bd9fc13f6c9 100644
+index db7d28ac9747..3f6dbaf0265b 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
 @@ -1551,7 +1551,7 @@ static bool blkif_completion(unsigned long *id,

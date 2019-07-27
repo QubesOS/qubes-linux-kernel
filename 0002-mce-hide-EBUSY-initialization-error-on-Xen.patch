@@ -1,4 +1,4 @@
-From 791f22b92868334abf94870eba965ffcd3a34130 Mon Sep 17 00:00:00 2001
+From 41289a67b087a0d55740334fc0f321398408d784 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 5 Jan 2016 02:44:04 +0100
@@ -39,10 +39,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 9 insertions(+)
 
 diff --git a/arch/x86/kernel/cpu/mce/core.c b/arch/x86/kernel/cpu/mce/core.c
-index b7fb541a4873..1947eb18d874 100644
+index 282916f3b8d8..2d6b4703339a 100644
 --- a/arch/x86/kernel/cpu/mce/core.c
 +++ b/arch/x86/kernel/cpu/mce/core.c
-@@ -50,6 +50,10 @@
+@@ -51,6 +51,10 @@
  #include <asm/msr.h>
  #include <asm/reboot.h>
  
@@ -53,7 +53,7 @@ index b7fb541a4873..1947eb18d874 100644
  #include "internal.h"
  
  static DEFINE_MUTEX(mce_log_mutex);
-@@ -2376,6 +2380,11 @@ static __init int mcheck_init_device(void)
+@@ -2389,6 +2393,11 @@ static __init int mcheck_init_device(void)
  	free_cpumask_var(mce_device_initialized);
  
  err_out:
