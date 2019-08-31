@@ -1,12 +1,12 @@
-# Base config based on Fedora's config (kernel-core-5.2.8-200.fc30.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.2.9-200.fc30.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 
 #
-# Compiler: gcc (GCC) 8.2.1 20180801 (Red Hat 8.2.1-2)
+# Compiler: gcc (GCC) 8.3.1 20190223 (Red Hat 8.3.1-2)
 #
 CONFIG_CC_IS_GCC=y
-CONFIG_GCC_VERSION=80201
+CONFIG_GCC_VERSION=80301
 CONFIG_CLANG_VERSION=0
 CONFIG_CC_HAS_ASM_GOTO=y
 CONFIG_CC_HAS_WARN_MAYBE_UNINITIALIZED=y
@@ -21,7 +21,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 # CONFIG_COMPILE_TEST is not set
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.2.8-200.fc30.x86_64"
+CONFIG_BUILD_SALT="5.2.9-200.fc30.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
