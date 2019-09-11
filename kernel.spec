@@ -467,13 +467,16 @@ umount /tmp/qubes-modules-%kernelrelease
 rmdir /tmp/qubes-modules-%kernelrelease
 mv /tmp/qubes-modules-%kernelrelease.img %vm_install_dir/modules.img
 
-%if "%{name_suffix}" == ""
+current_default="$(qubes-prefs default-kernel)"
+current_default_path="/var/lib/qubes/vm-kernels/$current_default"
+current_default_package="$(rpm --qf '%{NAME}' -qf "$current_default_path")"
+if [ "$current_default_package" = "%{name}-qubes-vm" ]; then
 # Set kernel as default VM kernel if we are the default package.
 
 # If qubes-prefs isn't installed yet, the default kernel will be set by %post
 # of qubes-core-dom0
 type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %version-%plainrel
-%endif
+fi
 
 exit 0
 
