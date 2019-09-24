@@ -48,7 +48,7 @@ endif
 HASH_FILE :=${SRC_FILE}.sha1sum
 
 WG_BASE_URL := https://git.zx2c4.com/WireGuard/snapshot
-WG_SRC_FILE := WireGuard-0.0.20190702.tar.xz
+WG_SRC_FILE := WireGuard-0.0.20190913.tar.xz
 
 WG_SRC_URL := $(WG_BASE_URL)/$(WG_SRC_FILE)
 WG_SIG_FILE := $(WG_SRC_FILE:%.xz=%.asc)
