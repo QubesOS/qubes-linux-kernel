@@ -20,9 +20,9 @@ set -eu -o pipefail
 linux_merge_config="./scripts/kconfig/merge_config.sh"
 make_opts=""
 
-if [ -n "${RPM_PACKAGE_VERSION:-}" ]; then
-    linux_merge_config="../linux-$RPM_PACKAGE_VERSION/scripts/kconfig/merge_config.sh"
-    make_opts="-C ../linux-$RPM_PACKAGE_VERSION O=$PWD"
+if [ -n "${LINUX_UPSTREAM_VERSION:-}" ]; then
+    linux_merge_config="../linux-$LINUX_UPSTREAM_VERSION/scripts/kconfig/merge_config.sh"
+    make_opts="-C ../linux-$LINUX_UPSTREAM_VERSION O=$PWD"
 fi
 
 if [ -z "$linux_merge_config" ]; then

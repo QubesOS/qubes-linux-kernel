@@ -11,14 +11,11 @@ SOURCEDIR := $(WORKDIR)
 
 NO_OF_CPUS := $(shell grep -c ^processor /proc/cpuinfo)
 
-BUILD_FLAVOR := pvops
-
 RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "_specdir $(SPECDIR)" \
 		--define "_builddir $(BUILDDIR)" \
 		--define "_srcrpmdir $(SRCRPMDIR)" \
-		--define "_rpmdir $(RPMDIR)" \
-		--define "build_flavor $(BUILD_FLAVOR)"
+		--define "_rpmdir $(RPMDIR)"
 
 ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
@@ -30,6 +27,13 @@ ifndef RELEASE
 RELEASE := $(shell cat rel)
 endif
 
+ifneq ($(VERSION),$(subst -rc,,$(VERSION)))
+DOWNLOAD_FROM_GIT=1
+VERIFICATION := hash
+else
+VERIFICATION := signature
+endif
+
 all: help
 
 MIRROR := cdn.kernel.org
@@ -39,13 +43,13 @@ else
 SRC_BASEURL := $(DISTFILES_MIRROR)
 endif
 
+ifeq ($(VERIFICATION),signature)
 SRC_FILE := linux-${VERSION}.tar.xz
-ifeq ($(BUILD_FLAVOR),pvops)
 SIGN_FILE := linux-${VERSION}.tar.sign
 else
-SIGN_FILE := linux-${VERSION}.tar.bz2.sign
+SRC_FILE := linux-${VERSION}.tar.gz
+HASH_FILE := $(SRC_FILE).sha512
 endif
-HASH_FILE :=${SRC_FILE}.sha1sum
 
 WG_BASE_URL := https://git.zx2c4.com/WireGuard/snapshot
 WG_SRC_FILE := WireGuard-0.0.20190913.tar.xz
@@ -56,6 +60,10 @@ WG_SIG_URL := $(WG_BASE_URL)/$(WG_SIG_FILE)
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
+
+ifeq ($(DOWNLOAD_FROM_GIT),1)
+URL := https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$(VERSION).tar.gz
+endif
 
 get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE)
 
@@ -79,14 +87,12 @@ import-keys:
 
 verify-sources: import-keys
 	@xzcat $(WG_SRC_FILE) | gpgv --keyring wireguard-trustedkeys.gpg $(WG_SIG_FILE) - 2>/dev/null
-ifeq ($(BUILD_FLAVOR),pvops)
+ifeq ($(VERIFICATION),signature)
 	@xzcat $(SRC_FILE) | gpgv --keyring linux-kernel-trustedkeys.gpg $(SIGN_FILE) - 2>/dev/null
 else
-#	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
-#	The key has been compromised
-#	and kernel.org decided not to release signature
-#	with a new key... oh, well...
-	sha1sum --quiet -c ${HASH_FILE}
+	# there are no signatures for rc tarballs
+	# verify locally based on a signed git tag and commit hash file
+	sha512sum --quiet -c $(HASH_FILE)
 endif
 
 .PHONY: clean-sources

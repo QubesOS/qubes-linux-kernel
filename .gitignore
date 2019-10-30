@@ -1,4 +1,4 @@
-linux-*.tar.bz2
+linux-*.tar.gz
 linux-*.tar.xz
 linux-*.sign
 WireGuard-*.tar.xz

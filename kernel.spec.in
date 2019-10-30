@@ -2,10 +2,19 @@
 # Based on the Open SUSE kernel-spec & Fedora kernel-spec.
 #
 
-%define variant pvops.qubes
+%define variant qubes
 %define plainrel @REL@
 %define rel %{plainrel}.%{variant}
-%define version @VERSION@
+%define version %(echo '@VERSION@' | sed 's/~rc.*/.0/')
+%define upstream_version %(echo '@VERSION@' | sed 's/~rc/-rc/')
+%if "%{version}" != "%{upstream_version}"
+%define prerelease 1
+%define rel 0.%(echo '@VERSION@' | sed 's/.*~rc/rc/').%{plainrel}.%{variant}
+%else
+%define prerelease 0
+%define rel %{plainrel}.%{variant}
+%endif
+
 %define name_suffix -latest
 
 %define _buildshell /bin/bash
@@ -14,13 +23,13 @@
 %global cpu_arch x86_64
 %define cpu_arch_flavor %cpu_arch
 
-%define kernelrelease %(echo %{version} | sed 's/^3\\.[0-9]\\+$/\\0.0/')-%rel.%cpu_arch
+%define kernelrelease %(echo %{upstream_version} | sed 's/^[0-9]\\.[0-9]\\+$/\\0.0/;s/-rc.*/.0/')-%rel.%cpu_arch
 %define my_builddir %_builddir/%{name}-%{version}
 
-%define build_src_dir %my_builddir/linux-%version
+%define build_src_dir %my_builddir/linux-%upstream_version
 %define src_install_dir /usr/src/kernels/%kernelrelease
 %define kernel_build_dir %my_builddir/linux-obj
-%define vm_install_dir /var/lib/qubes/vm-kernels/%version-%{plainrel}
+%define vm_install_dir /var/lib/qubes/vm-kernels/%upstream_version-%{plainrel}
 
 %define install_vdso 1
 %define debuginfodir /usr/lib/debug
@@ -92,10 +101,13 @@ Conflicts:      lvm2 < 2.02.33
 Provides:       kernel = %kernelrelease
 Provides:       kernel-uname-r = %kernelrelease
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
-Source0:        linux-%version.tar.xz
+%if !%{prerelease}
+Source0:        linux-%{upstream_version}.tar.xz
+%else
+Source0:        linux-%{upstream_version}.tar.gz
+%endif
 Source5:	WireGuard-0.0.20190913.tar.xz
 Source16:       guards
 Source17:       apply-patches
@@ -123,21 +135,20 @@ Patch13: 0014-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 Qubes Dom0 kernel.
 
 %prep
-if ! [ -e %_sourcedir/linux-%version.tar.xz ]; then
-    echo "The %name-%version.nosrc.rpm package does not contain the" \
-         "complete sources. Please install kernel-source-%version.src.rpm."
-    exit 1
-fi
-
 SYMBOLS="xen-dom0 pvops"
 
 # Unpack all sources and patches
 %autosetup -N -c -T -a 0
 
+export LINUX_UPSTREAM_VERSION=%{upstream_version}
+
 mkdir -p %kernel_build_dir
 
-cd linux-%version
+cd linux-%upstream_version
 %autopatch -p1
+
+# drop EXTRAVERSION - possible -rc suffix already included in %release
+sed -i -e 's/^EXTRAVERSION = -rc.*/EXTRAVERSION =/' Makefile
 
 cd %kernel_build_dir
 
@@ -147,7 +158,7 @@ cd %kernel_build_dir
 %build_src_dir/scripts/config \
         --set-str CONFIG_LOCALVERSION -%release.%cpu_arch %{setup_config}
 
-MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD"
+MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD KERNELRELEASE=%{kernelrelease}"
 
 make prepare $MAKE_ARGS
 make scripts $MAKE_ARGS
@@ -563,18 +574,18 @@ if [ "$current_default_package" = "%{name}-qubes-vm" ]; then
 
 # If qubes-prefs isn't installed yet, the default kernel will be set by %post
 # of qubes-core-dom0
-type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %version-%plainrel
+type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %upstream_version-%plainrel
 fi
 
 exit 0
 
 %preun qubes-vm
 
-if [ "`qubes-prefs -g default-kernel`" == "%version-%plainrel" ]; then
+if [ "`qubes-prefs -g default-kernel`" == "%upstream_version-%plainrel" ]; then
     echo "This kernel version is set as default VM kernel, cannot remove"
     exit 1
 fi
-if qvm-ls --kernel | grep -qw "%version-%plainrel"; then
+if qvm-ls --kernel | grep -qw "%upstream_version-%plainrel"; then
     echo "This kernel version is used by at least one VM, cannot remove"
     exit 1
 fi
