@@ -140,6 +140,26 @@ mkdir -p %kernel_build_dir
 cd linux-%version
 %autopatch -p1
 
+%if 0%{?fedora} >= 31
+# Mangle /usr/bin/python shebangs to /usr/bin/python3
+# Mangle all Python shebangs to be Python 3 explicitly
+# -p preserves timestamps
+# -n prevents creating ~backup files
+# -i specifies the interpreter for the shebang
+# This fixes errors such as
+# *** ERROR: ambiguous python shebang in /usr/bin/kvm_stat: #!/usr/bin/python. Change it to python3 (or python2) explicitly.
+# We patch all sources below for which we got a report/error.
+pathfix.py -i "%{__python3} %{py3_shbang_opts}" -p -n \
+	tools/kvm/kvm_stat/kvm_stat \
+	scripts/show_delta \
+	scripts/diffconfig \
+	scripts/bloat-o-meter \
+	tools/perf/tests/attr.py \
+	tools/perf/scripts/python/stat-cpi.py \
+	tools/perf/scripts/python/sched-migration.py \
+	Documentation
+%endif
+
 cd %kernel_build_dir
 
 # Create QubesOS config kernel
@@ -253,6 +273,11 @@ cp Module.markers %buildroot/lib/modules/%kernelrelease/build
 fi
 
 rm -rf %buildroot/lib/modules/%kernelrelease/build/Documentation
+
+# Remove useless scripts that creates ERROR with ambiguous shebang
+# that are removed too in Fedora
+rm -rf %buildroot/lib/modules/%kernelrelease/build/scripts/tracing
+rm -f %buildroot/lib/modules/%kernelrelease/build/scripts/spdxcheck.py
 
 # disable GCC plugins for external modules build, to not fail if different gcc
 # version is used
