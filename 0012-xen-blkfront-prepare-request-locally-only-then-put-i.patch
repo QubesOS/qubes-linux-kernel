@@ -1,4 +1,4 @@
-From 752af3d52ee9cc908988683cdd776152652e21d8 Mon Sep 17 00:00:00 2001
+From 115094605c08f2e2790f6110f7fdc002122e0788 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 06:07:14 +0100
@@ -187,5 +187,5 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  	if (new_persistent_gnts)
  		gnttab_free_grant_references(setup.gref_head);
 -- 
-2.20.1
+2.21.0
 

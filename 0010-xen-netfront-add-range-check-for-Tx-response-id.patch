@@ -1,4 +1,4 @@
-From 9b0c48ef89505f95f495fc1d48ee2f489b657999 Mon Sep 17 00:00:00 2001
+From b5bc80763b7bf0f9e32a9a4d4f930ff50d02385d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:22:24 +0100
@@ -19,7 +19,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 66e972918f5b..a8a5da7461fc 100644
+index 56c8a4a32672..e11df925c0dc 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
 @@ -392,6 +392,7 @@ static void xennet_tx_buf_gc(struct netfront_queue *queue)
@@ -31,5 +31,5 @@ index 66e972918f5b..a8a5da7461fc 100644
  			if (unlikely(gnttab_query_foreign_access(
  				queue->grant_tx_ref[id]) != 0)) {
 -- 
-2.20.1
+2.21.0
 

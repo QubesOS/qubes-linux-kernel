@@ -1,4 +1,4 @@
-From 5fa9a8629bacf9c61e236f517ae67e18f0f4b5d4 Mon Sep 17 00:00:00 2001
+From 3a7edaa90f1b3d7066ba9c227577039e4285cb3d Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Tue, 12 Sep 2017 00:49:02 +0200
 Subject: [PATCH] xen-pciback: add attribute to allow MSI enable flag writes
@@ -20,10 +20,10 @@ guest (or stubdom) can already generate MSIs through other ways, see
  3 files changed, 104 insertions(+)
 
 diff --git a/drivers/xen/xen-pciback/conf_space_capability.c b/drivers/xen/xen-pciback/conf_space_capability.c
-index 73427d8e0116..a277ddc7f7b4 100644
+index e5694133ebe5..4be817f448c3 100644
 --- a/drivers/xen/xen-pciback/conf_space_capability.c
 +++ b/drivers/xen/xen-pciback/conf_space_capability.c
-@@ -190,6 +190,40 @@ static const struct config_field caplist_pm[] = {
+@@ -189,6 +189,40 @@ static const struct config_field caplist_pm[] = {
  	{}
  };
  
@@ -64,7 +64,7 @@ index 73427d8e0116..a277ddc7f7b4 100644
  static struct xen_pcibk_config_capability xen_pcibk_config_capability_pm = {
  	.capability = PCI_CAP_ID_PM,
  	.fields = caplist_pm,
-@@ -198,11 +232,16 @@ static struct xen_pcibk_config_capability xen_pcibk_config_capability_vpd = {
+@@ -197,11 +231,16 @@ static struct xen_pcibk_config_capability xen_pcibk_config_capability_vpd = {
  	.capability = PCI_CAP_ID_VPD,
  	.fields = caplist_vpd,
  };
@@ -190,5 +190,5 @@ index 263c059bff90..796f949c92be 100644
  	unsigned int enable_intx:1;
  	unsigned int isr_on:1; /* Whether the IRQ handler is installed. */
 -- 
-2.20.1
+2.21.0
 

@@ -1,4 +1,4 @@
-From e0da6b06520aafefa2809098f4b993a04e70abee Mon Sep 17 00:00:00 2001
+From def16082c5e64f97d5d138ae638a6cde7a136432 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:51:10 +0100
@@ -124,5 +124,5 @@ index db7d28ac9747..3f6dbaf0265b 100644
  			break;
  		default:
 -- 
-2.20.1
+2.21.0
 

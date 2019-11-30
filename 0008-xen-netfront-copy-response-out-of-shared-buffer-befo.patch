@@ -1,4 +1,4 @@
-From 6c7b9e32eb26ad5c535126c8775e2e4c68b0d57a Mon Sep 17 00:00:00 2001
+From 688769df7c2365ae836eb755ccf5b196b45cbd56 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:09:55 +0100
@@ -18,7 +18,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 25 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 5c9a0226dc8d..b981a17f2edd 100644
+index 8f0a790ec5e7..abb9b3cd87b8 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
 @@ -385,13 +385,13 @@ static void xennet_tx_buf_gc(struct netfront_queue *queue)
@@ -142,7 +142,7 @@ index 5c9a0226dc8d..b981a17f2edd 100644
  		skb = xennet_get_rx_skb(queue, cons + slots);
  		ref = xennet_get_rx_ref(queue, cons + slots);
  		slots++;
-@@ -895,9 +894,9 @@ static RING_IDX xennet_fill_frags(struct netfront_queue *queue,
+@@ -895,9 +894,9 @@ static int xennet_fill_frags(struct netfront_queue *queue,
  	struct sk_buff *nskb;
  
  	while ((nskb = __skb_dequeue(list))) {
@@ -154,7 +154,7 @@ index 5c9a0226dc8d..b981a17f2edd 100644
  
  		if (skb_shinfo(skb)->nr_frags == MAX_SKB_FRAGS) {
  			unsigned int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
-@@ -913,7 +912,7 @@ static RING_IDX xennet_fill_frags(struct netfront_queue *queue,
+@@ -913,7 +912,7 @@ static int xennet_fill_frags(struct netfront_queue *queue,
  
  		skb_add_rx_frag(skb, skb_shinfo(skb)->nr_frags,
  				skb_frag_page(nfrag),
@@ -163,7 +163,7 @@ index 5c9a0226dc8d..b981a17f2edd 100644
  
  		skb_shinfo(nskb)->nr_frags = 0;
  		kfree_skb(nskb);
-@@ -1009,7 +1008,7 @@ static int xennet_poll(struct napi_struct *napi, int budget)
+@@ -1011,7 +1010,7 @@ static int xennet_poll(struct napi_struct *napi, int budget)
  	i = queue->rx.rsp_cons;
  	work_done = 0;
  	while ((i != rp) && (work_done < budget)) {
@@ -173,5 +173,5 @@ index 5c9a0226dc8d..b981a17f2edd 100644
  
  		err = xennet_get_responses(queue, &rinfo, rp, &tmpq);
 -- 
-2.20.1
+2.21.0
 
