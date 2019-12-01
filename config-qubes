@@ -77,12 +77,6 @@ CONFIG_SECURITY_YAMA=y
 
 
 ################################################################################
-## We don't use singed modules
-
-# CONFIG_MODULE_SIG is not set
-
-
-################################################################################
 ## Deactivate selinux by default
 
 # CONFIG_DEFAULT_SECURITY_SELINUX is not set
