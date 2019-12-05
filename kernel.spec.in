@@ -37,6 +37,9 @@
 # debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
 %define with_debuginfo 0
 
+# Sign all modules
+%global signmodules 1
+
 %if !%{with_debuginfo}
 %global debug_package %{nil}
 %define setup_config --disable CONFIG_DEBUG_INFO
@@ -58,6 +61,7 @@ BuildRequires:  qubes-kernel-vm-support
 BuildRequires:  dracut
 BuildRequires:  busybox
 BuildRequires:  bc
+BuildRequires:  openssl
 BuildRequires:  openssl-devel
 BuildRequires:  gcc-plugin-devel
 BuildRequires:  elfutils-libelf-devel
@@ -111,10 +115,12 @@ Source0:        linux-%{upstream_version}.tar.gz
 Source5:	WireGuard-0.0.20191012.tar.xz
 Source16:       guards
 Source17:       apply-patches
+Source18:       mod-sign.sh
 Source33:       check-for-config-changes
 Source34:       gen-config
 Source100:      config-base
 Source101:      config-qubes
+%define modsign_cmd %{SOURCE18}
 
 Patch0: 0001-xen-netfront-detach-crash.patch
 Patch1: 0002-mce-hide-EBUSY-initialization-error-on-Xen.patch
@@ -220,6 +226,27 @@ fi
 if [ -d "%_builddir/wireguard" ]; then
     make -C %kernel_build_dir M=%_builddir/wireguard/src modules
 fi
+
+
+%define __modsign_install_post \
+  if [ "%{signmodules}" -eq "1" ]; then \
+    %{modsign_cmd} certs/signing_key.pem certs/signing_key.x509 $RPM_BUILD_ROOT/lib/modules/%kernelrelease/ \
+  fi \
+%{nil}
+
+#
+# Disgusting hack alert! We need to ensure we sign modules *after* all
+# invocations of strip occur, which is in __debug_install_post if
+# find-debuginfo.sh runs, and __os_install_post if not.
+#
+
+%define __spec_install_post \
+  %{?__debug_package:%{__debug_install_post}}\
+  %{__arch_install_post}\
+  %{__os_install_post}\
+  %{?__remove_unwanted_dbginfo_install_post}\
+  %{__modsign_install_post}
+
 
 %install
 
