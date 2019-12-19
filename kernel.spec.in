@@ -113,7 +113,7 @@ Source0:        linux-%{upstream_version}.tar.xz
 %else
 Source0:        linux-%{upstream_version}.tar.gz
 %endif
-Source5:	WireGuard-0.0.20191212.tar.xz
+Source5:	WireGuard-0.0.20191219.tar.xz
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
