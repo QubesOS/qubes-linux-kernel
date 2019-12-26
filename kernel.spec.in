@@ -15,8 +15,6 @@
 %define rel %{plainrel}.%{variant}
 %endif
 
-%define name_suffix -latest
-
 %define _buildshell /bin/bash
 %define build_xen       1
 
