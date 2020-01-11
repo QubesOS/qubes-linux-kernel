@@ -53,7 +53,7 @@ if [ "$releasever" == 'rawhide' ]; then
 fi
 
 if [ "x$latestrpm" != "x" ] && [ "x$releasever" != "x" ]; then
-    key="$localdir/keys/RPM-GPG-KEY-fedora-$releasever-primary"
+    key="$localdir/../builder-rpm/keys/RPM-GPG-KEY-fedora-$releasever-primary"
 
     trap 'exit_clean' 0 1 2 3 6 15
     tmpdir="$(mktemp -d -p "$localdir")"
