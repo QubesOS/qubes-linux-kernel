@@ -492,7 +492,7 @@ if [ -n "$SOURCE_DATE_EPOCH" ]; then
 fi
 PATH="/sbin:$PATH" mkfs.ext3 -d %buildroot%vm_install_dir/modules \
       -U dcee2318-92bd-47a5-a15d-e79d1412cdce \
-      %buildroot%vm_install_dir/modules.img 500M
+      %buildroot%vm_install_dir/modules.img 1024M
 rm -rf %buildroot%vm_install_dir/modules
 %endif
 
