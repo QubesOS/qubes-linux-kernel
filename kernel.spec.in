@@ -114,6 +114,7 @@ Source0:        linux-%{upstream_version}.tar.xz
 Source0:        linux-%{upstream_version}.tar.gz
 %endif
 Source5:	wireguard-linux-compat-0.0.20200121.tar.xz
+Source6:        macbook12-spi-driver-31cc060adcb431efdf9cf547d600bb45bb00a7f4.tar.gz
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
@@ -212,6 +213,9 @@ rm -rf %_builddir/wireguard
 tar x -C %_builddir -Jpf %{SOURCE5}
 mv %_builddir/$(basename %{SOURCE5} .tar.xz) %_builddir/wireguard
 
+rm -rf %_builddir/macbook12-spi-driver
+tar -x -C %_builddir -zf %{SOURCE6}
+mv %_builddir/$(basename %{SOURCE6} .tar.gz) %_builddir/macbook12-spi-driver
 
 %build
 
@@ -228,6 +232,10 @@ if [ -d "%_builddir/wireguard" ]; then
     make -C %kernel_build_dir M=%_builddir/wireguard/src modules
 fi
 
+# Build applespi, apple-ibridge, apple-ib-tb, apple-ib-als modules
+if [ -d "%_builddir/macbook12-spi-driver" ]; then
+    make -C %kernel_build_dir M=%_builddir/macbook12-spi-driver modules
+fi
 
 %define __modsign_install_post \
   if [ "%{signmodules}" -eq "1" ]; then \
@@ -287,6 +295,9 @@ if [ -d "%_builddir/u2mfn" ]; then
 fi
 if [ -d "%_builddir/wireguard" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/wireguard/src
+fi
+if [ -d "%_builddir/macbook12-spi-driver" ]; then
+    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/macbook12-spi-driver
 fi
 
 mkdir -p %buildroot/%src_install_dir

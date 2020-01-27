@@ -58,6 +58,12 @@ WG_SRC_URL := $(WG_BASE_URL)/$(WG_SRC_FILE)
 WG_SIG_FILE := $(WG_SRC_FILE:%.xz=%.asc)
 WG_SIG_URL := $(WG_BASE_URL)/$(WG_SIG_FILE)
 
+SPI_BASE_URL := https://github.com/roadrunner2/macbook12-spi-driver/archive
+SPI_REVISION := 31cc060adcb431efdf9cf547d600bb45bb00a7f4
+SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
+SPI_SRC_FILE := macbook12-spi-driver-$(SPI_REVISION).tar.gz
+SPI_HASH_SHA256 := 46da514227bb2694e571ec4fff746d1302f41cdea5fe7cb2e522349f96ac83c1
+
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
 
@@ -65,7 +71,7 @@ ifeq ($(DOWNLOAD_FROM_GIT),1)
 URL := https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$(VERSION).tar.gz
 endif
 
-get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE)
+get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE) $(SPI_SRC_FILE)
 
 $(SRC_FILE):
 	@wget -q -N $(URL)
@@ -78,6 +84,9 @@ $(WG_SRC_FILE):
 
 $(WG_SIG_FILE):
 	@wget -q -N $(WG_SIG_URL)
+
+$(SPI_SRC_FILE):
+	@wget -q -N -O $(SPI_SRC_FILE) $(SPI_SRC_URL)
 
 import-keys:
 	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
@@ -94,6 +103,7 @@ else
 	# verify locally based on a signed git tag and commit hash file
 	sha512sum --quiet -c $(HASH_FILE)
 endif
+	@gunzip -c $(SPI_SRC_FILE) | sha256sum | head -c64 | grep -q "^$(SPI_HASH_SHA256)$$"
 
 .PHONY: clean-sources
 clean-sources:
@@ -102,6 +112,9 @@ ifneq ($(SRC_FILE), None)
 endif
 ifneq ($(WG_SRC_FILE), None)
 	-rm $(WG_SRC_FILE) $(WG_SIG_FILE)
+endif
+ifneq ($(SPI_SRC_FILE), None)
+	-rm $(SPI_SRC_FILE)
 endif
 
 
