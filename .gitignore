@@ -3,3 +3,4 @@ linux-*.tar.xz
 linux-*.sign
 kernel-*/
 config-base-*
+pkgs
