@@ -3,6 +3,8 @@ linux-*.tar.xz
 linux-*.sign
 WireGuard-*.tar.xz
 WireGuard-*.tar.asc
+wireguard-*.tar.xz
+wireguard-*.tar.asc
 kernel-*/
 config-base-*
 pkgs
