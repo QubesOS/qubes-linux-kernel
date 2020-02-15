@@ -57,6 +57,9 @@ ifeq ($(DOWNLOAD_FROM_GIT),1)
 URL := https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$(VERSION).tar.gz
 endif
 
+verrel:
+	@echo $(NAME)-$(VERSION)-$(RELEASE)
+
 get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE) $(SPI_SRC_FILE)
 
 $(SRC_FILE):
@@ -103,8 +106,9 @@ ifneq ($(SPI_SRC_FILE), None)
 	-rm $(SPI_SRC_FILE)
 endif
 
-verrel:
-	@echo $(NAME)-$(VERSION)-$(RELEASE)
+.PHONY: update-sources
+update-sources:
+	@$(WORKDIR)/update-sources $(BRANCH)
 
 help:
 	@echo "Usage: make <target>"
