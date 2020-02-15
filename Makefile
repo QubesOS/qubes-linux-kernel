@@ -1,21 +1,7 @@
 NAME := kernel
 SPECFILE := kernel.spec
 
-
 WORKDIR := $(shell pwd)
-SPECDIR ?= $(WORKDIR)
-SRCRPMDIR ?= $(WORKDIR)/srpm
-BUILDDIR ?= $(WORKDIR)
-RPMDIR ?= $(WORKDIR)/rpm
-SOURCEDIR := $(WORKDIR)
-
-NO_OF_CPUS := $(shell grep -c ^processor /proc/cpuinfo)
-
-RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
-		--define "_specdir $(SPECDIR)" \
-		--define "_builddir $(BUILDDIR)" \
-		--define "_srcrpmdir $(SRCRPMDIR)" \
-		--define "_rpmdir $(RPMDIR)"
 
 ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
@@ -104,44 +90,8 @@ ifneq ($(WG_SRC_FILE), None)
 	-rm $(WG_SRC_FILE) $(WG_SIG_FILE)
 endif
 
-
-#RPM := rpmbuild --buildroot=/dev/shm/buildroot/
-RPM := rpmbuild 
-
-RPM_WITH_DIRS = $(RPM) $(RPM_DEFINES)
-
-rpms: rpms-dom0
-
-rpms-vm:
-
-rpms-dom0: get-sources $(SPECFILE)
-	$(RPM_WITH_DIRS) -bb $(SPECFILE)
-	rpm --addsign $(RPMDIR)/x86_64/*$(VERSION)-$(RELEASE)*.rpm
-
-rpms-nobuild:
-	$(RPM_WITH_DIRS) --nobuild -bb $(SPECFILE)
-
-rpms-just-build: 
-	$(RPM_WITH_DIRS) --short-circuit -bc $(SPECFILE)
-
-rpms-install: 
-	$(RPM_WITH_DIRS) -bi $(SPECFILE)
-
-prep: get-sources $(SPECFILE)
-	$(RPM_WITH_DIRS) -bp $(SPECFILE)
-
-srpm: get-sources $(SPECFILE)
-	$(RPM_WITH_DIRS) -bs $(SPECFILE)
-
 verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)
-
-# mop up, printing out exactly what was mopped.
-
-.PHONY : clean
-clean ::
-	@echo "Running the %clean script of the rpmbuild..."
-	$(RPM_WITH_DIRS) --clean --nodeps $(SPECFILE)
 
 help:
 	@echo "Usage: make <target>"
@@ -149,12 +99,4 @@ help:
 	@echo "get-sources      Download kernel sources from kernel.org"
 	@echo "verify-sources"
 	@echo
-	@echo "prep             Just do the prep"	
-	@echo "rpms             Build rpms"
-	@echo "rpms-nobuild     Skip the build stage (for testing)"
-	@echo "rpms-just-build  Skip packaging (just test compilation)"
-	@echo "srpm             Create an srpm"
-	@echo
-	@echo "make update-repo-current  -- copy newly generated rpms to qubes yum repo"
-	@echo "make update-repo-current-testing  -- same, but to -current-testing"
-	@echo "make update-repo-unstable -- same, but to -unstable repo"
+	@echo "verrel"          Echo version release"	
