@@ -35,6 +35,9 @@ URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
 
 get-sources: $(SRC_FILE) $(SIGN_FILE)
 
+verrel:
+	@echo $(NAME)-$(VERSION)-$(RELEASE)
+
 $(SRC_FILE):
 	@wget -q -N $(URL)
 
@@ -62,8 +65,9 @@ ifneq ($(SRC_FILE), None)
 	-rm $(SRC_FILE)
 endif
 
-verrel:
-	@echo $(NAME)-$(VERSION)-$(RELEASE)
+.PHONY: update-sources
+update-sources:
+	@$(WORKDIR)/update-sources $(BRANCH)
 
 help:
 	@echo "Usage: make <target>"
