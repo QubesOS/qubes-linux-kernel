@@ -1,0 +1,149 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 sts=4 et :
+
+set -e
+if [ "${VERBOSE:-0}" -ge 2 ] || [ "${DEBUG:-0}" -eq 1 ]; then
+    debug=1
+    set -x
+fi
+
+exit_clean() {
+    local exit_code=$?
+    rm -rf "$tmpdir"
+    exit "${exit_code}"
+}
+
+errecho() {
+    >&2 echo "$@"
+}
+
+usage() {
+errecho "Usage: $0 [OPTIONS]... []
+
+This script is used for fetching latest Fedora kernel config for the current
+kernel version used by Qubes.
+
+Options:
+    --releasever <Fedora RELEASEVER>    Fedora release version to use. Default is latest.
+    --include-testing                   Include testing updates repository
+    --include-rc                        Include release candidate kernels
+
+Remark:
+    Ensure to have downloaded kernel sources in local directory (make get-sources).
+"
+    exit 1
+}
+
+get_releasever() {
+    releasever="$1"
+    # example of releasever: '29' or 'rawhide'
+    if [ "x$releasever" != "x" ]; then
+        if [[ ! "$releasever" =~ ^[1-9][0-9]$ ]] && [ "$releasever" != "rawhide" ]; then
+            errecho "Invalid release format"
+            exit 1
+        fi
+    elif [ "x$releasever" == "x" ]; then
+        listver="$(curl -s -L https://dl.fedoraproject.org/pub/fedora/linux/releases 2> /dev/null)"
+        releasever="$(echo "$listver" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -o "[1-9][0-9]" | tail -1)"
+        if ! [[ "$releasever" =~ ^[1-9][0-9]$ ]]; then
+            errecho "An error occurred while trying to determine latest Fedora version"
+            exit 1
+        fi
+    fi
+    echo "$releasever"
+}
+
+localdir="$(dirname "$(readlink -f "$0")")"
+kernelver="$(cat "$localdir/version")"
+kernelsrc="linux-$kernelver"
+
+if ! OPTS=$(getopt -o hv:t:r: --long help,releasever:,include-testing,include-rc -n "$0" -- "$@"); then
+    errecho "An error occurred while parsing options."
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -a | --releasever ) releasever="$2"; shift ;;
+        -m | --include-testing ) ktesting="1"; shift ;;
+        -i | --include-rc ) krc="1"; shift ;;
+        -h | --help) usage ;;
+    esac
+    shift
+done
+
+if [ ! -e "$localdir/$kernelsrc.tar.xz" ]; then
+    errecho "Cannot find $kernelsrc.tar.xz in local directory."
+    exit 1
+fi
+
+releasever=$(get_releasever "$releasever")
+
+# get the latest kernel rpm
+repo_opts="--disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever=$releasever"
+
+# include testing
+if [ "$ktesting" == "1" ]; then
+repo_opts="$repo_opts --enablerepo=updates-testing"
+fi
+
+# shellcheck disable=SC2086
+latestver=$(dnf -q repoquery kernel-core $repo_opts)
+
+# include rc
+if [ "$krc" != "1" ]; then
+latestver=$(echo "$latestver" | grep -v "rc[0-9]*")
+fi
+
+latestver=$(echo "$latestver" | sort -V | tail -1 | cut -d ':' -f2)
+latestrpm="kernel-core-$latestver.rpm"
+
+if [ "$releasever" == 'rawhide' ]; then
+    releasever="$(echo "$latestver" | grep -o "fc[1-9][0-9]" | sed 's/fc//')"
+fi
+
+if [ "x$latestrpm" != "x" ] && [ "x$releasever" != "x" ]; then
+    key="$localdir/../builder-rpm/keys/RPM-GPG-KEY-fedora-$releasever-primary"
+
+    trap 'exit_clean' 0 1 2 3 6 15
+    tmpdir="$(mktemp -d -p "$localdir")"
+    # download latest kernel rpm
+    # shellcheck disable=SC2086
+    dnf -q download kernel-core $repo_opts
+    mv "$latestrpm" "$tmpdir/$latestrpm.untrusted"
+
+    # check signature
+    mkdir -p "$tmpdir/rpmdb"
+    rpmkeys --dbpath="$tmpdir/rpmdb" --import "$key"
+    { rpmkeys --dbpath="$tmpdir/rpmdb" --checksig "$tmpdir/$latestrpm.untrusted" | grep -q 'signatures OK' ; } || { errecho "Failed to check signature"; exit 1; }
+    mv "$tmpdir/$latestrpm.untrusted" "$tmpdir/$latestrpm"
+
+    # extract kernel sources in qubes-linux-kernel
+    tar xf "$localdir/$kernelsrc.tar.xz" -C "$tmpdir"
+
+    # get latest config and put it in extracted sources
+    rpm2cpio "$tmpdir/$latestrpm" | cpio --quiet -i --to-stdout "./lib/modules/$latestver/config" > "$tmpdir/$kernelsrc/.config"
+
+    # generate new config with: yes '' | make oldconfig
+    cd "$tmpdir/$kernelsrc/"
+    ## drop config settings which depend on Fedora patches and adjust for the small version difference
+    if [ "$debug" == "1" ]; then
+        yes '' | make oldconfig
+    else
+        yes '' | make oldconfig > /dev/null 2>&1
+    fi
+    ## remove comments in header
+    sed -i '1,4d' "$tmpdir/$kernelsrc/.config"
+
+    # create final config
+    cat - "$tmpdir/$kernelsrc/.config" > "$localdir/config-base-$(echo "$latestver" | cut -d '-' -f1)" << EOF
+# Base config based on Fedora's config ($latestrpm)
+# Only modification is \`yes '' | make oldconfig\` to drop config settings which
+# depend on Fedora patches and adjust for the small version difference.
+EOF
+    rm -rf "$tmpdir"
+else
+    errecho "Unable to find the latest kernel rpm for Fedora $releasever"; exit 1
+fi

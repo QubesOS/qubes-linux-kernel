@@ -1,0 +1,66 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 sts=4 et :
+
+set -e
+set -o pipefail
+
+[ "$DEBUG" = "1" ] && set -x
+
+distance_version() {
+    read -ra VER1 <<<"$(echo "$1" | tr '.' ' ')"
+    read -ra VER2 <<<"$(echo "$2" | tr '.' ' ')"
+
+    [[ ${VER1[0]} -eq ${VER2[0]} ]] && [[ $((VER1[1] - VER2[1])) -le 1 ]] && [[ $((VER1[1] - VER2[1])) -ge 0 ]]
+}
+
+LOCALDIR="$(readlink -f "$(dirname "$0")")"
+BUILDERDIR="$LOCALDIR/../../"
+VERSION="$(cat version)"
+BRANCH="$1"
+
+if [ -z "$BRANCH" ]; then
+    # Check if qubes-builder Makefile is here
+    # else rely on current checkout branch
+    if [ -e "$BUILDERDIR/Makefile" ]; then
+        BRANCH="$(make -C ../../ -s get-var GET_VAR=BRANCH_linux_kernel 2>/dev/null)"
+    else
+        BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    fi
+fi
+
+# Filter allowed branches
+if [[ ! "$BRANCH" =~ ^stable-[0-9]+\.[0-9]+$ ]] && [ "$BRANCH" != "master" ]; then
+    echo "Cannot determine kernel branch to use."
+    exit 1
+fi
+
+LATEST_KERNEL_VERSION="$(python3 "$LOCALDIR/kernel-updater.py" --check-update --version "$VERSION" --branch "$BRANCH")"
+
+if [ "x$LATEST_KERNEL_VERSION" == "x" ]; then
+    echo "Current kernel version in branch ${BRANCH} is up to date"
+    exit 0
+fi
+
+# Download latest kernel
+echo "$LATEST_KERNEL_VERSION" > version
+make get-sources
+
+FC_LATEST="$(curl -s -L https://dl.fedoraproject.org/pub/fedora/linux/releases | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -o "[1-9][0-9]" | tail -1)"
+STABLE_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever="$FC_LATEST" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1)"
+if [ "$BRANCH" == "master" ]; then
+    TESTING_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --enablerepo=updates-testing --releasever="$FC_LATEST" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1)"
+    RAWHIDE_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever=rawhide | grep -v "rc[0-9]*" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1 || true)"
+fi
+
+if distance_version "$STABLE_KERNEL" "$LATEST_KERNEL_VERSION"; then
+    "$LOCALDIR/get-fedora-latest-config" --releasever "$FC_LATEST"
+    mv config-base-"$STABLE_KERNEL" config-base
+elif [ "$BRANCH" == "master" ] && { distance_version "$TESTING_KERNEL" "$LATEST_KERNEL_VERSION"; }; then
+    "$LOCALDIR/get-fedora-latest-config" --releasever "$FC_LATEST" --include-testing
+    mv config-base-"$STABLE_KERNEL" config-base
+elif [ "$BRANCH" == "master" ] && { distance_version "$RAWHIDE_KERNEL" "$LATEST_KERNEL_VERSION"; }; then
+    "$LOCALDIR/get-fedora-latest-config" --releasever rawhide
+    mv config-base-"$RAWHIDE_KERNEL" config-base
+else
+    echo "Cannot determine latest config for kernel ${LATEST_KERNEL_VERSION}. Use the current existing config..."
+fi
