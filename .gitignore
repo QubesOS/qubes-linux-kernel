@@ -6,3 +6,4 @@ WireGuard-*.tar.asc
 kernel-*/
 config-base-*
 macbook12-spi-driver-*.tar.gz
+pkgs
