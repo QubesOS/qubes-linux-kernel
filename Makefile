@@ -53,6 +53,9 @@ endif
 
 get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE)
 
+verrel:
+	@echo $(NAME)-$(VERSION)-$(RELEASE)
+
 $(SRC_FILE):
 	@wget -q -N $(URL)
 
@@ -90,8 +93,9 @@ ifneq ($(WG_SRC_FILE), None)
 	-rm $(WG_SRC_FILE) $(WG_SIG_FILE)
 endif
 
-verrel:
-	@echo $(NAME)-$(VERSION)-$(RELEASE)
+.PHONY: update-sources
+update-sources:
+	@$(WORKDIR)/update-sources $(BRANCH)
 
 help:
 	@echo "Usage: make <target>"
