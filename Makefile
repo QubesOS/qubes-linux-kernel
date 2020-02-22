@@ -2,6 +2,7 @@ NAME := kernel
 SPECFILE := kernel.spec
 
 WORKDIR := $(shell pwd)
+BRANCH ?= master
 
 ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
