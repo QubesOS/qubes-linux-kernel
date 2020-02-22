@@ -2,6 +2,7 @@ NAME := kernel
 SPECFILE := kernel.spec
 
 WORKDIR := $(shell pwd)
+BRANCH ?= master
 
 VER_REL := $(shell rpm $(RPM_DEFINES) -q --qf "%{VERSION} %{RELEASE}\n" --specfile $(SPECFILE)| head -1)
 
