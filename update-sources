@@ -6,6 +6,14 @@ set -o pipefail
 
 [ "$DEBUG" = "1" ] && set -x
 
+exit_clean() {
+    local exit_code=$?
+    if [ $exit_code -gt 0 ]; then
+        git checkout -- version
+    fi
+    exit "${exit_code}"
+}
+
 distance_version() {
     read -ra VER1 <<<"$(echo "$1" | tr '.' ' ')"
     read -ra VER2 <<<"$(echo "$2" | tr '.' ' ')"
@@ -42,6 +50,8 @@ if [ "x$LATEST_KERNEL_VERSION" == "x" ]; then
 fi
 
 # Download latest kernel
+trap 'exit_clean' 0 1 2 3 6 15
+
 echo "$LATEST_KERNEL_VERSION" > version
 make get-sources
 
