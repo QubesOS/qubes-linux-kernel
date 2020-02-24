@@ -114,7 +114,7 @@ Source0:        linux-%{upstream_version}.tar.xz
 Source0:        linux-%{upstream_version}.tar.gz
 %endif
 Source5:	wireguard-linux-compat-0.0.20200121.tar.xz
-Source6:        macbook12-spi-driver-31cc060adcb431efdf9cf547d600bb45bb00a7f4.tar.gz
+Source6:        macbook12-spi-driver-ddfbc7733542b8474a0e8f593aba91e06542be4f.tar.gz
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
