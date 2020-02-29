@@ -46,10 +46,10 @@ WG_SIG_FILE := $(WG_SRC_FILE:%.xz=%.asc)
 WG_SIG_URL := $(WG_BASE_URL)/$(WG_SIG_FILE)
 
 SPI_BASE_URL := https://github.com/roadrunner2/macbook12-spi-driver/archive
-SPI_REVISION := 31cc060adcb431efdf9cf547d600bb45bb00a7f4
+SPI_REVISION := ddfbc7733542b8474a0e8f593aba91e06542be4f
 SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
 SPI_SRC_FILE := macbook12-spi-driver-$(SPI_REVISION).tar.gz
-SPI_HASH_SHA256 := 46da514227bb2694e571ec4fff746d1302f41cdea5fe7cb2e522349f96ac83c1
+SPI_HASH_SHA256 := 8039f103fbb351ecbbaddd540feeb7b0b1abfa216f0689a611e43d997426470e
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
