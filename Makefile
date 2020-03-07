@@ -76,4 +76,4 @@ help:
 	@echo "get-sources      Download kernel sources from kernel.org"
 	@echo "verify-sources"
 	@echo
-	@echo "verrel"          Echo version release"	
+	@echo "verrel"          Echo version release"
