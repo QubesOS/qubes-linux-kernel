@@ -16,17 +16,25 @@ ifndef RELEASE
 RELEASE := $(word 2, $(VER_REL))
 endif
 
+ifneq ($(VERSION),$(subst -rc,,$(VERSION)))
+DOWNLOAD_FROM_GIT=1
+VERIFICATION := hash
+else
+VERIFICATION := signature
+endif
+
 all: help
 
 MIRROR := cdn.kernel.org
 SRC_BASEURL := https://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/;s/^4\..*/4.x/')
+
+ifeq ($(VERIFICATION),signature)
 SRC_FILE := linux-${VERSION}.tar.xz
-ifeq ($(BUILD_FLAVOR),pvops)
 SIGN_FILE := linux-${VERSION}.tar.sign
 else
-SIGN_FILE := linux-${VERSION}.tar.bz2.sign
+SRC_FILE := linux-${VERSION}.tar.gz
+HASH_FILE := $(SRC_FILE).sha512
 endif
-HASH_FILE :=${SRC_FILE}.sha1sum
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
@@ -47,20 +55,18 @@ import-keys:
 	@gpg --no-auto-check-trustdb --no-default-keyring --keyring linux-kernel-trustedkeys.gpg -q --import *-key.asc
 
 verify-sources: import-keys
-ifeq ($(BUILD_FLAVOR),pvops)
+ifeq ($(VERIFICATION),signature)
 	@xzcat $(SRC_FILE) | gpgv --keyring linux-kernel-trustedkeys.gpg $(SIGN_FILE) - 2>/dev/null
 else
-#	@gpg --verify $(SIGN_FILE) $(SRC_FILE)
-#	The key has been compromised
-#	and kernel.org decided not to release signature
-#	with a new key... oh, well...
-	sha1sum --quiet -c ${HASH_FILE}
+	# there are no signatures for rc tarballs
+	# verify locally based on a signed git tag and commit hash file
+	sha512sum --quiet -c $(HASH_FILE)
 endif
 
 .PHONY: clean-sources
 clean-sources:
 ifneq ($(SRC_FILE), None)
-	-rm $(SRC_FILE)
+	-rm $(SRC_FILE) $(SIGN_FILE)
 endif
 
 .PHONY: update-sources
