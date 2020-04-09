@@ -1,4 +1,4 @@
-From 61d8059c42eaf388b857e0d5c8460ccb76c2f97c Mon Sep 17 00:00:00 2001
+From adeff427d5cd336457e4138d2d3056b8645bb973 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 15 Jul 2012 19:57:47 +0200
 Subject: [PATCH] pvops/xen-blkfront: handle FDEJECT as detach request (#630)
@@ -8,7 +8,7 @@ Subject: [PATCH] pvops/xen-blkfront: handle FDEJECT as detach request (#630)
  1 file changed, 4 insertions(+)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index e76b999fceca..db7d28ac9747 100644
+index 3929b4e63ff7..4131689b314e 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
 @@ -47,6 +47,7 @@
@@ -19,7 +19,7 @@ index e76b999fceca..db7d28ac9747 100644
  
  #include <xen/xen.h>
  #include <xen/xenbus.h>
-@@ -511,6 +512,9 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
+@@ -508,6 +509,9 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
  			return 0;
  		return -EINVAL;
  	}
@@ -30,5 +30,5 @@ index e76b999fceca..db7d28ac9747 100644
  	default:
  		/*printk(KERN_ALERT "ioctl %08x not supported by Xen blkdev\n",
 -- 
-2.21.0
+2.20.1
 

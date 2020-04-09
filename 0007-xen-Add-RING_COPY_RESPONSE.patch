@@ -1,4 +1,4 @@
-From 76c089d06f5ff8dc7a54c3e5ef7d2f1447ca8ec4 Mon Sep 17 00:00:00 2001
+From 6812cd3fa24586c1dea1288f6effb7de29dd38d7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 15 Dec 2015 21:35:14 +0100
@@ -29,10 +29,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/include/xen/interface/io/ring.h b/include/xen/interface/io/ring.h
-index 3f40501fc60b..03702f6874df 100644
+index 2af7a1cd6658..0077455452e9 100644
 --- a/include/xen/interface/io/ring.h
 +++ b/include/xen/interface/io/ring.h
-@@ -201,6 +201,20 @@ struct __name##_back_ring {						\
+@@ -190,6 +190,20 @@ struct __name##_back_ring {						\
  #define RING_GET_RESPONSE(_r, _idx)					\
      (&((_r)->sring->ring[((_idx) & (RING_SIZE(_r) - 1))].rsp))
  
@@ -54,5 +54,5 @@ index 3f40501fc60b..03702f6874df 100644
  #define RING_REQUEST_CONS_OVERFLOW(_r, _cons)				\
      (((_cons) - (_r)->rsp_prod_pvt) >= RING_SIZE(_r))
 -- 
-2.21.0
+2.20.1
 
