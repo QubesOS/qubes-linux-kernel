@@ -56,6 +56,11 @@ get_releasever() {
 localdir="$(dirname "$(readlink -f "$0")")"
 kernelver="$(cat "$localdir/version")"
 kernelsrc="linux-$kernelver"
+if [[ "$kernelver" =~ -rc[0-9]+$ ]]; then
+kernelarchive="$kernelsrc.tar.gz"
+else
+kernelarchive="$kernelsrc.tar.xz"
+fi
 
 if ! OPTS=$(getopt -o hv:t:r: --long help,releasever:,include-testing,include-rc -n "$0" -- "$@"); then
     errecho "An error occurred while parsing options."
@@ -67,15 +72,15 @@ eval set -- "$OPTS"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -a | --releasever ) releasever="$2"; shift ;;
-        -m | --include-testing ) ktesting="1"; shift ;;
-        -i | --include-rc ) krc="1"; shift ;;
+        -m | --include-testing ) ktesting="1";;
+        -i | --include-rc ) krc="1";;
         -h | --help) usage ;;
     esac
     shift
 done
 
-if [ ! -e "$localdir/$kernelsrc.tar.xz" ]; then
-    errecho "Cannot find $kernelsrc.tar.xz in local directory."
+if [ ! -e "$localdir/$kernelarchive" ]; then
+    errecho "Cannot find $kernelarchive in local directory."
     exit 1
 fi
 
@@ -121,7 +126,7 @@ if [ "x$latestrpm" != "x" ] && [ "x$releasever" != "x" ]; then
     mv "$tmpdir/$latestrpm.untrusted" "$tmpdir/$latestrpm"
 
     # extract kernel sources in qubes-linux-kernel
-    tar xf "$localdir/$kernelsrc.tar.xz" -C "$tmpdir"
+    tar xf "$localdir/$kernelarchive" -C "$tmpdir"
 
     # get latest config and put it in extracted sources
     rpm2cpio "$tmpdir/$latestrpm" | cpio --quiet -i --to-stdout "./lib/modules/$latestver/config" > "$tmpdir/$kernelsrc/.config"
