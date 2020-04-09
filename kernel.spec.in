@@ -76,7 +76,7 @@ BuildRequires:  gcc >= 5.3.1-6.qubes1
 %else
 %if 0%{?fedora} == 25
 BuildRequires:  gcc >= 6.4.1-1.qubes1
-Conflicts:      xen-libs < 4.8.5-15
+Conflicts:      xen-libs < 2001:4.8.5-15
 %else
 BuildRequires:  gcc
 %endif
@@ -138,10 +138,8 @@ Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
 Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-xen-events-avoid-NULL-pointer-dereference-in-evtchn-from-irq.patch
-%if 0%{?fedora} != 25
 Patch14: 0015-xen-pciback-fix-INTERRUPT_TYPE_-defines.patch
 Patch15: 0016-gcc-common.h-params.h-has-been-dropped-in-GCC10.patch
-%endif
 
 %description
 Qubes Dom0 kernel.
