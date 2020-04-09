@@ -43,8 +43,9 @@ get_releasever() {
             exit 1
         fi
     elif [ "x$releasever" == "x" ]; then
-        listver="$(curl -s -L https://dl.fedoraproject.org/pub/fedora/linux/releases 2> /dev/null)"
-        releasever="$(echo "$listver" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -o "[1-9][0-9]" | tail -1)"
+        #listver="$(curl -s -L https://dl.fedoraproject.org/pub/fedora/linux/releases 2> /dev/null)"
+        #releasever="$(echo "$listver" | sed -e 's/<[^>]*>//g' | awk '{print $1}' | grep -o "[1-9][0-9]" | tail -1)"
+        releasever="$(git ls-remote --heads https://src.fedoraproject.org/rpms/fedora-release | grep -Po "refs/heads/f[0-9][1-9]*" | sed 's#refs/heads/f##g' | sort -g | tail -1)"
         if ! [[ "$releasever" =~ ^[1-9][0-9]$ ]]; then
             errecho "An error occurred while trying to determine latest Fedora version"
             exit 1
