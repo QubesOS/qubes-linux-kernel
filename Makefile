@@ -38,13 +38,6 @@ SRC_FILE := linux-${VERSION}.tar.gz
 HASH_FILE := $(SRC_FILE).sha512
 endif
 
-WG_BASE_URL := https://git.zx2c4.com/wireguard-linux-compat/snapshot
-WG_SRC_FILE := wireguard-linux-compat-0.0.20200215.tar.xz
-
-WG_SRC_URL := $(WG_BASE_URL)/$(WG_SRC_FILE)
-WG_SIG_FILE := $(WG_SRC_FILE:%.xz=%.asc)
-WG_SIG_URL := $(WG_BASE_URL)/$(WG_SIG_FILE)
-
 SPI_BASE_URL := https://github.com/roadrunner2/macbook12-spi-driver/archive
 SPI_REVISION := ddfbc7733542b8474a0e8f593aba91e06542be4f
 SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
@@ -61,7 +54,7 @@ endif
 verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)
 
-get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE) $(SPI_SRC_FILE)
+get-sources: $(SRC_FILE) $(SIGN_FILE) $(SPI_SRC_FILE)
 
 $(SRC_FILE):
 	@wget -q -N $(URL)
@@ -69,23 +62,14 @@ $(SRC_FILE):
 $(SIGN_FILE):
 	@wget -q -N $(URL_SIGN)
 
-$(WG_SRC_FILE):
-	@wget -q -N $(WG_SRC_URL)
-
-$(WG_SIG_FILE):
-	@wget -q -N $(WG_SIG_URL)
-
 $(SPI_SRC_FILE):
 	@wget -q -N -O $(SPI_SRC_FILE) $(SPI_SRC_URL)
 
 import-keys:
 	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
 	@gpg --no-auto-check-trustdb --no-default-keyring --keyring linux-kernel-trustedkeys.gpg -q --import kernel*-key.asc
-	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/wireguard-trustedkeys.gpg"; fi
-	@gpg --no-auto-check-trustdb --no-default-keyring --keyring wireguard-trustedkeys.gpg -q --import wireguard*-key.asc
 
 verify-sources: import-keys
-	@xzcat $(WG_SRC_FILE) | gpgv --keyring wireguard-trustedkeys.gpg $(WG_SIG_FILE) - 2>/dev/null
 ifeq ($(VERIFICATION),signature)
 	@xzcat $(SRC_FILE) | gpgv --keyring linux-kernel-trustedkeys.gpg $(SIGN_FILE) - 2>/dev/null
 else
@@ -99,9 +83,6 @@ endif
 clean-sources:
 ifneq ($(SRC_FILE), None)
 	-rm $(SRC_FILE) $(SIGN_FILE)
-endif
-ifneq ($(WG_SRC_FILE), None)
-	-rm $(WG_SRC_FILE) $(WG_SIG_FILE)
 endif
 ifneq ($(SPI_SRC_FILE), None)
 	-rm $(SPI_SRC_FILE)

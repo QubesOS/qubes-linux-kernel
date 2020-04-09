@@ -113,7 +113,6 @@ Source0:        linux-%{upstream_version}.tar.xz
 %else
 Source0:        linux-%{upstream_version}.tar.gz
 %endif
-Source5:	wireguard-linux-compat-0.0.20200215.tar.xz
 Source6:        macbook12-spi-driver-ddfbc7733542b8474a0e8f593aba91e06542be4f.tar.gz
 Source16:       guards
 Source17:       apply-patches
@@ -211,10 +210,6 @@ if [ -n "$u2mfn_ver" ]; then
     cp -r /usr/src/u2mfn-$u2mfn_ver %_builddir/u2mfn
 fi
 
-rm -rf %_builddir/wireguard
-tar x -C %_builddir -Jpf %{SOURCE5}
-mv %_builddir/$(basename %{SOURCE5} .tar.xz) %_builddir/wireguard
-
 rm -rf %_builddir/macbook12-spi-driver
 tar -x -C %_builddir -zf %{SOURCE6}
 mv %_builddir/$(basename %{SOURCE6} .tar.gz) %_builddir/macbook12-spi-driver
@@ -228,10 +223,6 @@ make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
 # Build u2mfn module
 if [ -d "%_builddir/u2mfn" ]; then
     make -C %kernel_build_dir M=%_builddir/u2mfn modules
-fi
-
-if [ -d "%_builddir/wireguard" ]; then
-    make -C %kernel_build_dir M=%_builddir/wireguard/src modules
 fi
 
 # Build applespi, apple-ibridge, apple-ib-tb, apple-ib-als modules
@@ -294,9 +285,6 @@ gzip -c9 < Module.symvers > %buildroot/boot/symvers-%kernelrelease.gz
 make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
 if [ -d "%_builddir/u2mfn" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
-fi
-if [ -d "%_builddir/wireguard" ]; then
-    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/wireguard/src
 fi
 if [ -d "%_builddir/macbook12-spi-driver" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/macbook12-spi-driver
