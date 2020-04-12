@@ -141,6 +141,10 @@ Patch13: 0014-xen-events-avoid-NULL-pointer-dereference-in-evtchn_.patch
 Patch14: 0015-xen-pciback-fix-INTERRUPT_TYPE_-defines.patch
 Patch15: 0016-gcc-common.h-params.h-has-been-dropped-in-GCC10.patch
 
+%if 0%{?fedora} == 32
+Patch16: x86-fix-early-boot-crash-on-gcc-10.patch
+%endif
+
 %description
 Qubes Dom0 kernel.
 
