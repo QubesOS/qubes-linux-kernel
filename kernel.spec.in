@@ -76,7 +76,7 @@ BuildRequires:  gcc >= 5.3.1-6.qubes1
 %else
 %if 0%{?fedora} == 25
 BuildRequires:  gcc >= 6.4.1-1.qubes1
-Conflicts:      xen-libs < 2001:4.8.5-15
+Requires:       xen-libs >= 2001:4.8.5-15
 %else
 BuildRequires:  gcc
 %endif
