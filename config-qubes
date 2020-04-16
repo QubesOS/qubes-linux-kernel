@@ -66,6 +66,9 @@ CONFIG_SECURITY_YAMA=y
 
 # CONFIG_HIBERNATION is not set
 
+CONFIG_STACKPROTECTOR=y
+CONFIG_STACKPROTECTOR_STRONG=y
+
 
 ################################################################################
 ## Disable PCI hotplug to prevent DMA attacks via ExpressCard or Thunderbolt
