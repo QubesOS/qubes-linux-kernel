@@ -1,4 +1,4 @@
-From 5e63ab0046f0d5df3e074b39c85609ababf440af Mon Sep 17 00:00:00 2001
+From 5d7acb7f9662658304d9f8fb4700032c9547a82e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:19:37 +0100
@@ -60,5 +60,5 @@ index abb9b3cd87b8..56c8a4a32672 100644
  	if (skb->ip_summed == CHECKSUM_PARTIAL)
  		/* local packet? */
 -- 
-2.20.1
+2.25.3
 

@@ -1,8 +1,8 @@
-From 43d20992068102f021aac389410b58a922e70586 Mon Sep 17 00:00:00 2001
+From b6b353c9976f7c6e8a079b4bd37b90cc7a906cbf Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Fri, 20 Mar 2020 04:09:18 +0100
-Subject: [PATCH 1/1] xen-pciback: fix INTERRUPT_TYPE_* defines
+Subject: [PATCH] xen-pciback: fix INTERRUPT_TYPE_* defines
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -57,5 +57,5 @@ index 28c45180a12e..5fe431c79f25 100644
  extern bool xen_pcibk_permissive;
  
 -- 
-2.25.1
+2.25.3
 

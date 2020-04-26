@@ -1,4 +1,4 @@
-From c35b15d00c89357d529ca300a4731ac6dcb662c9 Mon Sep 17 00:00:00 2001
+From 65b3d6a11740b22bb5b17c506109c06c89cd788a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:22:24 +0100
@@ -31,5 +31,5 @@ index 56c8a4a32672..e11df925c0dc 100644
  			if (unlikely(gnttab_query_foreign_access(
  				queue->grant_tx_ref[id]) != 0)) {
 -- 
-2.20.1
+2.25.3
 

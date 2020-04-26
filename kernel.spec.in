@@ -137,15 +137,9 @@ Patch9: 0010-xen-netfront-add-range-check-for-Tx-response-id.patch
 Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
 Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
-Patch13: 0014-xen-events-avoid-NULL-pointer-dereference-in-evtchn-from-irq.patch
+Patch13: 0014-xen-events-avoid-NULL-pointer-dereference-in-evtchn_.patch 
 Patch14: 0015-xen-pciback-fix-INTERRUPT_TYPE_-defines.patch
 Patch15: 0016-gcc-common.h-params.h-has-been-dropped-in-GCC10.patch
-
-# nouveau runpm and secboot fixes
-# Accepted nouveau upstream https://github.com/skeggsb/nouveau/commit/f5755e7069d4acbcce1a93692421f358241ead7b
-Patch20: 0001-drm-nouveau-workaround-runpm-fail-by-disabling-PCI-p.patch
-# Accepted nouveau upstream https://github.com/skeggsb/nouveau/commit/41c6a13e8143af71928749ea9895d2ebc2fb4ffd
-Patch21: 0002-drm-nouveau-gr-gp107-gp108-implement-workaround-for-.patch
 
 %description
 Qubes Dom0 kernel.

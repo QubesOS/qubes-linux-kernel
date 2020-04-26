@@ -1,4 +1,4 @@
-From 125a24bdd85904ada1e7f7cd42632f92cc1205a0 Mon Sep 17 00:00:00 2001
+From c7f548c739168b6d6d484324ed14fb61dc8c82a6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 5 Jan 2016 02:44:04 +0100
@@ -66,5 +66,5 @@ index 2c4f949611e4..d29dd999701d 100644
  
  	return err;
 -- 
-2.20.1
+2.25.3
 

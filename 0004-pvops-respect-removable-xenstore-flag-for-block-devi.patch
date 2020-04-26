@@ -1,4 +1,4 @@
-From 28b25d7c5eee288a8fda2bfe0246baa0cee8cb59 Mon Sep 17 00:00:00 2001
+From a9e41820649a6c8af3ec3c96399f3793f58d0295 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Mon, 11 Jun 2012 22:49:31 +0200
 Subject: [PATCH] pvops: respect 'removable' xenstore flag for block devices
@@ -10,10 +10,10 @@ by normal user.
  1 file changed, 7 insertions(+)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 9df516a56bb2..a9ba4956be22 100644
+index b32877e0b384..0919a86b867e 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -2341,6 +2341,7 @@ static void blkfront_connect(struct blkfront_info *info)
+@@ -2348,6 +2348,7 @@ static void blkfront_connect(struct blkfront_info *info)
  	char *envp[] = { "RESIZE=1", NULL };
  	int err, i;
  	struct blkfront_ring_info *rinfo;
@@ -21,7 +21,7 @@ index 9df516a56bb2..a9ba4956be22 100644
  
  	switch (info->connected) {
  	case BLKIF_STATE_CONNECTED:
-@@ -2408,6 +2409,12 @@ static void blkfront_connect(struct blkfront_info *info)
+@@ -2415,6 +2416,12 @@ static void blkfront_connect(struct blkfront_info *info)
  		}
  	}
  
@@ -35,5 +35,5 @@ index 9df516a56bb2..a9ba4956be22 100644
  				  physical_sector_size);
  	if (err) {
 -- 
-2.25.1
+2.25.3
 

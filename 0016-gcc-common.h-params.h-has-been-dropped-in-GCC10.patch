@@ -1,4 +1,4 @@
-From 5fe9d3898ab3b8ebcdacbc28c16d04d9c36e1533 Mon Sep 17 00:00:00 2001
+From 177ea31b05a8f346c78cd297ce98dab080f46a59 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Pierret=20=28fepitre=29?=
  <frederic.pierret@qubes-os.org>
 Date: Tue, 7 Apr 2020 04:04:11 -0400
@@ -65,5 +65,5 @@ index 17f06079a712..9ad76b7f3f10 100644
  static inline gasm *as_a_gasm(gimple stmt)
  {
 -- 
-2.25.1
+2.25.3
 
