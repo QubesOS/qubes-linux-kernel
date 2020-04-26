@@ -1,4 +1,4 @@
-From ca6107528e5b5c986b64297ae62f706b5b391b0c Mon Sep 17 00:00:00 2001
+From f9704e72d0bddbcd5a66e75b409fc087ba332ddd Mon Sep 17 00:00:00 2001
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Date: Wed, 1 Apr 2015 17:01:26 -0400
 Subject: [PATCH] xen/pcifront/pciback: Update pciif.h with ->err and ->result
@@ -34,10 +34,10 @@ index eba6e33147a2..cc6dcb13f1a8 100644
  
  static void pci_frontend_disable_msix(struct pci_dev *dev)
 diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
-index ea4a08b83fa0..2d63aa2946a3 100644
+index 787966f44589..0574c9121124 100644
 --- a/drivers/xen/xen-pciback/pciback_ops.c
 +++ b/drivers/xen/xen-pciback/pciback_ops.c
-@@ -268,7 +268,7 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
+@@ -266,7 +266,7 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
  	if (dev_data)
  		dev_data->ack_intr = 0;
  
@@ -71,5 +71,5 @@ index d9922ae36eb5..c8b674fd2455 100644
  	/* IN: Contains extra infor for this operation */
  	uint32_t info;
 -- 
-2.17.1
+2.25.3
 

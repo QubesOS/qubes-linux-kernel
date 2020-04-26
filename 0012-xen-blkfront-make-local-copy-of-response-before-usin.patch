@@ -1,4 +1,4 @@
-From bfad51710e1523650c2cfbf9aff561bb8364d9a7 Mon Sep 17 00:00:00 2001
+From 1f7cb70fb91f5dcd5f5c9120ff74a3bd054f35db Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:51:10 +0100
@@ -20,10 +20,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 17 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 3f6df7d98265..e520bc6f6007 100644
+index 25323cdc5b8d..f587df3f7a8a 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -1551,7 +1551,7 @@ static bool blkif_completion(unsigned long *id,
+@@ -1552,7 +1552,7 @@ static bool blkif_completion(unsigned long *id,
  static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  {
  	struct request *req;
@@ -32,7 +32,7 @@ index 3f6df7d98265..e520bc6f6007 100644
  	RING_IDX i, rp;
  	unsigned long flags;
  	struct blkfront_ring_info *rinfo = (struct blkfront_ring_info *)dev_id;
-@@ -1568,8 +1568,8 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1569,8 +1569,8 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  	for (i = rinfo->ring.rsp_cons; i != rp; i++) {
  		unsigned long id;
  
@@ -43,7 +43,7 @@ index 3f6df7d98265..e520bc6f6007 100644
  		/*
  		 * The backend has messed up and given us an id that we would
  		 * never have given to it (we stamp it up to BLK_RING_SIZE -
-@@ -1577,39 +1577,39 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1578,39 +1578,39 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  		 */
  		if (id >= BLK_RING_SIZE(info)) {
  			WARN(1, "%s: response to %s has incorrect id (%ld)\n",
@@ -91,7 +91,7 @@ index 3f6df7d98265..e520bc6f6007 100644
  				blkif_req(req)->error = BLK_STS_NOTSUPP;
  				info->feature_discard = 0;
  				info->feature_secdiscard = 0;
-@@ -1619,15 +1619,15 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1620,15 +1620,15 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  			break;
  		case BLKIF_OP_FLUSH_DISKCACHE:
  		case BLKIF_OP_WRITE_BARRIER:
@@ -111,7 +111,7 @@ index 3f6df7d98265..e520bc6f6007 100644
  				blkif_req(req)->error = BLK_STS_NOTSUPP;
  			}
  			if (unlikely(blkif_req(req)->error)) {
-@@ -1640,9 +1640,9 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+@@ -1641,9 +1641,9 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
  			/* fall through */
  		case BLKIF_OP_READ:
  		case BLKIF_OP_WRITE:
@@ -124,5 +124,5 @@ index 3f6df7d98265..e520bc6f6007 100644
  			break;
  		default:
 -- 
-2.17.1
+2.25.3
 

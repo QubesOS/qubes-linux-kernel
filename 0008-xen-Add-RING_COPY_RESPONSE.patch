@@ -1,4 +1,4 @@
-From bb7d9fa8c1c8d2e90ea7cac04fb1fafe4965ad69 Mon Sep 17 00:00:00 2001
+From 083cc2eaf1a73591beee802fbe863c6904cbf5cc Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 15 Dec 2015 21:35:14 +0100
@@ -54,5 +54,5 @@ index 3f40501fc60b..03702f6874df 100644
  #define RING_REQUEST_CONS_OVERFLOW(_r, _cons)				\
      (((_cons) - (_r)->rsp_prod_pvt) >= RING_SIZE(_r))
 -- 
-2.17.1
+2.25.3
 

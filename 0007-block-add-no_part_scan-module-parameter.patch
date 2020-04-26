@@ -1,4 +1,4 @@
-From a3d0a8585e975d169a3994463745620c8d8becd0 Mon Sep 17 00:00:00 2001
+From f28a9832cd1cbf50596d087893d660af53a892a9 Mon Sep 17 00:00:00 2001
 From: Rusty Bird <rustybird@openmailbox.org>
 Date: Mon, 11 Jul 2016 13:05:38 +0000
 Subject: [PATCH] block: add no_part_scan module parameter
@@ -15,10 +15,10 @@ the /sys/module/block/parameters/no_part_scan file.
  1 file changed, 12 insertions(+)
 
 diff --git a/block/genhd.c b/block/genhd.c
-index be5bab20b2ab..f4561f06e273 100644
+index 2b2a936cf848..f32e26fc5219 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -643,6 +643,15 @@ static void register_disk(struct device *parent, struct gendisk *disk)
+@@ -655,6 +655,15 @@ static void register_disk(struct device *parent, struct gendisk *disk)
  	WARN_ON(err);
  }
  
@@ -34,7 +34,7 @@ index be5bab20b2ab..f4561f06e273 100644
  /**
   * __device_add_disk - add disk information to kernel list
   * @parent: parent device for the disk
-@@ -660,6 +669,9 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
+@@ -672,6 +681,9 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
  	dev_t devt;
  	int retval;
  
@@ -45,5 +45,5 @@ index be5bab20b2ab..f4561f06e273 100644
  	 * be accompanied with EXT_DEVT flag.  Make sure all
  	 * parameters make sense.
 -- 
-2.17.1
+2.25.3
 

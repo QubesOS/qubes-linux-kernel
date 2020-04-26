@@ -1,4 +1,4 @@
-From a72bc89ab6d6c7e171bd04357ea6954a9c62b43d Mon Sep 17 00:00:00 2001
+From efd1da5650bf8f5a45173ddadbdadecf96c440de Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:19:37 +0100
@@ -20,7 +20,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 08ea5004e86b..88578e5aeaaf 100644
+index 61ab207a2f5a..08d9276b1c16 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
 @@ -458,7 +458,7 @@ static void xennet_tx_setup_grant(unsigned long gfn, unsigned int offset,
@@ -60,5 +60,5 @@ index 08ea5004e86b..88578e5aeaaf 100644
  	if (skb->ip_summed == CHECKSUM_PARTIAL)
  		/* local packet? */
 -- 
-2.17.1
+2.25.3
 

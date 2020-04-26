@@ -1,4 +1,4 @@
-From 4fcb87529a644016dc00459681efafc542e7c202 Mon Sep 17 00:00:00 2001
+From a979daf281fe05b3d6b149eab7fd2168006f0d0a Mon Sep 17 00:00:00 2001
 From: Michael D Labriola <michael.d.labriola@gmail.com>
 Date: Tue, 19 Feb 2019 18:08:12 -0500
 Subject: [PATCH] drm: change func to better detect wether swiotlb is needed
@@ -79,7 +79,7 @@ index 1a744f964b30..831f72b26d3b 100644
  	r = gmc_v8_0_init_microcode(adev);
  	if (r) {
 diff --git a/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c b/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c
-index 72f8018fa2a8..9ec47e726d78 100644
+index 8b25940c1367..7bb9a3ddab65 100644
 --- a/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c
 +++ b/drivers/gpu/drm/amd/amdgpu/gmc_v9_0.c
 @@ -911,7 +911,7 @@ static int gmc_v9_0_sw_init(void *handle)
@@ -161,5 +161,5 @@ index 97fc498dc767..987ff16b9420 100644
  
  static inline bool drm_arch_can_wc_memory(void)
 -- 
-2.17.2
+2.25.3
 
