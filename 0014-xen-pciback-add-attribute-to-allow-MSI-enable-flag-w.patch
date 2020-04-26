@@ -1,4 +1,4 @@
-From 3a7edaa90f1b3d7066ba9c227577039e4285cb3d Mon Sep 17 00:00:00 2001
+From 6403b443fb441d4206d59b34395f0bd6e876f168 Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Tue, 12 Sep 2017 00:49:02 +0200
 Subject: [PATCH] xen-pciback: add attribute to allow MSI enable flag writes
@@ -190,5 +190,5 @@ index 263c059bff90..796f949c92be 100644
  	unsigned int enable_intx:1;
  	unsigned int isr_on:1; /* Whether the IRQ handler is installed. */
 -- 
-2.21.0
+2.25.3
 

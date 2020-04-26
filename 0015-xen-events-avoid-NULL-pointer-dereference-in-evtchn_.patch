@@ -1,15 +1,11 @@
-From jgross@suse.com Thu Mar 19 08:14:39 2020
+From 6fcb0717242954d662dfbc8f8db7c5558fa0b539 Mon Sep 17 00:00:00 2001
 From: Juergen Gross <jgross@suse.com>
-To: xen-devel@lists.xenproject.org,
-	linux-kernel@vger.kernel.org
-Cc: Juergen Gross <jgross@suse.com>,
-	Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-	Stefano Stabellini <sstabellini@kernel.org>,
-	=?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?= <marmarek@invisiblethingslab.com>,
-	stable@vger.kernel.org
-Subject: [PATCH] xen/events: avoid NULL pointer dereference in evtchn_from_irq()
 Date: Thu, 19 Mar 2020 08:14:28 +0100
-Message-Id: <20200319071428.12115-1-jgross@suse.com>
+Subject: [PATCH] xen/events: avoid NULL pointer dereference in
+ evtchn_from_irq()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 There have been reports of races in evtchn_from_irq() where the info
 pointer has been NULL.
@@ -29,7 +25,7 @@ Signed-off-by: Juergen Gross <jgross@suse.com>
  2 files changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index 499eff7d3f65..838762fe3d6e 100644
+index 54d2e30683c4..f4ed6f99375b 100644
 --- a/drivers/xen/events/events_base.c
 +++ b/drivers/xen/events/events_base.c
 @@ -247,10 +247,16 @@ static void xen_irq_info_cleanup(struct irq_info *info)
@@ -81,6 +77,5 @@ index 82938cff6c7a..c421055843c8 100644
  	enum xen_irq_type type;	/* type */
  	unsigned irq;
 -- 
-2.16.4
-
+2.25.3
 

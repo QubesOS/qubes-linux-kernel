@@ -1,4 +1,4 @@
-From 688769df7c2365ae836eb755ccf5b196b45cbd56 Mon Sep 17 00:00:00 2001
+From 6a2e412c7284bbc093feb36cd74e085552419067 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 05:09:55 +0100
@@ -173,5 +173,5 @@ index 8f0a790ec5e7..abb9b3cd87b8 100644
  
  		err = xennet_get_responses(queue, &rinfo, rp, &tmpq);
 -- 
-2.21.0
+2.25.3
 

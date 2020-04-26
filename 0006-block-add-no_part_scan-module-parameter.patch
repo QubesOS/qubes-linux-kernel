@@ -1,4 +1,4 @@
-From 56ce69a0260413418c2845182aa93165c4a1ce42 Mon Sep 17 00:00:00 2001
+From 33a7b232862fb23d2534d7fb2af1373d2dedaae8 Mon Sep 17 00:00:00 2001
 From: Rusty Bird <rustybird@openmailbox.org>
 Date: Mon, 11 Jul 2016 13:05:38 +0000
 Subject: [PATCH] block: add no_part_scan module parameter
@@ -45,5 +45,5 @@ index 26b31fcae217..75993c12e123 100644
  	 * be accompanied with EXT_DEVT flag.  Make sure all
  	 * parameters make sense.
 -- 
-2.21.0
+2.25.3
 

@@ -1,4 +1,4 @@
-From 115094605c08f2e2790f6110f7fdc002122e0788 Mon Sep 17 00:00:00 2001
+From d467e1a99dd213cf831b29e4bc7628f7f2a162ee Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 06:07:14 +0100
@@ -22,10 +22,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 44 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 3f6dbaf0265b..37235ab63ca9 100644
+index 3d11efa1bb2a..e8a68c87bfc8 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -527,19 +527,16 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
+@@ -528,19 +528,16 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
  
  static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
  					    struct request *req,
@@ -47,7 +47,7 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  
  	return id;
  }
-@@ -547,23 +544,28 @@ static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
+@@ -548,23 +545,28 @@ static unsigned long blkif_ring_get_request(struct blkfront_ring_info *rinfo,
  static int blkif_queue_discard_req(struct request *req, struct blkfront_ring_info *rinfo)
  {
  	struct blkfront_info *info = rinfo->dev_info;
@@ -84,7 +84,7 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  
  	return 0;
  }
-@@ -695,7 +697,7 @@ static void blkif_setup_extra_req(struct blkif_request *first,
+@@ -696,7 +698,7 @@ static void blkif_setup_extra_req(struct blkif_request *first,
  static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *rinfo)
  {
  	struct blkfront_info *info = rinfo->dev_info;
@@ -93,7 +93,7 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  	unsigned long id, extra_id = NO_ASSOCIATED_ID;
  	bool require_extra_req = false;
  	int i;
-@@ -760,16 +762,16 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -761,16 +763,16 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  		 * BLKIF_OP_WRITE
  		 */
  		BUG_ON(req_op(req) == REQ_OP_FLUSH || req->cmd_flags & REQ_FUA);
@@ -118,7 +118,7 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  			BLKIF_OP_WRITE : BLKIF_OP_READ;
  		if (req_op(req) == REQ_OP_FLUSH || req->cmd_flags & REQ_FUA) {
  			/*
-@@ -780,15 +782,15 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -781,15 +783,15 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  			 * since it is guaranteed ordered WRT previous writes.)
  			 */
  			if (info->feature_flush && info->feature_fua)
@@ -138,7 +138,7 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  		if (unlikely(require_extra_req)) {
  			extra_id = blkif_ring_get_request(rinfo, req,
  							  &extra_ring_req);
-@@ -798,7 +800,7 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -799,7 +801,7 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  			 */
  			rinfo->shadow[extra_id].num_sg = 0;
  
@@ -147,7 +147,7 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  
  			/* Link the 2 requests together */
  			rinfo->shadow[extra_id].associated_id = id;
-@@ -806,12 +808,12 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -807,12 +809,12 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  		}
  	}
  
@@ -162,7 +162,7 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  
  	for_each_sg(rinfo->shadow[id].sg, sg, num_sg, i) {
  		BUG_ON(sg->offset + sg->length > PAGE_SIZE);
-@@ -833,10 +835,20 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
+@@ -834,10 +836,20 @@ static int blkif_queue_rw_req(struct request *req, struct blkfront_ring_info *ri
  	if (setup.segments)
  		kunmap_atomic(setup.segments);
  
@@ -187,5 +187,5 @@ index 3f6dbaf0265b..37235ab63ca9 100644
  	if (new_persistent_gnts)
  		gnttab_free_grant_references(setup.gref_head);
 -- 
-2.21.0
+2.25.3
 

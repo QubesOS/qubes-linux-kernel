@@ -1,4 +1,4 @@
-From 6a9f5a2435d3845b41f32b3768bb1c25bba1be2d Mon Sep 17 00:00:00 2001
+From abbad8e502cc152c79c720078cbfe87049e2731f Mon Sep 17 00:00:00 2001
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Date: Wed, 1 Apr 2015 17:01:26 -0400
 Subject: [PATCH] xen/pcifront/pciback: Update pciif.h with ->err and ->result
@@ -71,5 +71,5 @@ index d9922ae36eb5..c8b674fd2455 100644
  	/* IN: Contains extra infor for this operation */
  	uint32_t info;
 -- 
-2.21.0
+2.25.3
 
