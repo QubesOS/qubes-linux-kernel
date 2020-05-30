@@ -140,10 +140,6 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-xen-events-avoid-NULL-pointer-dereference-in-evtchn_.patch 
 Patch14: 0015-xen-pciback-fix-INTERRUPT_TYPE_-defines.patch
 
-%if 0%{?fedora} == 32
-Patch15: x86-fix-early-boot-crash-on-gcc-10.patch
-%endif
-
 %description
 Qubes Dom0 kernel.
 
