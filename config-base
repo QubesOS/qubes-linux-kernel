@@ -1,9 +1,9 @@
-# Base config based on Fedora's config (kernel-core-5.6.14-300.fc32.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.6.15-300.fc32.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 
 #
-# Compiler: gcc (GCC) 9.3.1 20200317 (Red Hat 9.3.1-1)
+# Compiler: gcc (GCC) 9.3.1 20200408 (Red Hat 9.3.1-2)
 #
 CONFIG_CC_IS_GCC=y
 CONFIG_GCC_VERSION=90301
@@ -23,7 +23,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.6.14-300.fc32.x86_64"
+CONFIG_BUILD_SALT="5.6.15-300.fc32.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -831,11 +831,8 @@ CONFIG_ARCH_HAS_MEM_ENCRYPT=y
 CONFIG_ARCH_HAS_GCOV_PROFILE_ALL=y
 # end of GCOV-based kernel profiling
 
-CONFIG_PLUGIN_HOSTCC="g++"
+CONFIG_PLUGIN_HOSTCC=""
 CONFIG_HAVE_GCC_PLUGINS=y
-CONFIG_GCC_PLUGINS=y
-# CONFIG_GCC_PLUGIN_LATENT_ENTROPY is not set
-# CONFIG_GCC_PLUGIN_RANDSTRUCT is not set
 # end of General architecture-dependent options
 
 CONFIG_RT_MUTEXES=y
@@ -8465,10 +8462,6 @@ CONFIG_LSM="yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor"
 # Memory initialization
 #
 CONFIG_INIT_STACK_NONE=y
-# CONFIG_GCC_PLUGIN_STRUCTLEAK_USER is not set
-# CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF is not set
-# CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF_ALL is not set
-# CONFIG_GCC_PLUGIN_STACKLEAK is not set
 # CONFIG_INIT_ON_ALLOC_DEFAULT_ON is not set
 # CONFIG_INIT_ON_FREE_DEFAULT_ON is not set
 # end of Memory initialization
