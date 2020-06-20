@@ -1,4 +1,4 @@
-From 7b398eaaa5110c29495e705be7f02b4b0b0ed412 Mon Sep 17 00:00:00 2001
+From 5437e2aca7e2afdbd502075382833fca2d01ec57 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 16 Dec 2015 06:07:14 +0100
@@ -22,7 +22,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 44 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index a1a1827f8cdb..0b405b248f20 100644
+index 60e4c6f36ba3..3a5f111fd5e8 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
 @@ -538,19 +538,16 @@ static int blkif_ioctl(struct block_device *bdev, fmode_t mode,
@@ -187,5 +187,5 @@ index a1a1827f8cdb..0b405b248f20 100644
  	if (new_persistent_gnts)
  		gnttab_free_grant_references(setup.gref_head);
 -- 
-2.25.3
+2.25.4
 

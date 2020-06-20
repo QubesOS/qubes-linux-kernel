@@ -1,4 +1,4 @@
-From 79f80cd5ce722e793d4badb5be7343c08491dedb Mon Sep 17 00:00:00 2001
+From b52ecfd2ee13fd99901b6d596bc3f7796c2ac12f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 30 Jan 2016 01:53:26 +0100
@@ -10,7 +10,7 @@ Ease debugging of PCI passthrough problems.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index 499eff7d3f65..edfba6329b47 100644
+index 3a791c8485d0..b75bcebc635b 100644
 --- a/drivers/xen/events/events_base.c
 +++ b/drivers/xen/events/events_base.c
 @@ -522,7 +522,7 @@ static unsigned int __startup_pirq(unsigned int irq)
@@ -23,5 +23,5 @@ index 499eff7d3f65..edfba6329b47 100644
  	}
  	evtchn = bind_pirq.port;
 -- 
-2.25.3
+2.25.4
 

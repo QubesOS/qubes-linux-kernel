@@ -1,4 +1,4 @@
-From c7f548c739168b6d6d484324ed14fb61dc8c82a6 Mon Sep 17 00:00:00 2001
+From 75b3b949f232394e7079ee02916725a6fb03c273 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 5 Jan 2016 02:44:04 +0100
@@ -39,7 +39,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 9 insertions(+)
 
 diff --git a/arch/x86/kernel/cpu/mce/core.c b/arch/x86/kernel/cpu/mce/core.c
-index 2c4f949611e4..d29dd999701d 100644
+index 54165f3569e8..af6340b1e16f 100644
 --- a/arch/x86/kernel/cpu/mce/core.c
 +++ b/arch/x86/kernel/cpu/mce/core.c
 @@ -51,6 +51,10 @@
@@ -53,7 +53,7 @@ index 2c4f949611e4..d29dd999701d 100644
  #include "internal.h"
  
  /* sysfs synchronization */
-@@ -2515,6 +2519,11 @@ static __init int mcheck_init_device(void)
+@@ -2527,6 +2531,11 @@ static __init int mcheck_init_device(void)
  	free_cpumask_var(mce_device_initialized);
  
  err_out:
@@ -66,5 +66,5 @@ index 2c4f949611e4..d29dd999701d 100644
  
  	return err;
 -- 
-2.25.3
+2.25.4
 
