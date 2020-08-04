@@ -594,6 +594,9 @@ if [ "$current_default_package" = "%{name}-qubes-vm" ]; then
 type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %version-%plainrel
 fi
 
+# make modules.img sparse (again)
+fallocate --dig-holes %vm_install_dir/modules.img
+
 exit 0
 
 %preun qubes-vm
