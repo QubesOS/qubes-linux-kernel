@@ -131,6 +131,8 @@ Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 Patch14: 0015-xen-events-avoid-NULL-pointer-dereference-in-evtchn_.patch
+Patch15: 0001-Create-uapi-power_supply-from-enums-and-power_supply.patch
+Patch16: 0002-uapi-linux-power_supply.h-add-power_supply_is_str_pr.patch
 
 %description
 Qubes Dom0 kernel.
