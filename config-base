@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-5.8.1-300.fc33.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.8.2-300.fc33.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 9.3.1 20200408 (Red Hat 9.3.1-2)"
@@ -21,7 +21,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.8.1-300.fc33.x86_64"
+CONFIG_BUILD_SALT="5.8.2-300.fc33.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -7717,7 +7717,7 @@ CONFIG_BME680_I2C=m
 CONFIG_BME680_SPI=m
 # CONFIG_CCS811 is not set
 # CONFIG_IAQCORE is not set
-# CONFIG_PMS7003 is not set
+CONFIG_PMS7003=m
 # CONFIG_SENSIRION_SGP30 is not set
 # CONFIG_SPS30 is not set
 # CONFIG_VZ89X is not set
@@ -7901,7 +7901,7 @@ CONFIG_HID_SENSOR_ALS=m
 # CONFIG_HID_SENSOR_PROX is not set
 # CONFIG_JSA1212 is not set
 CONFIG_RPR0521=m
-# CONFIG_LTR501 is not set
+CONFIG_LTR501=m
 CONFIG_LV0104CS=m
 # CONFIG_MAX44000 is not set
 CONFIG_MAX44009=m
