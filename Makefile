@@ -53,6 +53,7 @@ URL := https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapsh
 endif
 
 get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE)
+	git submodule update --init --recursive
 
 verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)

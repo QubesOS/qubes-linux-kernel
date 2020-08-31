@@ -106,6 +106,8 @@ Source0:        linux-%{upstream_version}.tar.xz
 %else
 Source0:        linux-%{upstream_version}.tar.gz
 %endif
+Source1:        @dummy-psu@
+Source2:        @dummy-backlight@
 Source5:	wireguard-linux-compat-1.0.20200401.tar.xz
 Source16:       guards
 Source17:       apply-patches
@@ -198,6 +200,13 @@ make clean $MAKE_ARGS
 
 rm -f source
 find . ! -type d -printf '%%P\n' > %my_builddir/obj-files
+
+rm -rf %_builddir/dummy-psu
+tar -x -C %_builddir -zf %{SOURCE1}
+
+rm -rf %_builddir/dummy-backlight
+tar -x -C %_builddir -zf %{SOURCE2}
+
 rm -rf %_builddir/u2mfn
 u2mfn_ver=`dkms status u2mfn|tail -n 1|cut -f 2 -d ' '|tr -d ':,:'`
 if [ -n "$u2mfn_ver" ]; then
@@ -214,6 +223,16 @@ mv %_builddir/$(basename %{SOURCE5} .tar.xz) %_builddir/wireguard
 cd %kernel_build_dir
 
 make %{?_smp_mflags} all $MAKE_ARGS CONFIG_DEBUG_SECTION_MISMATCH=y
+
+# Build dummy-psu module
+if [ -d "%_builddir/dummy-psu" ]; then
+    make -C %kernel_build_dir M=%_builddir/dummy-psu modules
+fi
+
+# Build dummy-backlight module
+if [ -d "%_builddir/dummy-backlight" ]; then
+    make -C %kernel_build_dir M=%_builddir/dummy-backlight modules
+fi
 
 # Build u2mfn module
 if [ -d "%_builddir/u2mfn" ]; then
@@ -278,6 +297,12 @@ dd if=/dev/zero of=%buildroot/boot/initramfs-%kernelrelease.img \
 gzip -c9 < Module.symvers > %buildroot/boot/symvers-%kernelrelease.gz
 
 make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot
+if [ -d "%_builddir/dummy-psu" ]; then
+    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/dummy-psu
+fi
+if [ -d "%_builddir/dummy-backlight" ]; then
+    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/dummy-backlight
+fi
 if [ -d "%_builddir/u2mfn" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
 fi
