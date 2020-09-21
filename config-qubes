@@ -128,6 +128,10 @@ CONFIG_SECURITY_APPARMOR=y
 
 
 ################################################################################
+## Disable floppy driver as it triggers a kernel bug (QubesOS/qubes-issues#6074)
+# CONFIG_BLK_DEV_FD is not set
+
+################################################################################
 ## TODO: from diff to old config
 
 ## CONFIG_X86_AMD_PLATFORM_DEVICE=y
