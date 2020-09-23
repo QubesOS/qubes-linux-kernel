@@ -1,0 +1,48 @@
+commit 3ef75019cdad54053edfa0ace8803a99388078df (HEAD -> qubes)
+Author: Paweł Marczewski <pawel@invisiblethingslab.com>
+Date:   Tue Sep 22 13:24:09 2020 +0200
+
+    iwlwifi: add a disable_rxq switch
+    
+    Workaround for issues with Intel wireless cards under Qubes:
+    
+    https://github.com/QubesOS/qubes-issues/issues/5615
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/iwl-drv.c b/drivers/net/wireless/intel/iwlwifi/iwl-drv.c
+index 04f14bfdd091..d3cd1d761ba0 100644
+--- a/drivers/net/wireless/intel/iwlwifi/iwl-drv.c
++++ b/drivers/net/wireless/intel/iwlwifi/iwl-drv.c
+@@ -1876,3 +1876,7 @@ MODULE_PARM_DESC(remove_when_gone,
+ module_param_named(disable_11ax, iwlwifi_mod_params.disable_11ax, bool,
+ 		   S_IRUGO);
+ MODULE_PARM_DESC(disable_11ax, "Disable HE capabilities (default: false)");
++
++module_param_named(disable_rxq, iwlwifi_mod_params.disable_rxq, bool,
++		   S_IRUGO);
++MODULE_PARM_DESC(disable_rxq, "Disable RX queue configuration (default: false)");
+diff --git a/drivers/net/wireless/intel/iwlwifi/iwl-modparams.h b/drivers/net/wireless/intel/iwlwifi/iwl-modparams.h
+index e8ce3a300857..d48933fa173d 100644
+--- a/drivers/net/wireless/intel/iwlwifi/iwl-modparams.h
++++ b/drivers/net/wireless/intel/iwlwifi/iwl-modparams.h
+@@ -137,6 +137,7 @@ struct iwl_mod_params {
+ 	bool disable_11ax;
+ 	bool remove_when_gone;
+ 	bool enable_ini;
++	bool disable_rxq;
+ };
+ 
+ static inline bool iwl_enable_rx_ampdu(void)
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/fw.c b/drivers/net/wireless/intel/iwlwifi/mvm/fw.c
+index 95a613537047..9c0dc72f7d18 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/fw.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/fw.c
+@@ -1241,7 +1241,8 @@ int iwl_mvm_up(struct iwl_mvm *mvm)
+ 	}
+ 
+ 	/* Init RSS configuration */
+-	if (mvm->trans->trans_cfg->device_family >= IWL_DEVICE_FAMILY_22000) {
++	if (mvm->trans->trans_cfg->device_family >= IWL_DEVICE_FAMILY_22000 &&
++		!iwlwifi_mod_params.disable_rxq) {
+ 		ret = iwl_configure_rxq(mvm);
+ 		if (ret) {
+ 			IWL_ERR(mvm, "Failed to configure RX queues: %d\n",
