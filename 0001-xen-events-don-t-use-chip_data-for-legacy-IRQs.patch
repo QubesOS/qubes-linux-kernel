@@ -75,7 +75,7 @@ index 90b8f56fbadb..6f02c18fa65c 100644
 @@ -603,7 +616,7 @@ EXPORT_SYMBOL_GPL(xen_irq_from_gsi);
  static void __unbind_from_irq(unsigned int irq)
  {
- 	int evtchn = evtchn_from_irq(irq);
+ 	evtchn_port_t evtchn = evtchn_from_irq(irq);
 -	struct irq_info *info = irq_get_chip_data(irq);
 +	struct irq_info *info = info_for_irq(irq);
  
