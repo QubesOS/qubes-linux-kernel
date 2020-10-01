@@ -98,6 +98,8 @@ Source300:      patches.qubes
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
+Patch20: 0001-xen-events-don-t-use-chip_data-for-legacy-IRQs.patch
+
 %description
 Qubes Dom0 kernel.
 
