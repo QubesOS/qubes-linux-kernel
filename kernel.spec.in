@@ -132,8 +132,9 @@ Patch9: 0010-xen-netfront-add-range-check-for-Tx-response-id.patch
 Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
 Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
-Patch13: 0001-Create-uapi-power_supply-from-enums-and-power_supply.patch
-Patch14: 0002-uapi-linux-power_supply.h-add-power_supply_is_str_pr.patch
+Patch13: 0014-iwlwifi-disable-rxq.patch
+Patch14: 0001-Create-uapi-power_supply-from-enums-and-power_supply.patch
+Patch15: 0002-uapi-linux-power_supply.h-add-power_supply_is_str_pr.patch
 
 Patch20: 0001-xen-events-don-t-use-chip_data-for-legacy-IRQs.patch
 
