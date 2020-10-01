@@ -134,6 +134,8 @@ Patch14: 0015-xen-events-avoid-NULL-pointer-dereference-in-evtchn_.patch
 Patch15: 0001-Create-uapi-power_supply-from-enums-and-power_supply.patch
 Patch16: 0002-uapi-linux-power_supply.h-add-power_supply_is_str_pr.patch
 
+Patch20: 0001-xen-events-don-t-use-chip_data-for-legacy-IRQs.patch
+
 %description
 Qubes Dom0 kernel.
 
