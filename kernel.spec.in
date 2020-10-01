@@ -135,6 +135,8 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0001-Create-uapi-power_supply-from-enums-and-power_supply.patch
 Patch14: 0002-uapi-linux-power_supply.h-add-power_supply_is_str_pr.patch
 
+Patch20: 0001-xen-events-don-t-use-chip_data-for-legacy-IRQs.patch
+
 %description
 Qubes Dom0 kernel.
 
