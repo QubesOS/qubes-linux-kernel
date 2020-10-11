@@ -55,6 +55,7 @@ verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)
 
 get-sources: $(SRC_FILE) $(SIGN_FILE) $(SPI_SRC_FILE)
+	git submodule update --init --recursive
 
 $(SRC_FILE):
 	@wget -q -N $(URL)

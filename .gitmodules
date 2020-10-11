@@ -1,0 +1,6 @@
+[submodule "dummy-psu"]
+	path = dummy-psu
+	url = https://github.com/QubesOS/qubes-dummy-psu
+[submodule "dummy-backlight"]
+	path = dummy-backlight
+	url = https://github.com/QubesOS/qubes-dummy-backlight
