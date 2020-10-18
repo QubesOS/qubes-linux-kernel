@@ -134,8 +134,6 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 Patch14: 0015-xen-events-avoid-NULL-pointer-dereference-in-evtchn_.patch
 
-Patch20: 0001-xen-events-don-t-use-chip_data-for-legacy-IRQs.patch
-
 %description
 Qubes Dom0 kernel.
 
