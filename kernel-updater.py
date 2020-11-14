@@ -24,8 +24,7 @@ class KernelUpdaterClient:
         if 200 <= r.status_code < 300:
             content = json.loads(r.content.decode('utf-8'))
             releases = [rel['version'] for rel in content['releases'] if
-                        rel['moniker'] in ('stable', 'longterm')]
-
+                        rel['moniker'] in ('stable', 'longterm') and not rel['iseol']]
             releases.sort(key=parse_version, reverse=True)
 
             if 'stable-' in self.branch:
