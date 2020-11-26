@@ -112,7 +112,7 @@ index 1052b95bc9a9..60e4c6f36ba3 100644
  			}
  			if (unlikely(blkif_req(req)->error)) {
 @@ -1650,9 +1650,9 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 			/* fall through */
+ 			fallthrough;
  		case BLKIF_OP_READ:
  		case BLKIF_OP_WRITE:
 -			if (unlikely(bret->status != BLKIF_RSP_OKAY))

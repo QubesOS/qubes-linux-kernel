@@ -80,26 +80,38 @@ index 8f0a790ec5e7..abb9b3cd87b8 100644
  
  	queue->rx.rsp_cons = cons;
  	return err;
-@@ -782,28 +781,28 @@ static int xennet_get_responses(struct netfront_queue *queue,
- 				struct netfront_rx_info *rinfo, RING_IDX rp,
- 				struct sk_buff_head *list)
+@@ -782,39 +781,39 @@ static int xennet_get_responses(struct netfront_queue *queue,
+ 				struct sk_buff_head *list,
+ 				bool *need_xdp_flush)
  {
 -	struct xen_netif_rx_response *rx = &rinfo->rx;
 +	struct xen_netif_rx_response rx = rinfo->rx;
- 	struct xen_netif_extra_info *extras = rinfo->extras;
- 	struct device *dev = &queue->info->netdev->dev;
- 	RING_IDX cons = queue->rx.rsp_cons;
- 	struct sk_buff *skb = xennet_get_rx_skb(queue, cons);
- 	grant_ref_t ref = xennet_get_rx_ref(queue, cons);
 -	int max = XEN_NETIF_NR_SLOTS_MIN + (rx->status <= RX_COPY_THRESHOLD);
 +	int max = XEN_NETIF_NR_SLOTS_MIN + (rx.status <= RX_COPY_THRESHOLD);
+ 	RING_IDX cons = queue->rx.rsp_cons;
+ 	struct sk_buff *skb = xennet_get_rx_skb(queue, cons);
+ 	struct xen_netif_extra_info *extras = rinfo->extras;
+ 	grant_ref_t ref = xennet_get_rx_ref(queue, cons);
+ 	struct device *dev = &queue->info->netdev->dev;
+ 	struct bpf_prog *xdp_prog;
+ 	struct xdp_buff xdp;
+ 	unsigned long ret;
  	int slots = 1;
  	int err = 0;
- 	unsigned long ret;
+ 	u32 verdict;
  
 -	if (rx->flags & XEN_NETRXF_extra_info) {
 +	if (rx.flags & XEN_NETRXF_extra_info) {
  		err = xennet_get_extras(queue, extras, rp);
+ 		if (!err) {
+ 			if (extras[XEN_NETIF_EXTRA_TYPE_XDP - 1].type) {
+ 				struct xen_netif_extra_info *xdp;
+ 
+ 				xdp = &extras[XEN_NETIF_EXTRA_TYPE_XDP - 1];
+-				rx->offset = xdp->u.xdp.headroom;
++				rx.offset = xdp->u.xdp.headroom;
+ 			}
+ 		}
  		cons = queue->rx.rsp_cons;
  	}
  
@@ -124,10 +136,24 @@ index 8f0a790ec5e7..abb9b3cd87b8 100644
  			err = -EINVAL;
  			goto next;
  		}
+@@ -825,11 +825,11 @@ static int xennet_get_responses(struct netfront_queue *queue,
+ 		rcu_read_lock();
+ 		xdp_prog = rcu_dereference(queue->xdp_prog);
+ 		if (xdp_prog) {
+-			if (!(rx->flags & XEN_NETRXF_more_data)) {
++			if (!(rx.flags & XEN_NETRXF_more_data)) {
+ 				/* currently only a single page contains data */
+ 				verdict = xennet_run_xdp(queue,
+ 							 skb_frag_page(&skb_shinfo(skb)->frags[0]),
+-							 rx, xdp_prog, &xdp, need_xdp_flush);
++							 &rx, xdp_prog, &xdp, need_xdp_flush);
+ 				if (verdict != XDP_PASS)
+ 					err = -EINVAL;
+ 			} else {
 @@ -830,7 +829,7 @@ static int xennet_get_responses(struct netfront_queue *queue,
- 		__skb_queue_tail(list, skb);
- 
+ 		rcu_read_unlock();
  next:
+ 		__skb_queue_tail(list, skb);
 -		if (!(rx->flags & XEN_NETRXF_more_data))
 +		if (!(rx.flags & XEN_NETRXF_more_data))
  			break;
@@ -171,7 +197,7 @@ index 8f0a790ec5e7..abb9b3cd87b8 100644
 +		RING_COPY_RESPONSE(&queue->rx, i, rx);
  		memset(extras, 0, sizeof(rinfo.extras));
  
- 		err = xennet_get_responses(queue, &rinfo, rp, &tmpq);
+ 		err = xennet_get_responses(queue, &rinfo, rp, &tmpq,
 -- 
 2.25.4
 
