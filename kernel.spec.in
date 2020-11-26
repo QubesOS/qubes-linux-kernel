@@ -108,7 +108,7 @@ Source0:        linux-%{upstream_version}.tar.gz
 %endif
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
-Source5:	wireguard-linux-compat-1.0.20200401.tar.xz
+Source5:	wireguard-linux-compat-1.0.20201112.tar.xz
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh

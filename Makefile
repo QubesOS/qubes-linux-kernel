@@ -39,7 +39,7 @@ HASH_FILE := $(SRC_FILE).sha512
 endif
 
 WG_BASE_URL := https://git.zx2c4.com/wireguard-linux-compat/snapshot/
-WG_SRC_FILE := wireguard-linux-compat-1.0.20200401.tar.xz
+WG_SRC_FILE := wireguard-linux-compat-1.0.20201112.tar.xz
 
 WG_SRC_URL := $(WG_BASE_URL)/$(WG_SRC_FILE)
 WG_SIG_FILE := $(WG_SRC_FILE:%.xz=%.asc)
