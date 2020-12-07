@@ -13,6 +13,7 @@ CONFIG_EXPERT=y
 ## Use xz to save space on /boot
 
 # CONFIG_KERNEL_GZIP is not set
+# CONFIG_KERNEL_ZSTD is not set
 CONFIG_KERNEL_XZ=y
 
 
