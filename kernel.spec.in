@@ -137,6 +137,7 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-iwlwifi-disable-rxq.patch
 Patch14: 0001-xen-add-helpers-for-caching-grant-mapping-pages.patch
 Patch15: 0002-xen-don-t-use-page-lru-for-ZONE_DEVICE-memory.patch
+Patch16: 0015-xsa350-linux.patch
 
 %description
 Qubes Dom0 kernel.
