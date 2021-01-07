@@ -135,9 +135,6 @@ Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
 Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-iwlwifi-disable-rxq.patch
-Patch14: 0001-xen-add-helpers-for-caching-grant-mapping-pages.patch
-Patch15: 0002-xen-don-t-use-page-lru-for-ZONE_DEVICE-memory.patch
-Patch16: 0015-xsa350-linux.patch
 
 %description
 Qubes Dom0 kernel.
@@ -177,7 +174,8 @@ pathfix.py -i "%{__python3} %{py3_shbang_opts}" -p -n \
 	tools/perf/scripts/python/stat-cpi.py \
 	tools/perf/scripts/python/sched-migration.py \
 	Documentation \
-	scripts/gen_compile_commands.py
+	scripts/clang-tools/gen_compile_commands.py \
+	scripts/clang-tools/run-clang-tools.py
 %endif
 
 cd %kernel_build_dir
