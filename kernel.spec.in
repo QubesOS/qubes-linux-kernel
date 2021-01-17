@@ -111,6 +111,7 @@ Source0:        linux-%{upstream_version}.tar.gz
 %endif
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
+Source3:        @linux-utils@
 #Source6:        macbook12-spi-driver-ddfbc7733542b8474a0e8f593aba91e06542be4f.tar.gz
 Source16:       guards
 Source17:       apply-patches
@@ -210,10 +211,7 @@ rm -rf %_builddir/dummy-backlight
 tar -x -C %_builddir -zf %{SOURCE2}
 
 rm -rf %_builddir/u2mfn
-u2mfn_ver=`dkms status u2mfn|tail -n 1|cut -f 2 -d ' '|tr -d ':,:'`
-if [ -n "$u2mfn_ver" ]; then
-    cp -r /usr/src/u2mfn-$u2mfn_ver %_builddir/u2mfn
-fi
+tar -x -C %_builddir -zf %{SOURCE3} --strip-components=2 linux-utils/kernel-modules/u2mfn
 
 #rm -rf %_builddir/macbook12-spi-driver
 #tar -x -C %_builddir -zf %{SOURCE6}
