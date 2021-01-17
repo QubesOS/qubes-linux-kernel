@@ -4,3 +4,7 @@
 [submodule "dummy-backlight"]
 	path = dummy-backlight
 	url = https://github.com/QubesOS/qubes-dummy-backlight
+[submodule "linux-utils"]
+	path = linux-utils
+	url = https://github.com/QubesOS/qubes-linux-utils.git
+	branch = release4.0
