@@ -3,7 +3,7 @@
 #
 
 %define variant qubes
-%define plainrel @REL@
+%define plainrel @REL@%{?dist}
 %define rel %{plainrel}.%{variant}
 %define version %(echo '@VERSION@' | sed 's/~rc.*/.0/')
 %define upstream_version %(echo '@VERSION@' | sed 's/~rc/-rc/')
