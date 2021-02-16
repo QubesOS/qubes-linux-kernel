@@ -120,6 +120,7 @@ Patch13: 0014-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch14: 0015-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 Patch15: 0016-drm-change-func-to-better-detect-wether-swiotlb-is-n.patch
 Patch16: 0017-drm-amdgpu-fix-dma-mask-check-in-gmc_v6_0.c.patch
+Patch17: xsa365-linux.patch
 
 %description
 Qubes Dom0 kernel.
