@@ -96,7 +96,7 @@ repo_opts="$repo_opts --enablerepo=updates-testing"
 fi
 
 # shellcheck disable=SC2086
-latestver=$(dnf -q repoquery kernel-core $repo_opts)
+latestver=$(dnf $dnf_opts -q repoquery kernel-core $repo_opts)
 
 # include rc
 if [ "$krc" != "1" ]; then
@@ -117,7 +117,7 @@ if [ "x$latestrpm" != "x" ] && [ "x$releasever" != "x" ]; then
     tmpdir="$(mktemp -d -p "$localdir")"
     # download latest kernel rpm
     # shellcheck disable=SC2086
-    dnf -q download kernel-core $repo_opts
+    dnf $dnf_opts -q download kernel-core $repo_opts
     mv "$latestrpm" "$tmpdir/$latestrpm.untrusted"
 
     # check signature
