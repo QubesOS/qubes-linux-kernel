@@ -131,6 +131,11 @@ CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
 CONFIG_XEN_UNPOPULATED_ALLOC=y
 
 ################################################################################
+## Help crash debugging by saving crash messages to EFI variables
+
+CONFIG_EFI_VARS_PSTORE=y
+
+################################################################################
 ## TODO: from diff to old config
 
 ## CONFIG_X86_AMD_PLATFORM_DEVICE=y
