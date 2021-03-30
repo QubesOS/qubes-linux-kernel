@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-5.11.7-300.fc34.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.11.10-300.fc34.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 8.3.1 20191121 (Red Hat 8.3.1-5)"
@@ -22,7 +22,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.11.7-300.fc34.x86_64"
+CONFIG_BUILD_SALT="5.11.10-300.fc34.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -7345,6 +7345,7 @@ CONFIG_HYPERV_BALLOON=m
 #
 CONFIG_XEN_BALLOON=y
 # CONFIG_XEN_BALLOON_MEMORY_HOTPLUG is not set
+CONFIG_XEN_MEMORY_HOTPLUG_LIMIT=512
 CONFIG_XEN_SCRUB_PAGES_DEFAULT=y
 CONFIG_XEN_DEV_EVTCHN=m
 CONFIG_XEN_BACKEND=y
