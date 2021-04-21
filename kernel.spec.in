@@ -135,6 +135,7 @@ Patch9: 0010-xen-netfront-add-range-check-for-Tx-response-id.patch
 Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
 Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
+Patch13: 0001-xen-gntdev-fix-gntdev_mmap-error-exit-path.patch
 
 %description
 Qubes Dom0 kernel.
