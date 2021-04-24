@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-5.11.12-300.fc34.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.11.16-300.fc34.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 8.3.1 20191121 (Red Hat 8.3.1-5)"
@@ -22,7 +22,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.11.12-300.fc34.x86_64"
+CONFIG_BUILD_SALT="5.11.16-300.fc34.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -7317,7 +7317,7 @@ CONFIG_VIRTIO_MMIO=m
 CONFIG_VIRTIO_DMA_SHARED_BUFFER=m
 CONFIG_VDPA=m
 CONFIG_VDPA_SIM=m
-# CONFIG_VDPA_SIM_NET is not set
+CONFIG_VDPA_SIM_NET=m
 CONFIG_IFCVF=m
 CONFIG_MLX5_VDPA=y
 CONFIG_MLX5_VDPA_NET=m
@@ -7820,8 +7820,7 @@ CONFIG_AD7766=m
 # CONFIG_AD7923 is not set
 CONFIG_AD7949=m
 # CONFIG_AD799X is not set
-CONFIG_AD9467=m
-CONFIG_ADI_AXI_ADC=m
+# CONFIG_AD9467 is not set
 # CONFIG_AXP20X_ADC is not set
 CONFIG_AXP288_ADC=m
 # CONFIG_CC10001_ADC is not set
