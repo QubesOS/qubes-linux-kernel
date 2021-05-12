@@ -58,17 +58,21 @@ get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE)
 verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)
 
+ifeq ($(FETCH_CMD),)
+$(error "You can not run this Makefile without having FETCH_CMD defined")
+endif
+
 $(SRC_FILE):
-	@wget -q -N $(URL)
+	@$(FETCH_CMD) $(SRC_FILE) -- $(URL)
 
 $(SIGN_FILE):
-	@wget -q -N $(URL_SIGN)
+	@$(FETCH_CMD) $(SIGN_FILE) -- $(URL_SIGN)
 
 $(WG_SRC_FILE):
-	@wget -q -N $(WG_SRC_URL)
+	@$(FETCH_CMD) $@ -- $(WG_SRC_URL)
 
 $(WG_SIG_FILE):
-	@wget -q -N $(WG_SIG_URL)
+	@$(FETCH_CMD) $@ -- $(WG_SIG_URL)
 
 import-keys:
 	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
