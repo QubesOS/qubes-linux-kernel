@@ -57,14 +57,18 @@ verrel:
 get-sources: $(SRC_FILE) $(SIGN_FILE) $(SPI_SRC_FILE)
 	git submodule update --init --recursive
 
+ifeq ($(FETCH_CMD),)
+$(error "You can not run this Makefile without having FETCH_CMD defined")
+endif
+
 $(SRC_FILE):
-	@wget -q -N $(URL)
+	@$(FETCH_CMD) $(SRC_FILE) -- $(URL)
 
 $(SIGN_FILE):
-	@wget -q -N $(URL_SIGN)
+	@$(FETCH_CMD) $(SIGN_FILE) -- $(URL_SIGN)
 
 $(SPI_SRC_FILE):
-	@wget -q -N -O $(SPI_SRC_FILE) $(SPI_SRC_URL)
+	@$(FETCH_CMD) $(SPI_SRC_FILE) -L -- $(SPI_SRC_URL)
 
 import-keys:
 	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
