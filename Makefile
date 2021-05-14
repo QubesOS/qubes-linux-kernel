@@ -8,10 +8,10 @@ ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
 endif
 ifndef VERSION
-VERSION := $(shell cat version)
+VERSION := $(file <version)
 endif
 ifndef RELEASE
-RELEASE := $(shell cat rel)
+RELEASE := $(file <rel)
 endif
 
 ifneq ($(VERSION),$(subst -rc,,$(VERSION)))
