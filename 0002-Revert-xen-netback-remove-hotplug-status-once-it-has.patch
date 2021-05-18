@@ -1,0 +1,42 @@
+From 6d9a10fb2b8c79d42af2e68f41263140e508a3b1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Tue, 18 May 2021 03:08:44 +0200
+Subject: [PATCH 2/2] Revert "xen-netback: remove 'hotplug-status' once it has
+ served its purpose"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+This reverts commit 1f2565780e9b7218cf92c7630130e82dcc0fe9c2.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/net/xen-netback/xenbus.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+index a5439c130130..f7b74e583c56 100644
+--- a/drivers/net/xen-netback/xenbus.c
++++ b/drivers/net/xen-netback/xenbus.c
+@@ -675,7 +675,6 @@ static void hotplug_status_changed(struct xenbus_watch *watch,
+ 
+ 		/* Not interested in this watch anymore. */
+ 		unregister_hotplug_status_watch(be);
+-		xenbus_rm(XBT_NIL, be->dev->nodename, "hotplug-status");
+ 	}
+ 	kfree(str);
+ }
+@@ -987,6 +986,7 @@ static int netback_remove(struct xenbus_device *dev)
+ 	if (be->vif) {
+ 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
+ 		backend_disconnect(be);
++		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
+ 		xenvif_free(be->vif);
+ 		be->vif = NULL;
+ 	}
+-- 
+2.26.3
+

@@ -136,6 +136,8 @@ Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
 Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0001-xen-gntdev-fix-gntdev_mmap-error-exit-path.patch
+Patch14: 0001-Revert-xen-netback-Check-for-hotplug-status-existenc.patch
+Patch15: 0002-Revert-xen-netback-remove-hotplug-status-once-it-has.patch
 
 %description
 Qubes Dom0 kernel.
