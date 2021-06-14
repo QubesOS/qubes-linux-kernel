@@ -108,7 +108,7 @@ Source0:        linux-%{upstream_version}.tar
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
-#Source6:        macbook12-spi-driver-ddfbc7733542b8474a0e8f593aba91e06542be4f.tar
+Source6:        macbook12-spi-driver-65c63d8ead29006dc9900f02a5c0e7f55d78b23f.tar
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
@@ -211,9 +211,9 @@ tar -x -C %_builddir -zf %{SOURCE2}
 rm -rf %_builddir/u2mfn
 tar -x -C %_builddir -zf %{SOURCE3} --strip-components=2 linux-utils/kernel-modules/u2mfn
 
-#rm -rf %_builddir/macbook12-spi-driver
-#tar -x -C %_builddir -f %{SOURCE6}
-#mv %_builddir/$(basename %{SOURCE6} .tar) %_builddir/macbook12-spi-driver
+rm -rf %_builddir/macbook12-spi-driver
+tar -x -C %_builddir -f %{SOURCE6}
+mv %_builddir/$(basename %{SOURCE6} .tar) %_builddir/macbook12-spi-driver
 
 %build
 
@@ -237,9 +237,9 @@ if [ -d "%_builddir/u2mfn" ]; then
 fi
 
 # Build applespi, apple-ibridge, apple-ib-tb, apple-ib-als modules
-#if [ -d "%_builddir/macbook12-spi-driver" ]; then
-#    make -C %kernel_build_dir M=%_builddir/macbook12-spi-driver modules
-#fi
+if [ -d "%_builddir/macbook12-spi-driver" ]; then
+    make -C %kernel_build_dir M=%_builddir/macbook12-spi-driver modules
+fi
 
 %define __modsign_install_post \
   if [ "%{signmodules}" -eq "1" ]; then \
@@ -303,9 +303,9 @@ fi
 if [ -d "%_builddir/u2mfn" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
 fi
-#if [ -d "%_builddir/macbook12-spi-driver" ]; then
-#    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/macbook12-spi-driver
-#fi
+if [ -d "%_builddir/macbook12-spi-driver" ]; then
+    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/macbook12-spi-driver
+fi
 
 mkdir -p %buildroot/%src_install_dir
 
