@@ -23,6 +23,8 @@ endif
 
 all: help
 
+UNTRUSTED_SUFF := .UNTRUSTED
+
 MIRROR := cdn.kernel.org
 ifeq (,$(DISTFILES_MIRROR))
 SRC_BASEURL := https://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/;s/^4\..*/4.x/;s/^5\..*/5.x/')
@@ -37,11 +39,13 @@ else
 SRC_FILE := linux-${VERSION}.tar.gz
 HASH_FILE := $(SRC_FILE).sha512
 endif
+SRC_TARFILE := linux-${VERSION}.tar
 
 SPI_BASE_URL := https://github.com/roadrunner2/macbook12-spi-driver/archive
 SPI_REVISION := ddfbc7733542b8474a0e8f593aba91e06542be4f
 SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
 SPI_SRC_FILE := macbook12-spi-driver-$(SPI_REVISION).tar.gz
+SPI_SRC_TARFILE := macbook12-spi-driver-$(SPI_REVISION).tar
 SPI_HASH_SHA256 := 8039f103fbb351ecbbaddd540feeb7b0b1abfa216f0689a611e43d997426470e
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
@@ -54,43 +58,68 @@ endif
 verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)
 
-get-sources: $(SRC_FILE) $(SIGN_FILE) $(SPI_SRC_FILE)
+get-sources: $(SRC_TARFILE) $(SPI_SRC_TARFILE)
 	git submodule update --init --recursive
 
 ifeq ($(FETCH_CMD),)
 $(error "You can not run this Makefile without having FETCH_CMD defined")
 endif
 
-$(SRC_FILE):
-	@$(FETCH_CMD) $(SRC_FILE) -- $(URL)
+.INTERMEDIATE: linux-keyring.gpg
+linux-keyring.gpg: $(sort $(wildcard kernel.org-*.asc))
+	cat $^ | gpg --dearmor >$@
 
-$(SIGN_FILE):
-	@$(FETCH_CMD) $(SIGN_FILE) -- $(URL_SIGN)
+.INTERMEDIATE: $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)
+%.tar$(UNTRUSTED_SUFF): %.tar.xz$(UNTRUSTED_SUFF)
+	if [ -f /usr/bin/qvm-run-vm ]; \
+        then qvm-run-vm --dispvm 2>/dev/null xzcat <$< > $@; \
+	else xzcat <$< > $@; fi
 
-$(SPI_SRC_FILE):
-	@$(FETCH_CMD) $(SPI_SRC_FILE) -L -- $(SPI_SRC_URL)
+%.tar$(UNTRUSTED_SUFF): %.tar.gz$(UNTRUSTED_SUFF)
+	if [ -f /usr/bin/qvm-run-vm ]; \
+        then qvm-run-vm --dispvm 2>/dev/null zcat <$< > $@; \
+	else zcat <$< > $@; fi
 
-import-keys:
-	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
-	@gpg --no-auto-check-trustdb --no-default-keyring --keyring linux-kernel-trustedkeys.gpg -q --import kernel*-key.asc
-
-verify-sources: import-keys
 ifeq ($(VERIFICATION),signature)
-	@xzcat $(SRC_FILE) | gpgv --keyring linux-kernel-trustedkeys.gpg $(SIGN_FILE) - 2>/dev/null
+# signature based
+$(SRC_TARFILE): $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(SIGN_FILE) linux-keyring.gpg
+	gpgv --keyring ./$(word 3,$^) $(word 2,$^) $(word 1,$^) || \
+	  { echo "Wrong signature on $@$(UNTRUSTED_SUFF)!"; exit 1; }
+	mv $@$(UNTRUSTED_SUFF) $@
 else
+# hash based
+$(SRC_TARFILE): $(SRC_FILE)$(UNTRUSTED_SUFF) $(HASH_FILE)
 	# there are no signatures for rc tarballs
 	# verify locally based on a signed git tag and commit hash file
 	sha512sum --quiet -c $(HASH_FILE)
+	zcat <$< >$@
+	rm -f $<
 endif
-	@gunzip -c $(SPI_SRC_FILE) | sha256sum | head -c64 | grep -q "^$(SPI_HASH_SHA256)$$"
+
+$(SPI_SRC_TARFILE): $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)
+	cat $< | sha256sum | head -c64 | grep -q "^$(SPI_HASH_SHA256)$$"
+	mv $< $@
+
+$(SRC_FILE)$(UNTRUSTED_SUFF):
+	@$(FETCH_CMD) $@ -- $(URL)
+
+.SECONDARY: $(SIGN_FILE)
+$(SIGN_FILE):
+	@$(FETCH_CMD) $(SIGN_FILE) -- $(URL_SIGN)
+
+$(SPI_SRC_FILE)$(UNTRUSTED_SUFF):
+	@$(FETCH_CMD) $@ -L -- $(SPI_SRC_URL)
+
+verify-sources:
+	@true
 
 .PHONY: clean-sources
 clean-sources:
 ifneq ($(SRC_FILE), None)
-	-rm $(SRC_FILE) $(SIGN_FILE)
+	-rm $(SRC_FILE)$(UNTRUSTED_SUFF) $(SRC_TARFILE) $(SIGN_FILE)
 endif
 ifneq ($(SPI_SRC_FILE), None)
-	-rm $(SPI_SRC_FILE)
+	-rm $(SPI_SRC_FILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE)
 endif
 
 .PHONY: update-sources
