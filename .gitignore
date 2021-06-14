@@ -1,6 +1,8 @@
-linux-*.tar.bz2
-linux-*.tar.xz
+linux-*.tar
+linux-*.tar.gz.UNTRUSTED
+linux-*.tar.xz.UNTRUSTED
 linux-*.sign
+linux-keyring.gpg
 kernel-*/
 config-base-*
 pkgs

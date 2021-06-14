@@ -97,7 +97,7 @@ Provides:       kernel-uname-r = %kernelrelease
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 ExclusiveArch:  x86_64
 
-Source0:        linux-%version.tar.xz
+Source0:        linux-%version.tar
 Source16:       guards
 Source17:       apply-patches
 Source33:       check-for-config-changes
@@ -127,7 +127,7 @@ Patch16: 0017-drm-amdgpu-fix-dma-mask-check-in-gmc_v6_0.c.patch
 Qubes Dom0 kernel.
 
 %prep
-if ! [ -e %_sourcedir/linux-%version.tar.xz ]; then
+if ! [ -e %_sourcedir/linux-%version.tar ]; then
     echo "The %name-%version.nosrc.rpm package does not contain the" \
          "complete sources. Please install kernel-source-%version.src.rpm."
     exit 1
