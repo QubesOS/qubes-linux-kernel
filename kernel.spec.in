@@ -101,15 +101,11 @@ Provides:       kernel-uname-r = %kernelrelease
 
 ExclusiveArch:  x86_64
 
-%if !%{prerelease}
-Source0:        linux-%{upstream_version}.tar.xz
-%else
-Source0:        linux-%{upstream_version}.tar.gz
-%endif
+Source0:        linux-%{upstream_version}.tar
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
-Source5:	wireguard-linux-compat-1.0.20201112.tar.xz
+Source5:	wireguard-linux-compat-1.0.20201112.tar
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
@@ -210,8 +206,8 @@ rm -rf %_builddir/u2mfn
 tar -x -C %_builddir -zf %{SOURCE3} --strip-components=2 linux-utils/kernel-modules/u2mfn
 
 rm -rf %_builddir/wireguard
-tar x -C %_builddir -Jpf %{SOURCE5}
-mv %_builddir/$(basename %{SOURCE5} .tar.xz) %_builddir/wireguard
+tar x -C %_builddir -pf %{SOURCE5}
+mv %_builddir/$(basename %{SOURCE5} .tar) %_builddir/wireguard
 
 
 %build

@@ -23,6 +23,8 @@ endif
 
 all: help
 
+UNTRUSTED_SUFF := .UNTRUSTED
+
 MIRROR := cdn.kernel.org
 ifeq (,$(DISTFILES_MIRROR))
 SRC_BASEURL := https://${MIRROR}/pub/linux/kernel/v$(shell echo $(VERSION) | sed 's/^\(2\.[0-9]*\).*/\1/;s/^3\..*/3.x/;s/^4\..*/4.x/;s/^5\..*/5.x/')
@@ -37,12 +39,14 @@ else
 SRC_FILE := linux-${VERSION}.tar.gz
 HASH_FILE := $(SRC_FILE).sha512
 endif
+SRC_TARFILE := linux-${VERSION}.tar
 
 WG_BASE_URL := https://git.zx2c4.com/wireguard-linux-compat/snapshot/
 WG_SRC_FILE := wireguard-linux-compat-1.0.20201112.tar.xz
 
 WG_SRC_URL := $(WG_BASE_URL)/$(WG_SRC_FILE)
 WG_SIG_FILE := $(WG_SRC_FILE:%.xz=%.asc)
+WG_SRC_TARFILE := $(WG_SRC_FILE:%.xz=%)
 WG_SIG_URL := $(WG_BASE_URL)/$(WG_SIG_FILE)
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
@@ -52,7 +56,7 @@ ifeq ($(DOWNLOAD_FROM_GIT),1)
 URL := https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$(VERSION).tar.gz
 endif
 
-get-sources: $(SRC_FILE) $(SIGN_FILE) $(WG_SRC_FILE) $(WG_SIG_FILE)
+get-sources: $(SRC_TARFILE) $(WG_SRC_TARFILE)
 	git submodule update --init --recursive
 
 verrel:
@@ -62,41 +66,59 @@ ifeq ($(FETCH_CMD),)
 $(error "You can not run this Makefile without having FETCH_CMD defined")
 endif
 
-$(SRC_FILE):
-	@$(FETCH_CMD) $(SRC_FILE) -- $(URL)
+.INTERMEDIATE: linux-keyring.gpg
+linux-keyring.gpg: $(sort $(wildcard kernel.org-*.asc))
+	cat $^ | gpg --dearmor >$@
 
-$(SIGN_FILE):
-	@$(FETCH_CMD) $(SIGN_FILE) -- $(URL_SIGN)
+.INTERMEDIATE: wireguard-keyring.gpg
+wireguard-keyring.gpg: $(sort $(wildcard wireguard-*.asc))
+	cat $^ | gpg --dearmor >$@
 
-$(WG_SRC_FILE):
+$(WG_SRC_FILE)$(UNTRUSTED_SUFF):
 	@$(FETCH_CMD) $@ -- $(WG_SRC_URL)
 
+.SECONDARY: $(WG_SIG_FILE)
 $(WG_SIG_FILE):
 	@$(FETCH_CMD) $@ -- $(WG_SIG_URL)
 
-import-keys:
-	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/linux-kernel-trustedkeys.gpg"; fi
-	@gpg --no-auto-check-trustdb --no-default-keyring --keyring linux-kernel-trustedkeys.gpg -q --import kernel*-key.asc
-	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/wireguard-trustedkeys.gpg"; fi
-	@gpg --no-auto-check-trustdb --no-default-keyring --keyring wireguard-trustedkeys.gpg -q --import wireguard*-key.asc
+.INTERMEDIATE: $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(WG_SRC_TARFILE)$(UNTRUSTED_SUFF)
+%.tar$(UNTRUSTED_SUFF): %.tar.xz$(UNTRUSTED_SUFF)
+	if [ -f /usr/bin/qvm-run-vm ]; \
+        then qvm-run-vm --dispvm 2>/dev/null xzcat <$< > $@; \
+	else xzcat <$< > $@; fi
 
-verify-sources: import-keys
-	@xzcat $(WG_SRC_FILE) | gpgv --keyring wireguard-trustedkeys.gpg $(WG_SIG_FILE) - 2>/dev/null
-ifeq ($(VERIFICATION),signature)
-	@xzcat $(SRC_FILE) | gpgv --keyring linux-kernel-trustedkeys.gpg $(SIGN_FILE) - 2>/dev/null
-else
-	# there are no signatures for rc tarballs
-	# verify locally based on a signed git tag and commit hash file
-	sha512sum --quiet -c $(HASH_FILE)
-endif
+%.tar$(UNTRUSTED_SUFF): %.tar.gz$(UNTRUSTED_SUFF)
+	if [ -f /usr/bin/qvm-run-vm ]; \
+        then qvm-run-vm --dispvm 2>/dev/null zcat <$< > $@; \
+	else zcat <$< > $@; fi
+
+$(SRC_TARFILE): $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(SIGN_FILE) linux-keyring.gpg
+	gpgv --keyring ./$(word 3,$^) $(word 2,$^) $(word 1,$^) || \
+	  { echo "Wrong signature on $@$(UNTRUSTED_SUFF)!"; exit 1; }
+	mv $@$(UNTRUSTED_SUFF) $@
+
+$(WG_SRC_TARFILE): $(WG_SRC_TARFILE)$(UNTRUSTED_SUFF) $(WG_SIG_FILE) wireguard-keyring.gpg
+	gpgv --keyring ./$(word 3,$^) $(word 2,$^) $(word 1,$^) || \
+	  { echo "Wrong signature on $@$(UNTRUSTED_SUFF)!"; exit 1; }
+	mv $@$(UNTRUSTED_SUFF) $@
+
+$(SRC_FILE)$(UNTRUSTED_SUFF):
+	@$(FETCH_CMD) $@ -- $(URL)
+
+.SECONDARY: $(SIGN_FILE)
+$(SIGN_FILE):
+	@$(FETCH_CMD) $(SIGN_FILE) -- $(URL_SIGN)
+
+verify-sources:
+	@true
 
 .PHONY: clean-sources
 clean-sources:
 ifneq ($(SRC_FILE), None)
-	-rm $(SRC_FILE) $(SIGN_FILE)
+	-rm $(SRC_FILE)$(UNTRUSTED_SUFF) $(SRC_TARFILE) $(SIGN_FILE)
 endif
 ifneq ($(WG_SRC_FILE), None)
-	-rm $(WG_SRC_FILE) $(WG_SIG_FILE)
+	-rm $(WG_SRC_FILE)$(UNTRUSTED_SUFF) $(WG_SRC_TARFILE) $(WG_SIG_FILE)
 endif
 
 .PHONY: update-sources
