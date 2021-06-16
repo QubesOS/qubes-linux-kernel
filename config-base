@@ -1,9 +1,9 @@
-# Base config based on Fedora's config (kernel-core-5.12.9-300.fc34.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.12.10-300.fc34.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
-CONFIG_CC_VERSION_TEXT="gcc (GCC) 8.3.1 20191121 (Red Hat 8.3.1-5)"
+CONFIG_CC_VERSION_TEXT="gcc (GCC) 8.4.1 20200928 (Red Hat 8.4.1-1)"
 CONFIG_CC_IS_GCC=y
-CONFIG_GCC_VERSION=80301
+CONFIG_GCC_VERSION=80401
 CONFIG_CLANG_VERSION=0
 CONFIG_LD_IS_BFD=y
 CONFIG_LD_VERSION=23000
@@ -23,7 +23,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.12.9-300.fc34.x86_64"
+CONFIG_BUILD_SALT="5.12.10-300.fc34.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -742,6 +742,7 @@ CONFIG_KVM_MMU_AUDIT=y
 CONFIG_AS_AVX512=y
 CONFIG_AS_SHA1_NI=y
 CONFIG_AS_SHA256_NI=y
+CONFIG_AS_TPAUSE=y
 
 #
 # General architecture-dependent options
