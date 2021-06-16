@@ -97,8 +97,8 @@ $(SRC_TARFILE): $(SRC_FILE)$(UNTRUSTED_SUFF) $(HASH_FILE)
 endif
 
 $(SPI_SRC_TARFILE): $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)
-	cat $< | sha256sum | head -c64 | grep -q "^$(SPI_HASH_SHA256)$$"
-	mv $< $@
+	$(file > spi.sha256,$(SPI_HASH_SHA256)  $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF))
+	sha256sum -c spi.sha256 && mv $< $@ && rm spi.sha256
 
 $(SRC_FILE)$(UNTRUSTED_SUFF):
 	@$(FETCH_CMD) $@ -- $(URL)
