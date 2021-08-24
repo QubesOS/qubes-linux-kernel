@@ -25,6 +25,7 @@ LOCALDIR="$(readlink -f "$(dirname "$0")")"
 BUILDERDIR="$LOCALDIR/../../"
 VERSION="$(cat version)"
 BRANCH="$1"
+FC_LATEST="${2//fc}"
 
 if [ -z "$BRANCH" ]; then
     # Check if qubes-builder Makefile is here
@@ -34,6 +35,10 @@ if [ -z "$BRANCH" ]; then
     else
         BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     fi
+fi
+
+if [ -z "$FC_LATEST" ]; then
+    FC_LATEST="$(git ls-remote --heads https://src.fedoraproject.org/rpms/fedora-release | grep -Po "refs/heads/f[0-9][1-9]*" | sed 's#refs/heads/f##g' | sort -g | tail -1)"
 fi
 
 # Filter allowed branches
@@ -55,7 +60,6 @@ trap 'exit_clean' 0 1 2 3 6 15
 echo "$LATEST_KERNEL_VERSION" > version
 make get-sources
 
-FC_LATEST="$(git ls-remote --heads https://src.fedoraproject.org/rpms/fedora-release | grep -Po "refs/heads/f[0-9][1-9]*" | sed 's#refs/heads/f##g' | sort -g | tail -1)"
 STABLE_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever="$FC_LATEST" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1)"
 if [ "$BRANCH" == "master" ]; then
     TESTING_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --enablerepo=updates-testing --releasever="$FC_LATEST" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1)"
