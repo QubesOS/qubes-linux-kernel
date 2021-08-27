@@ -9,3 +9,4 @@ macbook12-spi-driver-*.tar
 macbook12-spi-driver-*.tar.gz.UNTRUSTED
 pkgs
 spi.sha256
+genfs/genfs
