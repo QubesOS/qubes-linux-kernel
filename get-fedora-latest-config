@@ -9,7 +9,12 @@ fi
 
 exit_clean() {
     local exit_code=$?
-    rm -rf "$tmpdir"
+    if [ -n "$tmpdir" ]; then
+        rm -rf "$tmpdir"
+    fi
+    if [ ${exit_code} != 0 ]; then
+        errecho "Unable to find the latest kernel rpm for Fedora $releasever";
+    fi
     exit "${exit_code}"
 }
 
@@ -79,6 +84,8 @@ if [ ! -e "$localdir/$kernelarchive" ]; then
     exit 1
 fi
 
+trap 'exit_clean' 0 1 2 3 6 15
+
 releasever=$(get_releasever "$releasever")
 
 # get the latest kernel rpm
@@ -104,10 +111,8 @@ if [ "$releasever" == 'rawhide' ]; then
     releasever="$(echo "$latestver" | grep -o "fc[1-9][0-9]" | sed 's/fc//')"
 fi
 
-if [ "x$latestrpm" != "x" ] && [ "x$releasever" != "x" ]; then
+if [ -n "$latestrpm"  ] && [ -n "$releasever" ]; then
     key="$localdir/../builder-rpm/keys/RPM-GPG-KEY-fedora-$releasever-primary"
-
-    trap 'exit_clean' 0 1 2 3 6 15
     tmpdir="$(mktemp -d -p "$localdir")"
     # download latest kernel rpm
     # shellcheck disable=SC2086
@@ -143,7 +148,6 @@ if [ "x$latestrpm" != "x" ] && [ "x$releasever" != "x" ]; then
 # Only modification is \`yes '' | make oldconfig\` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 EOF
-    rm -rf "$tmpdir"
 else
-    errecho "Unable to find the latest kernel rpm for Fedora $releasever"; exit 1
+    exit 1
 fi

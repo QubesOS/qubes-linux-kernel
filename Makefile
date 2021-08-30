@@ -3,6 +3,7 @@ SPECFILE := kernel.spec
 
 WORKDIR := $(shell pwd)
 BRANCH ?= master
+DISTS ?=
 
 ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
@@ -124,7 +125,7 @@ endif
 
 .PHONY: update-sources
 update-sources:
-	@$(WORKDIR)/update-sources $(BRANCH)
+	@$(WORKDIR)/update-sources $(BRANCH) $(DIST)
 
 help:
 	@echo "Usage: make <target>"
