@@ -122,7 +122,6 @@ Patch0: 0001-xen-netfront-detach-crash.patch
 Patch1: 0002-mce-hide-EBUSY-initialization-error-on-Xen.patch
 Patch2: 0003-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
 Patch3: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
-Patch4: 0005-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
 Patch5: 0006-block-add-no_part_scan-module-parameter.patch
 Patch7: 0008-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
 Patch8: 0009-xen-netfront-do-not-use-data-already-exposed-to-back.patch
