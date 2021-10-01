@@ -140,6 +140,12 @@ CONFIG_XEN_GNTDEV_DMABUF=y
 
 CONFIG_EFI_VARS_PSTORE=y
 
+
+################################################################################
+## Support Linux installs where /sbin/ and /usr/sbin/ have not been merged
+
+CONFIG_MODPROBE_PATH="/sbin/modprobe"
+
 ################################################################################
 ## TODO: from diff to old config
 
