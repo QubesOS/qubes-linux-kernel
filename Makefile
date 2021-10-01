@@ -43,11 +43,11 @@ endif
 SRC_TARFILE := linux-${VERSION}.tar
 
 SPI_BASE_URL := https://github.com/PatrickVerner/macbook12-spi-driver/archive
-SPI_REVISION := 466c0b89938dd9b2691665f261e9ae0243c8293f
+SPI_REVISION := f85d028a41fbc928048c8ad248735501e76a2ce9
 SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
 SPI_SRC_FILE := macbook12-spi-driver-$(SPI_REVISION).tar.gz
 SPI_SRC_TARFILE := macbook12-spi-driver-$(SPI_REVISION).tar
-SPI_HASH_SHA256 := b4be29fb1a2be253e359938c16cea64e16ff2d6fb8dab4145b9b1ab5ef088e48
+SPI_HASH_SHA256 := 92bb7cbeb8df5a57d57ffffc193f621d20b336eb57af0aa81ce30404225c7425
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
