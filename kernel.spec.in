@@ -124,7 +124,6 @@ Patch2: 0003-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
 Patch3: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
 Patch4: 0005-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
 Patch5: 0006-block-add-no_part_scan-module-parameter.patch
-Patch6: 0007-xen-Add-RING_COPY_RESPONSE.patch
 Patch7: 0008-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
 Patch8: 0009-xen-netfront-do-not-use-data-already-exposed-to-back.patch
 Patch9: 0010-xen-netfront-add-range-check-for-Tx-response-id.patch
@@ -133,7 +132,6 @@ Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch14: 0001-Revert-xen-netback-Check-for-hotplug-status-existenc.patch
 Patch15: 0002-Revert-xen-netback-remove-hotplug-status-once-it-has.patch
-Patch16: 0001-PCI-MSI-Skip-masking-MSI-X-on-Xen-PV.patch
 
 %description
 Qubes Dom0 kernel.
