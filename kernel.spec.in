@@ -133,6 +133,8 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch14: 0001-Revert-xen-netback-Check-for-hotplug-status-existenc.patch
 Patch15: 0002-Revert-xen-netback-remove-hotplug-status-once-it-has.patch
 Patch16: 0001-xen-balloon-fix-cancelled-balloon-action.patch
+Patch17: 0014-gcc-plugin.sh-fix-gcc11-standard-in-plugin-detection.patch
+Patch18: 0015-gcc-plugins-fix-gcc-11-indigestion-with-plugins.patch
 
 %description
 Qubes Dom0 kernel.
