@@ -66,6 +66,7 @@ BuildRequires:  elfutils-libelf-devel
 BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  e2fsprogs
+BuildRequires:  make
 
 # gcc with support for BTI mitigation
 %if 0%{?fedora} == 25
