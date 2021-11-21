@@ -460,7 +460,7 @@ PATH="/sbin:$PATH" dracut --nomdadmconf --nolvmconf \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
     --modules "kernel-modules qubes-vm-simple" \
     --conf /dev/null --confdir /var/empty \
-    -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
+    -d "xenblk xen-blkfront cdrom ext4 virtio virtio_blk jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease || exit 1
 
 # workaround for buggy dracut-044 in Fedora 25
