@@ -2,6 +2,7 @@
 # Based on the Open SUSE kernel-spec & Fedora kernel-spec.
 #
 
+%define backend_vmm @BACKEND_VMM@
 %define variant qubes
 %define plainrel @REL@%{?dist}
 %define rel %{plainrel}.%{variant}
@@ -209,8 +210,10 @@ tar -x -C %_builddir -zf %{SOURCE1}
 rm -rf %_builddir/dummy-backlight
 tar -x -C %_builddir -zf %{SOURCE2}
 
+%if "%{?backend_vmm}" == "xen"
 rm -rf %_builddir/u2mfn
 tar -x -C %_builddir -zf %{SOURCE3} --strip-components=2 linux-utils/kernel-modules/u2mfn
+%endif
 
 #rm -rf %_builddir/macbook12-spi-driver
 #tar -x -C %_builddir -f %{SOURCE6}
@@ -232,10 +235,12 @@ if [ -d "%_builddir/dummy-backlight" ]; then
     make -C %kernel_build_dir M=%_builddir/dummy-backlight modules
 fi
 
-# Build u2mfn module
+%if "%{?backend_vmm}" == "xen"
+# Build u2mfn module on Xen
 if [ -d "%_builddir/u2mfn" ]; then
     make -C %kernel_build_dir M=%_builddir/u2mfn modules
 fi
+%endif
 
 # Build applespi, apple-ibridge, apple-ib-tb, apple-ib-als modules
 #if [ -d "%_builddir/macbook12-spi-driver" ]; then
