@@ -123,16 +123,9 @@ Patch2: 0003-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
 Patch3: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
 Patch4: 0005-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
 Patch5: 0006-block-add-no_part_scan-module-parameter.patch
-Patch6: 0007-xen-Add-RING_COPY_RESPONSE.patch
-Patch7: 0008-xen-netfront-copy-response-out-of-shared-buffer-befo.patch
-Patch8: 0009-xen-netfront-do-not-use-data-already-exposed-to-back.patch
-Patch9: 0010-xen-netfront-add-range-check-for-Tx-response-id.patch
-Patch10: 0011-xen-blkfront-make-local-copy-of-response-before-usin.patch
-Patch11: 0012-xen-blkfront-prepare-request-locally-only-then-put-i.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch14: 0001-Revert-xen-netback-Check-for-hotplug-status-existenc.patch
 Patch15: 0002-Revert-xen-netback-remove-hotplug-status-once-it-has.patch
-Patch16: 0001-xen-balloon-add-late_initcall_sync-for-initial-ballo.patch
 Patch17: 0014-gcc-plugin.sh-fix-gcc11-standard-in-plugin-detection.patch
 Patch18: 0015-gcc-plugins-fix-gcc-11-indigestion-with-plugins.patch
 
