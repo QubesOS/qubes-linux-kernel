@@ -19,7 +19,7 @@ index 06b642b23a07..15769cadd687 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
 @@ -784,6 +784,15 @@ static void register_disk(struct device *parent, struct gendisk *disk,
- 	}
+ 		blkdev_put(bdev, FMODE_READ);
  }
  
 +/* copied (not moved) from far down below, to have fewer patch hunks */
@@ -32,11 +32,11 @@ index 06b642b23a07..15769cadd687 100644
 +MODULE_PARM_DESC(no_part_scan, "When adding block devices, always mark them as not to be scanned for partitions");
 +
  /**
-  * __device_add_disk - add disk information to kernel list
+  * device_add_disk - add disk information to kernel list
   * @parent: parent device for the disk
 @@ -812,6 +821,9 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
- 	if (register_queue)
- 		elevator_init_mq(disk->queue);
+ 	 */
+ 	elevator_init_mq(disk->queue);
  
 +	if (disk_no_part_scan)
 +		disk->flags |= GENHD_FL_NO_PART_SCAN;
