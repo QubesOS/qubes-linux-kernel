@@ -116,6 +116,9 @@ CONFIG_USB_CONFIGFS=m
 CONFIG_USB_CONFIGFS_MASS_STORAGE=y
 CONFIG_USB_DUMMY_HCD=m
 
+###############################################################################
+## Disable UAS. VHCI doesn't support USB streams yet.
+# CONFIG_USB_UAS is not set
 
 ################################################################################
 ## Enable AppArmor
