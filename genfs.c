@@ -264,6 +264,12 @@ static int real_main(const char *const filesystem, const char *const uname) {
     if (fs->super->s_inode_size < sizeof(struct ext2_inode_large))
         errx(1, "Filesystem inode size %" PRIu16 " not supported (expected %zu)",
              fs->super->s_inode_size, sizeof(struct ext2_inode_large));
+    if (!fs->super->s_lpf_ino) {
+        if ((err = ext2fs_namei(fs, EXT2_ROOT_INO, EXT2_ROOT_INO, "lost+found", &fs->super->s_lpf_ino)))
+            genfs_err(err, "obtaining lost+found inode");
+        if (!fs->super->s_lpf_ino)
+            errx(1, "no lost+found inode");
+    }
     if (uname) {
         if ((err = ext2fs_open_inode_scan(fs, EXT2_INODE_SCAN_DEFAULT_BUFFER_BLOCKS, &scan)) || !scan)
             genfs_err(err, "scanning filesystem %s", filesystem);
@@ -298,6 +304,17 @@ static int real_main(const char *const filesystem, const char *const uname) {
             if (!LINUX_S_ISLNK(inode.i_mode) && (inode.i_mode & (LINUX_S_IWGRP|LINUX_S_IWOTH)))
                 errx(1, "Inode %" PRIu32 " is not a symlink and is group- or "
                         "world- writable (mode 0%04o)", ino, (int)perms);
+            // Ensure all files have at least mode 0644 (read and write
+            // to owner, read for others).  Since everything in this
+            // directory is public anyway (published online) trying to
+            // hide it is of no benefit.  Also ensure that all
+            // directories are executable.
+            //
+            // Exception: the lost+found inode is 0700 because of POLA.
+            if (LINUX_S_ISDIR(inode.i_mode))
+                inode.i_mode = ((ino == fs->super->s_lpf_ino) ? 0700 : 0755) | (inode.i_mode & ~0777);
+            else if (LINUX_S_ISREG(inode.i_mode) || LINUX_S_ISLNK(inode.i_mode))
+                inode.i_mode |= 0644;
             if (mark_immutable && LINUX_S_ISREG(inode.i_mode))
                 inode.i_flags |= EXT2_IMMUTABLE_FL;
             set_label(fs, "", ino, 0, "", label_modules_object);
