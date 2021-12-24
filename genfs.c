@@ -315,6 +315,9 @@ static int real_main(const char *const filesystem, const char *const uname) {
                 inode.i_mode = ((ino == fs->super->s_lpf_ino) ? 0700 : 0755) | (inode.i_mode & ~0777);
             else if (LINUX_S_ISREG(inode.i_mode) || LINUX_S_ISLNK(inode.i_mode))
                 inode.i_mode |= 0644;
+            else
+                errx(1, "Inode %" PRIu32 " is neither a regular file, "
+                        "directory, or symbolic link (mode 0%06o)", ino, (int)inode.i_mode);
             if (mark_immutable && LINUX_S_ISREG(inode.i_mode))
                 inode.i_flags |= EXT2_IMMUTABLE_FL;
             set_label(fs, "", ino, 0, "", label_modules_object);
