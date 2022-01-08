@@ -1,0 +1,13 @@
+MAKEFLAGS ::= -rR
+CFLAGS ::= $(shell pkg-config --cflags --libs ext2fs com_err) \
+    -fstack-protector-all -fcf-protection -fstack-clash-protection -O2 \
+    -D_FORITFY_SOURCE=2 -fwrapv -fwrapv-pointer \
+    -fno-delete-null-pointer-checks -fno-strict-aliasing -Wall -Wextra \
+    -Werror=format-security -pedantic-errors -Wformat=2 -Wmaybe-uninitialized \
+    -Wshadow -g3
+
+$(or $(GENFS),genfs): genfs.c genfs-makefile
+	gcc $(CFLAGS) genfs.c -o '$(subst ','\'',$(or $(GENFS),genfs))'
+.PHONY: clean
+clean:
+	rm -f genfs
