@@ -130,6 +130,7 @@ Patch5: 0006-block-add-no_part_scan-module-parameter.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch14: 0001-Revert-xen-netback-Check-for-hotplug-status-existenc.patch
 Patch15: 0002-Revert-xen-netback-remove-hotplug-status-once-it-has.patch
+Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 
 %description
 Qubes Dom0 kernel.

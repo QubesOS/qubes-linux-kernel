@@ -1,0 +1,61 @@
+From 29034eb7621ace3416c6964c32227c5aa0dd005b Mon Sep 17 00:00:00 2001
+From: Ivan Kardykov <kardykov@tabit.pro>
+Date: Tue, 14 Dec 2021 10:53:50 +0300
+Subject: [PATCH] usbip: tweak clear halt with simple reset
+
+Some USB 3.0+ storage devices freeze with usb_clear_halt, but it is
+enough to reset endpoint here.
+
+Signed-off-by: Ivan Kardykov <kardykov@tabit.pro>
+---
+ drivers/usb/usbip/stub_rx.c | 25 ++++++++++---------------
+ 1 file changed, 10 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/usb/usbip/stub_rx.c b/drivers/usb/usbip/stub_rx.c
+index 325c22008..7caa07bbb 100644
+--- a/drivers/usb/usbip/stub_rx.c
++++ b/drivers/usb/usbip/stub_rx.c
+@@ -67,8 +67,6 @@ static int tweak_clear_halt_cmd(struct urb *urb)
+ 	struct usb_ctrlrequest *req;
+ 	int target_endp;
+ 	int target_dir;
+-	int target_pipe;
+-	int ret;
+ 
+ 	req = (struct usb_ctrlrequest *) urb->setup_packet;
+ 
+@@ -83,21 +81,18 @@ static int tweak_clear_halt_cmd(struct urb *urb)
+ 	target_dir = le16_to_cpu(req->wIndex) & 0x0080;
+ 
+ 	if (target_dir)
+-		target_pipe = usb_rcvctrlpipe(urb->dev, target_endp);
+-	else
+-		target_pipe = usb_sndctrlpipe(urb->dev, target_endp);
++		target_endp |= USB_DIR_IN;
+ 
+-	ret = usb_clear_halt(urb->dev, target_pipe);
+-	if (ret < 0)
+-		dev_err(&urb->dev->dev,
+-			"usb_clear_halt error: devnum %d endp %d ret %d\n",
+-			urb->dev->devnum, target_endp, ret);
+-	else
+-		dev_info(&urb->dev->dev,
+-			 "usb_clear_halt done: devnum %d endp %d\n",
+-			 urb->dev->devnum, target_endp);
++	/*
++	 * Some USB storage devices freeze with usb_clear_halt()
++	 * so just reset endpoint here.
++	 */
++	usb_reset_endpoint(urb->dev, target_endp);
+ 
+-	return ret;
++	dev_info(&urb->dev->dev,
++		"usb_reset_endpoint done: devnum %d endp %d\n",
++		urb->dev->devnum, target_endp);
++	return 0;
+ }
+ 
+ static int tweak_set_interface_cmd(struct urb *urb)
+-- 
+2.31.1
+
