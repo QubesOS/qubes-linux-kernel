@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-5.15.11-200.fc35.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-5.15.12-200.fc35.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.2.1 20210728 (Red Hat 11.2.1-1)"
@@ -28,7 +28,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="5.15.11-200.fc35.x86_64"
+CONFIG_BUILD_SALT="5.15.12-200.fc35.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -7733,7 +7733,6 @@ CONFIG_THINKPAD_ACPI_ALSA_SUPPORT=y
 CONFIG_THINKPAD_ACPI_VIDEO=y
 CONFIG_THINKPAD_ACPI_HOTKEY_POLL=y
 CONFIG_THINKPAD_LMI=m
-CONFIG_X86_PLATFORM_DRIVERS_INTEL=y
 CONFIG_INTEL_ATOMISP2_PDX86=y
 CONFIG_INTEL_ATOMISP2_LED=m
 CONFIG_INTEL_ATOMISP2_PM=m
