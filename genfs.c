@@ -111,6 +111,7 @@ static int root_iterate_callback(ext2_ino_t dir __attribute__((unused)),
     int const name_len = ext2fs_dirent_name_len(dirent);
     errcode_t err;
     const char *label = label_modules_object;
+    bool mark_this_node_immutable = mark_immutable;
     assert(name_len >= 0);
     if ((name_len == 1 && dirent->name[0] == '.') ||
         (name_len == 2 && dirent->name[0] == '.' && dirent->name[1] == '.')) {
@@ -126,9 +127,11 @@ static int root_iterate_callback(ext2_ino_t dir __attribute__((unused)),
     } else if (!strncmp(dirent->name, data->uname_or_label, (size_t)name_len)) {
         if ((err = ext2fs_dir_iterate2(data->fs, dirent->inode, 0, NULL, dir_iterate_callback, data)))
             genfs_err(err, "processing %s", data->uname_or_label);
+        mark_this_node_immutable = false;
     }
+
     process_dirent(data->fs, "", dirent->inode, name_len, dirent->name,
-                   label, mark_immutable);
+                   label, mark_this_node_immutable);
     return 0;
 }
 
