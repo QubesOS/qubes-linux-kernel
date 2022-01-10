@@ -116,6 +116,8 @@ static int root_iterate_callback(ext2_ino_t dir __attribute__((unused)),
     if ((name_len == 1 && dirent->name[0] == '.') ||
         (name_len == 2 && dirent->name[0] == '.' && dirent->name[1] == '.')) {
         return 0;
+    } else if (memchr(dirent->name, '\0', (size_t)name_len)) {
+        errx(1, "Inode %" PRIx64 " has a NUL in its name", (uint64_t)dirent->inode);
     } else if (!strncmp(dirent->name, "firmware", (size_t)name_len)) {
         struct qubes_genfs_data relabel_data = {
             .fs = data->fs,
@@ -128,6 +130,10 @@ static int root_iterate_callback(ext2_ino_t dir __attribute__((unused)),
         if ((err = ext2fs_dir_iterate2(data->fs, dirent->inode, 0, NULL, dir_iterate_callback, data)))
             genfs_err(err, "processing %s", data->uname_or_label);
         mark_this_node_immutable = false;
+    } else if (strncmp(dirent->name, "vmlinuz", (size_t)name_len) &&
+               strncmp(dirent->name, "lost+found", (size_t)name_len) &&
+               strncmp(dirent->name, "initramfs", (size_t)name_len)) {
+        errx(1, "Unexpected inode %.*s found in root of file system", name_len, dirent->name);
     }
 
     process_dirent(data->fs, "", dirent->inode, name_len, dirent->name,
