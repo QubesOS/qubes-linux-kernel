@@ -111,7 +111,11 @@ static int root_iterate_callback(ext2_ino_t dir __attribute__((unused)),
     int const name_len = ext2fs_dirent_name_len(dirent);
     errcode_t err;
     const char *label = label_modules_object;
-    if (!strncmp(dirent->name, "firmware", (size_t)name_len)) {
+    assert(name_len >= 0);
+    if ((name_len == 1 && dirent->name[0] == '.') ||
+        (name_len == 2 && dirent->name[0] == '.' && dirent->name[1] == '.')) {
+        return 0;
+    } else if (!strncmp(dirent->name, "firmware", (size_t)name_len)) {
         struct qubes_genfs_data relabel_data = {
             .fs = data->fs,
             .uname_or_label = label = label_lib,
