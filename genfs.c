@@ -345,7 +345,7 @@ static int real_main(const char *const filesystem, const char *const uname) {
             .uname_or_label = uname,
         };
         process_dirent(fs, "", EXT2_ROOT_INO, 0, "",
-                       label_modules_object, mark_immutable);
+                       label_modules_object, false);
         if ((err = ext2fs_dir_iterate2(fs, EXT2_ROOT_INO, 0, NULL,
                                        root_iterate_callback, &data)))
             genfs_err(err, "processing /");
