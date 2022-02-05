@@ -42,6 +42,7 @@
 
 %if !%{with_debuginfo}
 %global debug_package %{nil}
+%define _build_id_links none
 %define setup_config --disable CONFIG_DEBUG_INFO
 %else
 %define setup_config --enable CONFIG_DEBUG_INFO --disable CONFIG_DEBUG_INFO_REDUCED
