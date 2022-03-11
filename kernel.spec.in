@@ -184,6 +184,8 @@ cd %kernel_build_dir
 
 %build_src_dir/scripts/config \
         --set-str CONFIG_LOCALVERSION -%release.%cpu_arch %{setup_config}
+%build_src_dir/scripts/config \
+        --set-str CONFIG_BUILD_SALT "%{kernelrelease}" %{setup_config}
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD KERNELRELEASE=%{kernelrelease}"
 
