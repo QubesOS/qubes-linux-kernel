@@ -135,19 +135,6 @@ Patch14: 0001-Revert-xen-netback-Check-for-hotplug-status-existenc.patch
 Patch15: 0002-Revert-xen-netback-remove-hotplug-status-once-it-has.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 
-Patch100: xsa396-linux-01.patch
-Patch101: xsa396-linux-02.patch
-Patch102: xsa396-linux-03.patch
-Patch103: xsa396-linux-04.patch
-Patch104: xsa396-linux-05.patch
-Patch105: xsa396-linux-06.patch
-Patch106: xsa396-linux-07.patch
-Patch107: xsa396-linux-09.patch
-Patch108: xsa396-linux-10.patch
-Patch109: xsa396-linux-11.patch
-Patch110: xsa396-linux-12.patch
-
-
 %description
 Qubes Dom0 kernel.
 
