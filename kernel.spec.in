@@ -123,7 +123,6 @@ Patch4: 0005-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
 Patch5: 0006-block-add-no_part_scan-module-parameter.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
-Patch14: 0001-Revert-xen-netback-Check-for-hotplug-status-existenc.patch
 
 %description
 Qubes Dom0 kernel.
