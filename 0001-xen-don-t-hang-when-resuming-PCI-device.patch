@@ -1,0 +1,56 @@
+From ff32baa1f39b1adb519479a51e7acbcbfdd2206c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jakub=20K=C4=85dzio=C5=82ka?=
+ <niedzejkob@invisiblethingslab.com>
+Date: Wed, 23 Mar 2022 02:21:03 +0100
+Subject: [PATCH] xen: don't hang when resuming PCI device
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+If a xen domain with at least two VCPUs has a PCI device attached which
+enters the D3hot state during suspend, the kernel may hang while
+resuming, depending on the core on which an async resume task gets
+scheduled.
+
+The bug occurs because xen's do_suspend calls dpm_resume_start while
+only the timer of the boot CPU has been resumed (when xen_suspend called
+syscore_resume), before calling xen_arch_suspend to resume the timers of
+the other CPUs. This breaks pci_dev_d3_sleep.
+
+Thus this patch moves the call to xen_arch_resume before the call to
+dpm_resume_start, eliminating the hangs and restoring the stack-like
+structure of the suspend/restore procedure.
+
+Signed-off-by: Jakub Kądziołka <niedzejkob@invisiblethingslab.com>
+Reviewed-by: Juergen Gross <jgross@suse.com>
+Link: https://lore.kernel.org/r/20220323012103.2537-1-niedzejkob@invisiblethingslab.com
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+---
+ drivers/xen/manage.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index 374d36de7f5a..3d5a384d65f7 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -141,6 +141,8 @@ static void do_suspend(void)
+ 
+ 	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
+ 
++	xen_arch_resume();
++
+ 	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+ 
+ 	if (err) {
+@@ -148,8 +150,6 @@ static void do_suspend(void)
+ 		si.cancelled = 1;
+ 	}
+ 
+-	xen_arch_resume();
+-
+ out_resume:
+ 	if (!si.cancelled)
+ 		xs_resume();
+-- 
+2.35.1
+
