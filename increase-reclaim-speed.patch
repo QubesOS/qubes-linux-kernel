@@ -1,0 +1,136 @@
+From d0fd57434c89edf09d97524741b50990a823f8c6 Mon Sep 17 00:00:00 2001
+From: Demi Marie Obenour <demi@invisiblethingslab.com>
+Date: Mon, 18 Apr 2022 12:25:00 -0400
+Subject: [PATCH] xen: speed up grant-table reclaim
+
+When a grant entry is still in use by the remote domain, Linux must put
+it on a deferred list.  Normally, this list is very short, because
+the PV network and block protocols expect the backend to unmap the grant
+first.  However, Qubes OS's GUI protocol is subject to the constraints
+of the X Window System, and as such winds up with the frontend unmapping
+the window first.  As a result, the list can grow very large, resulting
+in a massive memory leak and eventual VM freeze.
+
+Fix this problem by bumping the number of entries that the VM will
+attempt to free at each iteration to 10000.  This is an ugly hack that
+may well make a denial of service easier, but for Qubes OS that is less
+bad than the problem Qubes OS users are facing today.  There really
+needs to be a way for a frontend to be notified when the backend has
+unmapped the grants.  Additionally, a module parameter is provided to
+allow tuning the reclaim speed.
+
+The code previously used printk(KERN_DEBUG) whenever it had to defer
+reclaiming a page because the grant was still mapped.  This resulted in
+a large volume of log messages that bothered users.  Use pr_debug
+instead, which suppresses the messages by default.  Developers can
+enable them using the dynamic debug mechanism.
+
+Fixes QubesOS/qubes-issues#7410 (memory leak)
+Fixes QubesOS/qubes-issues#7359 (excessive logging)
+---
+Anyone have suggestions for improving the grant mechanism?  Argo isn't
+a good option, as in the GUI protocol there are substantial performance
+wins to be had by using true shared memory.
+
+ drivers/xen/grant-table.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 5c83d41..2c2faa7 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -355,14 +355,20 @@
+ static void gnttab_handle_deferred(struct timer_list *);
+ static DEFINE_TIMER(deferred_timer, gnttab_handle_deferred);
+ 
++static atomic64_t deferred_count;
++static atomic64_t leaked_count;
++static unsigned int free_per_iteration = 10000;
++
+ static void gnttab_handle_deferred(struct timer_list *unused)
+ {
+-	unsigned int nr = 10;
++	unsigned int nr = READ_ONCE(free_per_iteration);
++	const bool ignore_limit = nr == 0;
+ 	struct deferred_entry *first = NULL;
+ 	unsigned long flags;
++	size_t freed = 0;
+ 
+ 	spin_lock_irqsave(&gnttab_list_lock, flags);
+-	while (nr--) {
++	while ((ignore_limit || nr--) && !list_empty(&deferred_list)) {
+ 		struct deferred_entry *entry
+ 			= list_first_entry(&deferred_list,
+ 					   struct deferred_entry, list);
+@@ -372,10 +378,13 @@
+ 		list_del(&entry->list);
+ 		spin_unlock_irqrestore(&gnttab_list_lock, flags);
+ 		if (_gnttab_end_foreign_access_ref(entry->ref, entry->ro)) {
++			uint64_t ret = atomic64_sub_return(1, &deferred_count);
+ 			put_free_entry(entry->ref);
+-			pr_debug("freeing g.e. %#x (pfn %#lx)\n",
+-				 entry->ref, page_to_pfn(entry->page));
++			pr_debug("freeing g.e. %#x (pfn %#lx), %llu remaining\n",
++				 entry->ref, page_to_pfn(entry->page),
++				 (unsigned long long)ret);
+ 			put_page(entry->page);
++			freed++;
+ 			kfree(entry);
+ 			entry = NULL;
+ 		} else {
+@@ -387,14 +396,15 @@
+ 		spin_lock_irqsave(&gnttab_list_lock, flags);
+ 		if (entry)
+ 			list_add_tail(&entry->list, &deferred_list);
+-		else if (list_empty(&deferred_list))
+-			break;
+ 	}
+-	if (!list_empty(&deferred_list) && !timer_pending(&deferred_timer)) {
++	if (list_empty(&deferred_list))
++		WARN_ON(atomic64_read(&deferred_count));
++	else if (!timer_pending(&deferred_timer)) {
+ 		deferred_timer.expires = jiffies + HZ;
+ 		add_timer(&deferred_timer);
+ 	}
+ 	spin_unlock_irqrestore(&gnttab_list_lock, flags);
++	pr_debug("Freed %zu references", freed);
+ }
+ 
+ static void gnttab_add_deferred(grant_ref_t ref, bool readonly,
+@@ -402,7 +412,7 @@
+ {
+ 	struct deferred_entry *entry;
+ 	gfp_t gfp = (in_atomic() || irqs_disabled()) ? GFP_ATOMIC : GFP_KERNEL;
+-	const char *what = KERN_WARNING "leaking";
++	uint64_t leaked, deferred;
+ 
+ 	entry = kmalloc(sizeof(*entry), gfp);
+ 	if (!page) {
+@@ -426,12 +436,20 @@
+ 			add_timer(&deferred_timer);
+ 		}
+ 		spin_unlock_irqrestore(&gnttab_list_lock, flags);
+-		what = KERN_DEBUG "deferring";
++		deferred = atomic64_add_return(1, &deferred_count);
++		leaked = atomic64_read(&leaked_count);
++		pr_debug("deferring g.e. %#x (pfn %#lx) (total deferred %llu, total leaked %llu)\n",
++			 ref, page ? page_to_pfn(page) : -1, deferred, leaked);
++	} else {
++		deferred = atomic64_read(&deferred_count);
++		leaked = atomic64_add_return(1, &leaked_count);
++		pr_warn("leaking g.e. %#x (pfn %#lx) (total deferred %llu, total leaked %llu)\n",
++			ref, page ? page_to_pfn(page) : -1, deferred, leaked);
+ 	}
+-	printk("%s g.e. %#x (pfn %#lx)\n",
+-	       what, ref, page ? page_to_pfn(page) : -1);
+ }
+ 
++module_param(free_per_iteration, uint, 0600);
++
+ int gnttab_try_end_foreign_access(grant_ref_t ref)
+ {
+ 	int ret = _gnttab_end_foreign_access_ref(ref, 0);
+-- 
+Sincerely,
+Demi Marie Obenour (she/her/hers)
+Invisible Things Lab
