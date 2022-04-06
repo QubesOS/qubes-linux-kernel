@@ -134,6 +134,7 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch17: 0001-xen-don-t-hang-when-resuming-PCI-device.patch
 Patch18: 0001-xen-fix-is_xen_pmu.patch
+Patch19: increase-reclaim-speed.patch
 
 %description
 Qubes Dom0 kernel.
