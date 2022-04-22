@@ -47,7 +47,6 @@ SPI_REVISION := f85d028a41fbc928048c8ad248735501e76a2ce9
 SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
 SPI_SRC_FILE := macbook12-spi-driver-$(SPI_REVISION).tar.gz
 SPI_SRC_TARFILE := macbook12-spi-driver-$(SPI_REVISION).tar
-SPI_HASH_SHA256 := 92bb7cbeb8df5a57d57ffffc193f621d20b336eb57af0aa81ce30404225c7425
 
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
@@ -97,9 +96,10 @@ $(SRC_TARFILE): $(SRC_FILE)$(UNTRUSTED_SUFF) $(HASH_FILE)
 	rm -f $<
 endif
 
-$(SPI_SRC_TARFILE): $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)
-	$(file > spi.sha256,$(SPI_HASH_SHA256)  $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF))
-	sha256sum -c spi.sha256 && mv $< $@ && rm spi.sha256
+$(SPI_SRC_TARFILE): $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE).sha256
+	@sha256sum --status --strict -c <(printf "$(file <$(SPI_SRC_TARFILE).sha256)  -\n") <$(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF) || \
+		{ echo "Wrong SHA256 checksum on $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)!"; exit 1; }
+	@mv $< $@
 
 $(SRC_FILE)$(UNTRUSTED_SUFF):
 	@$(FETCH_CMD) $@ -- $(URL)
