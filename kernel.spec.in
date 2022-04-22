@@ -131,7 +131,6 @@ Patch4: 0005-pvops-xen-blkfront-handle-FDEJECT-as-detach-request-.patch
 Patch5: 0006-block-add-no_part_scan-module-parameter.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch17: 0001-xen-don-t-hang-when-resuming-PCI-device.patch
-Patch18: 0001-xen-fix-is_xen_pmu.patch
 
 %description
 Qubes Dom0 kernel.
