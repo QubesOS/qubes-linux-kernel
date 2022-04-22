@@ -14,7 +14,7 @@ index 3b889ea950c2..59f57e55a36b 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
 @@ -2347,6 +2347,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	unsigned int binfo;
+ 	unsigned int physical_sector_size;
  	int err, i;
  	struct blkfront_ring_info *rinfo;
 +	int removable;
@@ -29,9 +29,9 @@ index 3b889ea950c2..59f57e55a36b 100644
 +			    "removable", "%d", &removable,
 +			    NULL);
 +	if (!err && removable)
-+		binfo |= VDISK_REMOVABLE;
++		info->vdisk_info |= VDISK_REMOVABLE;
 +
- 	err = xlvbd_alloc_gendisk(sectors, info, binfo, sector_size,
+ 	err = xlvbd_alloc_gendisk(sectors, info, sector_size,
  				  physical_sector_size);
  	if (err) {
 -- 
