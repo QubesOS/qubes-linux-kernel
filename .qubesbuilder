@@ -1,6 +1,6 @@
 host:
   rpm:
-    spec:
+    build:
     - kernel.spec
 source:
   modules:
