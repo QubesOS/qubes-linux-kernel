@@ -134,7 +134,6 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch17: 0001-xen-don-t-hang-when-resuming-PCI-device.patch
 Patch19: increase-reclaim-speed.patch
-Patch20: 0001-drm-amdgpu-do-not-use-passthrough-mode-in-Xen-dom0.patch
 
 %description
 Qubes Dom0 kernel.
