@@ -62,7 +62,7 @@ index 5c83d41..2c2faa7 100644
  		struct deferred_entry *entry
  			= list_first_entry(&deferred_list,
  					   struct deferred_entry, list);
-@@ -372,10 +378,13 @@
+@@ -372,29 +378,33 @@
  		list_del(&entry->list);
  		spin_unlock_irqrestore(&gnttab_list_lock, flags);
  		if (_gnttab_end_foreign_access_ref(entry->ref, entry->ro)) {
@@ -78,7 +78,12 @@ index 5c83d41..2c2faa7 100644
  			kfree(entry);
  			entry = NULL;
  		} else {
-@@ -387,14 +396,15 @@
+ 			if (!--entry->warn_delay)
+-				pr_info("g.e. %#x still pending\n", entry->ref);
++				pr_debug("g.e. %#x still pending\n", entry->ref);
+ 			if (!first)
+ 				first = entry;
+ 		}
  		spin_lock_irqsave(&gnttab_list_lock, flags);
  		if (entry)
  			list_add_tail(&entry->list, &deferred_list);
