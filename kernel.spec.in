@@ -85,6 +85,11 @@ BuildRequires:  gcc
 # Needed for building GCC hardened plugins
 BuildRequires: gcc-c++
 
+%if 0%{?fedora} >= 32
+# Required for CONFIG_DEBUG_INFO_BTF
+BuildRequires: dwarves
+%endif
+
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
@@ -185,6 +190,12 @@ cd %kernel_build_dir
         --set-str CONFIG_LOCALVERSION -%release.%cpu_arch %{setup_config}
 %build_src_dir/scripts/config \
         --set-str CONFIG_BUILD_SALT "%{kernelrelease}" %{setup_config}
+
+%if 0%{?fedora} < 32
+# No new enough dwarves package available
+%build_src_dir/scripts/config \
+        --disable CONFIG_DEBUG_INFO_BTF
+%endif
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD KERNELRELEASE=%{kernelrelease}"
 
