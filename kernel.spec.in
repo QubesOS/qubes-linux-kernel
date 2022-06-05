@@ -118,7 +118,7 @@ Source0:        linux-%{upstream_version}.tar
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
-Source6:        macbook12-spi-driver-f85d028a41fbc928048c8ad248735501e76a2ce9.tar
+Source6:        macbook12-spi-driver-2905d318d1a3ee1a227052490bf20eddef2592f9.tar
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
