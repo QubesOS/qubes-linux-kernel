@@ -65,7 +65,7 @@ index 5c83d41..2c2faa7 100644
 @@ -372,10 +378,13 @@
  		list_del(&entry->list);
  		spin_unlock_irqrestore(&gnttab_list_lock, flags);
- 		if (_gnttab_end_foreign_access_ref(entry->ref, entry->ro)) {
+ 		if (_gnttab_end_foreign_access_ref(entry->ref)) {
 +			uint64_t ret = atomic64_sub_return(1, &deferred_count);
  			put_free_entry(entry->ref);
 -			pr_debug("freeing g.e. %#x (pfn %#lx)\n",
@@ -96,7 +96,7 @@ index 5c83d41..2c2faa7 100644
 +	pr_debug("Freed %zu references", freed);
  }
  
- static void gnttab_add_deferred(grant_ref_t ref, bool readonly,
+ static void gnttab_add_deferred(grant_ref_t ref, struct page *page)
 @@ -402,7 +412,7 @@
  {
  	struct deferred_entry *entry;
@@ -129,7 +129,7 @@ index 5c83d41..2c2faa7 100644
 +
  int gnttab_try_end_foreign_access(grant_ref_t ref)
  {
- 	int ret = _gnttab_end_foreign_access_ref(ref, 0);
+ 	int ret = _gnttab_end_foreign_access_ref(ref);
 -- 
 Sincerely,
 Demi Marie Obenour (she/her/hers)
