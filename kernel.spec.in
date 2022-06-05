@@ -125,7 +125,6 @@ Source104:      genfs-makefile
 Source105:      genfs.c
 %define modsign_cmd %{SOURCE18}
 
-Patch0: 0001-xen-netfront-detach-crash.patch
 Patch1: 0002-mce-hide-EBUSY-initialization-error-on-Xen.patch
 Patch2: 0003-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
 Patch3: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
