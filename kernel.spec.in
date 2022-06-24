@@ -142,6 +142,7 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch20: 0001-xen-pat-enabled.patch
+Patch21: v4-0001-xen-gntdev-Avoid-blocking-in-unmap_grant_pages.patch
 
 %description
 Qubes Dom0 kernel.
