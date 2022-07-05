@@ -142,6 +142,11 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch20: 0001-xen-pat-enabled.patch
+Patch21: xsa403-linux-1.patch
+Patch22: xsa403-linux-2.patch
+Patch23: xsa403-linux-3.patch
+Patch24: xsa403-linux-4.patch
+Patch25: xsa405-linux.patch
 
 %description
 Qubes Dom0 kernel.
