@@ -146,6 +146,13 @@ CONFIG_EFI_VARS_PSTORE=y
 
 CONFIG_MODPROBE_PATH="/sbin/modprobe"
 
+
+################################################################################
+## workaround for running (unsupported) pv vms on qubes 4.1
+## also need to blacklist the module in the vm/template!
+CONFIG_INTEL_PMC_CORE=m
+
+
 ################################################################################
 ## TODO: from diff to old config
 
