@@ -117,10 +117,6 @@ Patch14: 0015-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 Patch15: 0016-drm-change-func-to-better-detect-wether-swiotlb-is-n.patch
 Patch16: 0017-drm-amdgpu-fix-dma-mask-check-in-gmc_v6_0.c.patch
 Patch19: increase-reclaim-speed.patch
-Patch20: xsa403-linux-1.patch
-Patch21: xsa403-linux-2.patch
-Patch22: xsa403-linux-3.patch
-Patch23: xsa403-linux-4.patch
 
 %description
 Qubes Dom0 kernel.
