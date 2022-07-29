@@ -43,9 +43,13 @@
 %if !%{with_debuginfo}
 %global debug_package %{nil}
 %define _build_id_links none
-%define setup_config --disable CONFIG_DEBUG_INFO
+%define setup_config --enable CONFIG_DEBUG_INFO_NONE \\\
+        --disable CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT \\\
+        --disable CONFIG_DEBUG_INFO
 %else
-%define setup_config --enable CONFIG_DEBUG_INFO --disable CONFIG_DEBUG_INFO_REDUCED
+%define setup_config --enable CONFIG_DEBUG_INFO \\\
+        --enable CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT \\\
+        --disable CONFIG_DEBUG_INFO_REDUCED
 %endif
 
 Name:           kernel%{?name_suffix}
@@ -85,6 +89,11 @@ BuildRequires:  gcc
 # Needed for building GCC hardened plugins
 BuildRequires: gcc-c++
 
+%if 0%{?fedora} >= 32
+# Required for CONFIG_DEBUG_INFO_BTF
+BuildRequires: dwarves
+%endif
+
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
 
@@ -113,7 +122,7 @@ Source0:        linux-%{upstream_version}.tar
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
-Source6:        macbook12-spi-driver-f85d028a41fbc928048c8ad248735501e76a2ce9.tar
+Source6:        macbook12-spi-driver-2905d318d1a3ee1a227052490bf20eddef2592f9.tar
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
@@ -125,15 +134,14 @@ Source104:      genfs-makefile
 Source105:      genfs.c
 %define modsign_cmd %{SOURCE18}
 
-Patch0: 0001-xen-netfront-detach-crash.patch
 Patch1: 0002-mce-hide-EBUSY-initialization-error-on-Xen.patch
 Patch2: 0003-Log-error-code-of-EVTCHNOP_bind_pirq-failure.patch
 Patch3: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
 Patch5: 0006-block-add-no_part_scan-module-parameter.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
-Patch17: 0001-xen-don-t-hang-when-resuming-PCI-device.patch
 Patch19: increase-reclaim-speed.patch
+Patch20: 0001-xen-pat-enabled.patch
 
 %description
 Qubes Dom0 kernel.
@@ -186,6 +194,12 @@ cd %kernel_build_dir
         --set-str CONFIG_LOCALVERSION -%release.%cpu_arch %{setup_config}
 %build_src_dir/scripts/config \
         --set-str CONFIG_BUILD_SALT "%{kernelrelease}" %{setup_config}
+
+%if 0%{?fedora} < 32
+# No new enough dwarves package available
+%build_src_dir/scripts/config \
+        --disable CONFIG_DEBUG_INFO_BTF
+%endif
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD KERNELRELEASE=%{kernelrelease}"
 
