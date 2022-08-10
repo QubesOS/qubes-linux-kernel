@@ -1,0 +1,19 @@
+host:
+  rpm:
+    build:
+    - kernel.spec
+source:
+  modules:
+  - linux-utils
+  - dummy-psu
+  - dummy-backlight
+  files:
+  - url: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-@VERSION@.tar.xz
+    signature: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-@VERSION@.tar.sign
+    uncompress: true
+    pubkeys:
+    - kernel.org-2-key.asc
+    - kernel.org-1-key.asc
+  - url: https://github.com/PatrickVerner/macbook12-spi-driver/archive/2905d318d1a3ee1a227052490bf20eddef2592f9.tar.gz#/macbook12-spi-driver-2905d318d1a3ee1a227052490bf20eddef2592f9.tar.gz
+    uncompress: true
+    sha256: macbook12-spi-driver-2905d318d1a3ee1a227052490bf20eddef2592f9.tar.sha256
