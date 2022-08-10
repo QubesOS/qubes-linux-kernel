@@ -125,10 +125,6 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch13: 0014-xen-pciback-add-attribute-to-allow-MSI-enable-flag-w.patch
 Patch17: 0001-xen-don-t-hang-when-resuming-PCI-device.patch
 Patch19: increase-reclaim-speed.patch
-Patch20: xsa403-linux-1.patch
-Patch21: xsa403-linux-2.patch
-Patch22: xsa403-linux-3.patch
-Patch23: xsa403-linux-4.patch
 
 %description
 Qubes Dom0 kernel.
