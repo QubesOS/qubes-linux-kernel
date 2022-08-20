@@ -143,6 +143,7 @@ Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch21: v6-ACPI-skip-IRQ-override-on-AMD-Zen-platforms.patch
 Patch25: 0001-Re-enable-interrupts-before-loading-PNVM.patch
+Patch26: 0001-Add-support-for-ESRT-loading-under-Xen.patch
 
 %description
 Qubes Dom0 kernel.

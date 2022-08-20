@@ -1,0 +1,136 @@
+From 360fef5cd43594936fecbbd22d7638c67be57a67 Mon Sep 17 00:00:00 2001
+From: Demi Marie Obenour <demi@invisiblethingslab.com>
+Date: Sat, 13 Aug 2022 10:36:41 -0400
+Subject: [PATCH] Add support for ESRT loading under Xen
+
+This is needed for fwupd to work in Qubes OS.
+
+Signed-off-by: Demi Marie Obenour <demi@invisiblethingslab.com>
+---
+ drivers/firmware/efi/esrt.c | 34 ++++++++++++++++++++++++----------
+ drivers/xen/efi.c           | 33 +++++++++++++++++++++++++++++++++
+ include/linux/efi.h         | 10 ++++++++++
+ 3 files changed, 67 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/firmware/efi/esrt.c b/drivers/firmware/efi/esrt.c
+index 2a2f52b017e736dd995c69e8aeb5fbd7761732e5..c0fc149a838044cc16bb08a374a0c8ea6b7dcbff 100644
+--- a/drivers/firmware/efi/esrt.c
++++ b/drivers/firmware/efi/esrt.c
+@@ -244,22 +244,36 @@ void __init efi_esrt_init(void)
+ 	struct efi_system_resource_table tmpesrt;
+ 	size_t size, max, entry_size, entries_size;
+ 	efi_memory_desc_t md;
+-	int rc;
+ 	phys_addr_t end;
+ 
+-	if (!efi_enabled(EFI_MEMMAP))
+-		return;
+-
+ 	pr_debug("esrt-init: loading.\n");
+ 	if (!esrt_table_exists())
+ 		return;
+ 
+-	rc = efi_mem_desc_lookup(efi.esrt, &md);
+-	if (rc < 0 ||
+-	    (!(md.attribute & EFI_MEMORY_RUNTIME) &&
+-	     md.type != EFI_BOOT_SERVICES_DATA &&
+-	     md.type != EFI_RUNTIME_SERVICES_DATA)) {
+-		pr_warn("ESRT header is not in the memory map.\n");
++	if (efi_enabled(EFI_MEMMAP)) {
++		if (efi_mem_desc_lookup(efi.esrt, &md) < 0 ||
++		    (!(md.attribute & EFI_MEMORY_RUNTIME) &&
++		     md.type != EFI_BOOT_SERVICES_DATA &&
++		     md.type != EFI_RUNTIME_SERVICES_DATA)) {
++			pr_warn("ESRT header is not in the memory map.\n");
++			return;
++		}
++	} else if (IS_ENABLED(CONFIG_XEN_EFI) && efi_enabled(EFI_PARAVIRT)) {
++		if (!xen_efi_mem_desc_lookup(efi.esrt, &md)) {
++			pr_warn("Failed to lookup ESRT header in Xen memory map\n");
++			return;
++		}
++
++		/* Recent Xen versions relocate the ESRT to memory of type
++		 * EfiRuntimeServicesData, which Xen will not reuse.  If the ESRT
++		 * is not in EfiRuntimeServicesData memory, it has not been reserved
++		 * by Xen and might be allocated to other guests, so it cannot
++		 * safely be used. */
++		if (md.type != EFI_RUNTIME_SERVICES_DATA) {
++			pr_warn("Xen did not reserve ESRT, ignoring it\n");
++			return;
++		}
++	} else {
+ 		return;
+ 	}
+ 
+diff --git a/drivers/xen/efi.c b/drivers/xen/efi.c
+index d1ff2186ebb48a7c0981ecb6d4afcbbb25ffcea0..b313f213822f0fd5ba6448f6f6f453cfda4c7e23 100644
+--- a/drivers/xen/efi.c
++++ b/drivers/xen/efi.c
+@@ -26,6 +26,7 @@
+ 
+ #include <xen/interface/xen.h>
+ #include <xen/interface/platform.h>
++#include <xen/page.h>
+ #include <xen/xen.h>
+ #include <xen/xen-ops.h>
+ 
+@@ -40,6 +41,38 @@
+ 
+ #define efi_data(op)	(op.u.efi_runtime_call)
+ 
++static_assert(XEN_PAGE_SHIFT == EFI_PAGE_SHIFT,
++              "Mismatch between EFI_PAGE_SHIFT and XEN_PAGE_SHIFT");
++
++bool xen_efi_mem_desc_lookup(u64 phys_addr, efi_memory_desc_t *md)
++{
++	struct xen_platform_op op = {
++		.cmd = XENPF_firmware_info,
++		.u.firmware_info = {
++			.type = XEN_FW_EFI_INFO,
++			.index = XEN_FW_EFI_MEM_INFO,
++			.u.efi_info.mem.addr = phys_addr,
++			.u.efi_info.mem.size = ((u64)-1ULL) - phys_addr,
++		}
++	};
++	union xenpf_efi_info *info = &op.u.firmware_info.u.efi_info;
++	int rc;
++
++	memset(md, 0, sizeof(*md)); /* initialize md even on failure */
++	rc = HYPERVISOR_platform_op(&op);
++	if (rc) {
++		pr_warn("Could not obtain information on address %llu from Xen: "
++			"error %d\n", phys_addr, rc);
++		return false;
++	}
++
++	md->attribute = info->mem.attr;
++	md->type = info->mem.type;
++	md->num_pages = info->mem.size >> XEN_PAGE_SHIFT;
++	md->phys_addr = info->mem.addr;
++	return true;
++}
++
+ static efi_status_t xen_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
+ {
+ 	struct xen_platform_op op = INIT_EFI_OP(get_time);
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index d2b84c2fec39f0268324d1a38a73ed67786973c9..0598869cdc924aef0e2b9cacc4450b728e1a98c7 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -1327,1 +1327,11 @@ struct linux_efi_coco_secret_area {
++#if IS_ENABLED(CONFIG_XEN_EFI)
++extern bool xen_efi_mem_desc_lookup(u64 phys_addr, efi_memory_desc_t *out_md);
++#else
++static inline bool xen_efi_mem_desc_lookup(u64 phys_addr, efi_memory_desc_t *out_md)
++{
++	BUILD_BUG();
++	return false;
++}
++#endif
++
+ #endif /* _LINUX_EFI_H */
+-- 
+Sincerely,
+Demi Marie Obenour (she/her/hers)
+Invisible Things Lab
