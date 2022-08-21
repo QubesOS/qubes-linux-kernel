@@ -7,5 +7,3 @@ include:
     file: '/r4.1/gitlab-dom0-install.yml'
   - project: 'QubesOS/qubes-continuous-integration'
     file: '/r4.1/gitlab-dom0-openqa.yml'
-  - project: 'QubesOS/qubes-continuous-integration'
-    file: '/r4.0/gitlab-dom0.yml'
