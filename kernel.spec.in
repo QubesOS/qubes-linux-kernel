@@ -134,6 +134,8 @@ Patch17: 0001-xen-don-t-hang-when-resuming-PCI-device.patch
 Patch21: 0001-fb-addr-fix-obtain-upper-32-bits.patch
 Patch22: 0001-fb-addr-fix-obtain-full-video-frame-buffer-address.patch
 Patch23: increase-reclaim-speed.patch
+Patch24: 0001-xen-blkback-Advertise-feature-persistent-as-user-req.patch
+Patch25: 0002-xen-blkfront-Advertise-feature-persistent-as-user-re.patch
 
 %description
 Qubes Dom0 kernel.
