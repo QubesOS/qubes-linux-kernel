@@ -143,6 +143,9 @@ Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch20: 0001-xen-pat-enabled.patch
 Patch21: v6-ACPI-skip-IRQ-override-on-AMD-Zen-platforms.patch
+Patch22: 0001-xen-blkback-Advertise-feature-persistent-as-user-req.patch
+Patch23: 0002-xen-blkfront-Advertise-feature-persistent-as-user-re.patch
+Patch24: 0003-xen-blkfront-Cache-feature_persistent-value-before-a.patch
 
 %description
 Qubes Dom0 kernel.
