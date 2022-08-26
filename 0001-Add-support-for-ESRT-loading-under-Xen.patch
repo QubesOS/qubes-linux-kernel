@@ -2,6 +2,8 @@ From 360fef5cd43594936fecbbd22d7638c67be57a67 Mon Sep 17 00:00:00 2001
 From: Demi Marie Obenour <demi@invisiblethingslab.com>
 Date: Sat, 13 Aug 2022 10:36:41 -0400
 Subject: [PATCH] Add support for ESRT loading under Xen
+To: Ard Biesheuvel <ardb@kernel.org>, Juergen Gross <jgross@suse.com>, Stefano Stabellini <sstabellini@kernel.org>, Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
 
 This is needed for fwupd to work in Qubes OS.
 
