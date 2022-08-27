@@ -1,7 +1,7 @@
 From 360fef5cd43594936fecbbd22d7638c67be57a67 Mon Sep 17 00:00:00 2001
 From: Demi Marie Obenour <demi@invisiblethingslab.com>
 Date: Sat, 13 Aug 2022 10:36:41 -0400
-Subject: [PATCH] Add support for ESRT loading under Xen
+Subject: [PATCH v2] Add support for ESRT loading under Xen
 To: Ard Biesheuvel <ardb@kernel.org>, Juergen Gross <jgross@suse.com>, Stefano Stabellini <sstabellini@kernel.org>, Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
 Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
 
@@ -9,25 +9,33 @@ This is needed for fwupd to work in Qubes OS.
 
 Signed-off-by: Demi Marie Obenour <demi@invisiblethingslab.com>
 ---
- drivers/firmware/efi/esrt.c | 34 ++++++++++++++++++++++++----------
- drivers/xen/efi.c           | 33 +++++++++++++++++++++++++++++++++
- include/linux/efi.h         | 10 ++++++++++
- 3 files changed, 67 insertions(+), 10 deletions(-)
+Changes since v1:
+
+- Use a different type (struct xen_efi_mem_info) for memory information
+  provided by Xen, as Xen reports it in a different way than the
+  standard Linux functions do.
+
+ drivers/firmware/efi/esrt.c | 49 +++++++++++++++++++++++++++----------
+ drivers/xen/efi.c           | 32 ++++++++++++++++++++++++++
+ include/linux/efi.h         | 18 ++++++++++++++
+ 3 files changed, 86 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/firmware/efi/esrt.c b/drivers/firmware/efi/esrt.c
 index 2a2f52b017e736dd995c69e8aeb5fbd7761732e5..c0fc149a838044cc16bb08a374a0c8ea6b7dcbff 100644
 --- a/drivers/firmware/efi/esrt.c
 +++ b/drivers/firmware/efi/esrt.c
-@@ -244,22 +244,36 @@ void __init efi_esrt_init(void)
+@@ -243,27 +243,50 @@ void __init efi_esrt_init(void)
+ 	void *va;
  	struct efi_system_resource_table tmpesrt;
  	size_t size, max, entry_size, entries_size;
- 	efi_memory_desc_t md;
+-	efi_memory_desc_t md;
 -	int rc;
  	phys_addr_t end;
- 
+-
 -	if (!efi_enabled(EFI_MEMMAP))
 -		return;
--
++	uint32_t type;
+ 
  	pr_debug("esrt-init: loading.\n");
  	if (!esrt_table_exists())
  		return;
@@ -39,6 +47,8 @@ index 2a2f52b017e736dd995c69e8aeb5fbd7761732e5..c0fc149a838044cc16bb08a374a0c8ea
 -	     md.type != EFI_RUNTIME_SERVICES_DATA)) {
 -		pr_warn("ESRT header is not in the memory map.\n");
 +	if (efi_enabled(EFI_MEMMAP)) {
++		efi_memory_desc_t md;
++
 +		if (efi_mem_desc_lookup(efi.esrt, &md) < 0 ||
 +		    (!(md.attribute & EFI_MEMORY_RUNTIME) &&
 +		     md.type != EFI_BOOT_SERVICES_DATA &&
@@ -46,18 +56,26 @@ index 2a2f52b017e736dd995c69e8aeb5fbd7761732e5..c0fc149a838044cc16bb08a374a0c8ea
 +			pr_warn("ESRT header is not in the memory map.\n");
 +			return;
 +		}
++
++		type = md.type;
++		max = efi_mem_desc_end(&md);
 +	} else if (IS_ENABLED(CONFIG_XEN_EFI) && efi_enabled(EFI_PARAVIRT)) {
-+		if (!xen_efi_mem_desc_lookup(efi.esrt, &md)) {
++		struct xen_efi_mem_info info;
++
++		if (!xen_efi_mem_info_query(efi.esrt, &info)) {
 +			pr_warn("Failed to lookup ESRT header in Xen memory map\n");
 +			return;
 +		}
++
++		type = info.type;
++		max = info.addr + info.size;
 +
 +		/* Recent Xen versions relocate the ESRT to memory of type
 +		 * EfiRuntimeServicesData, which Xen will not reuse.  If the ESRT
 +		 * is not in EfiRuntimeServicesData memory, it has not been reserved
 +		 * by Xen and might be allocated to other guests, so it cannot
 +		 * safely be used. */
-+		if (md.type != EFI_RUNTIME_SERVICES_DATA) {
++		if (type != EFI_RUNTIME_SERVICES_DATA) {
 +			pr_warn("Xen did not reserve ESRT, ignoring it\n");
 +			return;
 +		}
@@ -65,6 +83,19 @@ index 2a2f52b017e736dd995c69e8aeb5fbd7761732e5..c0fc149a838044cc16bb08a374a0c8ea
  		return;
  	}
  
+-	max = efi_mem_desc_end(&md);
+ 	if (max < efi.esrt) {
+ 		pr_err("EFI memory descriptor is invalid. (esrt: %p max: %p)\n",
+ 		       (void *)efi.esrt, (void *)max);
+@@ -333,7 +356,7 @@ void __init efi_esrt_init(void)
+ 
+ 	end = esrt_data + size;
+ 	pr_info("Reserving ESRT space from %pa to %pa.\n", &esrt_data, &end);
+-	if (md.type == EFI_BOOT_SERVICES_DATA)
++	if (type == EFI_BOOT_SERVICES_DATA)
+ 		efi_mem_reserve(esrt_data, esrt_data_size);
+ 
+ 	pr_debug("esrt-init: loaded.\n");
 diff --git a/drivers/xen/efi.c b/drivers/xen/efi.c
 index d1ff2186ebb48a7c0981ecb6d4afcbbb25ffcea0..b313f213822f0fd5ba6448f6f6f453cfda4c7e23 100644
 --- a/drivers/xen/efi.c
@@ -77,14 +108,14 @@ index d1ff2186ebb48a7c0981ecb6d4afcbbb25ffcea0..b313f213822f0fd5ba6448f6f6f453cf
  #include <xen/xen.h>
  #include <xen/xen-ops.h>
  
-@@ -40,6 +41,38 @@
+@@ -40,6 +41,37 @@
  
  #define efi_data(op)	(op.u.efi_runtime_call)
  
 +static_assert(XEN_PAGE_SHIFT == EFI_PAGE_SHIFT,
 +              "Mismatch between EFI_PAGE_SHIFT and XEN_PAGE_SHIFT");
 +
-+bool xen_efi_mem_desc_lookup(u64 phys_addr, efi_memory_desc_t *md)
++bool xen_efi_mem_info_query(u64 phys_addr, struct xen_efi_mem_info *md)
 +{
 +	struct xen_platform_op op = {
 +		.cmd = XENPF_firmware_info,
@@ -105,11 +136,10 @@ index d1ff2186ebb48a7c0981ecb6d4afcbbb25ffcea0..b313f213822f0fd5ba6448f6f6f453cf
 +			"error %d\n", phys_addr, rc);
 +		return false;
 +	}
-+
-+	md->attribute = info->mem.attr;
++	md->addr = info->mem.addr;
++	md->size = info->mem.size;
++	md->attr = info->mem.attr;
 +	md->type = info->mem.type;
-+	md->num_pages = info->mem.size >> XEN_PAGE_SHIFT;
-+	md->phys_addr = info->mem.addr;
 +	return true;
 +}
 +
@@ -120,11 +150,19 @@ diff --git a/include/linux/efi.h b/include/linux/efi.h
 index d2b84c2fec39f0268324d1a38a73ed67786973c9..0598869cdc924aef0e2b9cacc4450b728e1a98c7 100644
 --- a/include/linux/efi.h
 +++ b/include/linux/efi.h
-@@ -1327,1 +1327,11 @@ struct linux_efi_coco_secret_area {
+@@ -1327,1 +1327,19 @@ struct linux_efi_coco_secret_area {
++/* Result of a XEN_FW_EFI_MEM_INFO query */
++struct xen_efi_mem_info {
++    uint64_t addr; /* address queried */
++    uint64_t size; /* remaining bytes in memory region */
++    uint64_t attr; /* attributes */
++    uint32_t type; /* type */
++};
++
 +#if IS_ENABLED(CONFIG_XEN_EFI)
-+extern bool xen_efi_mem_desc_lookup(u64 phys_addr, efi_memory_desc_t *out_md);
++extern bool xen_efi_mem_info_query(u64 phys_addr, struct xen_efi_mem_info *out_md);
 +#else
-+static inline bool xen_efi_mem_desc_lookup(u64 phys_addr, efi_memory_desc_t *out_md)
++static inline bool xen_efi_mem_info_query(u64 phys_addr, struct xen_efi_mem_info *out_md)
 +{
 +	BUILD_BUG();
 +	return false;
