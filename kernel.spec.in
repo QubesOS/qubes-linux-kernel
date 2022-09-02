@@ -136,6 +136,7 @@ Patch22: 0001-fb-addr-fix-obtain-full-video-frame-buffer-address.patch
 Patch23: increase-reclaim-speed.patch
 Patch24: 0001-xen-blkback-Advertise-feature-persistent-as-user-req.patch
 Patch25: 0002-xen-blkfront-Advertise-feature-persistent-as-user-re.patch
+Patch26: 0001-Re-enable-interrupts-before-loading-PNVM.patch
 
 %description
 Qubes Dom0 kernel.
