@@ -141,7 +141,6 @@ Patch5: 0006-block-add-no_part_scan-module-parameter.patch
 Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
-Patch21: v6-ACPI-skip-IRQ-override-on-AMD-Zen-platforms.patch
 Patch25: 0001-Re-enable-interrupts-before-loading-PNVM.patch
 
 %description
