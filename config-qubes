@@ -151,6 +151,12 @@ CONFIG_MODPROBE_PATH="/sbin/modprobe"
 ## also need to blacklist the module in the vm/template!
 CONFIG_INTEL_PMC_CORE=m
 
+## Technically, CONFIG_XEN_VIRTIO_FORCE_GRANT=y is a good idea, but we don't
+## use virtio devices under Xen yet. On the other hand, this interfere with
+## running Xen nested within KVM. CONFIG_XEN_VIRTIO under PV (dom0) behaves as
+## CONFIG_XEN_VIRTIO_FORCE_GRANT, so disable whole CONFIG_XEN_VIRTIO.
+
+# CONFIG_XEN_VIRTIO is not set
 
 ################################################################################
 ## TODO: from diff to old config
