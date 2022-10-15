@@ -8,8 +8,8 @@ source:
   - dummy-psu
   - dummy-backlight
   files:
-  - url: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-@VERSION@.tar.xz
-    signature: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-@VERSION@.tar.sign
+  - url: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-@VERSION@.tar.xz
+    signature: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-@VERSION@.tar.sign
     uncompress: true
     pubkeys:
     - kernel.org-2-key.asc
