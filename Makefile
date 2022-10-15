@@ -38,7 +38,7 @@ SRC_FILE := linux-${VERSION}.tar.xz
 SIGN_FILE := linux-${VERSION}.tar.sign
 else
 SRC_FILE := linux-${VERSION}.tar.gz
-HASH_FILE := $(SRC_FILE).sha512
+HASH_FILE := linux-${VERSION}.tar.sha256
 endif
 SRC_TARFILE := linux-${VERSION}.tar
 
@@ -52,7 +52,7 @@ URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
 
 ifeq ($(DOWNLOAD_FROM_GIT),1)
-URL := https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-$(VERSION).tar.gz
+URL := https://git.kernel.org/torvalds/t/linux-$(VERSION).tar.gz
 endif
 
 verrel:
@@ -88,12 +88,12 @@ $(SRC_TARFILE): $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(SIGN_FILE) linux-keyring.gpg
 	mv $@$(UNTRUSTED_SUFF) $@
 else
 # hash based
-$(SRC_TARFILE): $(SRC_FILE)$(UNTRUSTED_SUFF) $(HASH_FILE)
+$(SRC_TARFILE): $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(HASH_FILE)
 	# there are no signatures for rc tarballs
 	# verify locally based on a signed git tag and commit hash file
-	sha512sum --quiet -c $(HASH_FILE)
-	zcat <$< >$@
-	rm -f $<
+	@sha256sum --status --strict -c <(printf "$(file <$(HASH_FILE))  -\n") <$< || \
+	  { echo "Wrong hash of $@$(UNTRUSTED_SUFF)!"; exit 1; }
+	@mv $< $@
 endif
 
 $(SPI_SRC_TARFILE): $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE).sha256

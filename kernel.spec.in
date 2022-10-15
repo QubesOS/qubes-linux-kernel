@@ -4,12 +4,11 @@
 
 %define variant qubes
 %define plainrel @REL@%{?dist}
-%define rel %{plainrel}.%{variant}
-%define version %(echo '@VERSION@' | sed 's/~rc.*/.0/')
-%define upstream_version %(echo '@VERSION@' | sed 's/~rc/-rc/')
+%define version %(echo '@VERSION@' | sed 's/-rc.*//')
+%define upstream_version @VERSION@
 %if "%{version}" != "%{upstream_version}"
 %define prerelease 1
-%define rel 0.%(echo '@VERSION@' | sed 's/.*~rc/rc/').%{plainrel}.%{variant}
+%define rel 0.%(echo '@VERSION@' | sed 's/.*-rc/rc/').%{plainrel}.%{variant}
 %else
 %define prerelease 0
 %define rel %{plainrel}.%{variant}
