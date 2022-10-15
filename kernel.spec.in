@@ -547,7 +547,7 @@ PATH=/usr/sbin:/sbin:$PATH mkfs.ext3 -F "-Enum_backup_sb=0,root_owner=0:0$flags"
     -d %buildroot%vm_install_dir/modules %buildroot%vm_install_dir/modules.img 512M
 
 %if 0%{?fedora} >= 32
-SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH %{_builddir}/genfs %buildroot%vm_install_dir/modules.img %{VERSION}-%{RELEASE}.%{_arch} immutable=yes
+SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH %{_builddir}/genfs %buildroot%vm_install_dir/modules.img %kernelrelease immutable=yes
 e2fsck -pDfE optimize_extents -- %buildroot%vm_install_dir/modules.img
 resize2fs -M -- %buildroot%vm_install_dir/modules.img
 e2fsck -pDfE optimize_extents -- %buildroot%vm_install_dir/modules.img
