@@ -147,6 +147,7 @@ Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch25: 0001-Re-enable-interrupts-before-loading-PNVM.patch
 Patch26: gpu-hang.patch
+Patch27: xhci-detach.patch
 
 %description
 Qubes Dom0 kernel.
