@@ -545,7 +545,7 @@ flags=
 %endif
 
 PATH=/usr/sbin:/sbin:$PATH mkfs.ext3 -F "-Enum_backup_sb=0,root_owner=0:0$flags" \
-    -d %buildroot%vm_install_dir/modules %buildroot%vm_install_dir/modules.img 512M
+    -d %buildroot%vm_install_dir/modules %buildroot%vm_install_dir/modules.img 768M
 
 %if 0%{?fedora} >= 32
 SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH %{_builddir}/genfs %buildroot%vm_install_dir/modules.img %kernelrelease immutable=yes
