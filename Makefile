@@ -72,12 +72,12 @@ linux-keyring.gpg: $(sort $(wildcard kernel.org-*.asc))
 .INTERMEDIATE: $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)
 %.tar$(UNTRUSTED_SUFF): %.tar.xz$(UNTRUSTED_SUFF)
 	if [ -f /usr/bin/qvm-run-vm ]; \
-        then qvm-run-vm --dispvm 2>/dev/null xzcat <$< > $@; \
+        then qvm-run-vm --no-gui --dispvm 2>/dev/null xzcat <$< > $@; \
 	else xzcat <$< > $@; fi
 
 %.tar$(UNTRUSTED_SUFF): %.tar.gz$(UNTRUSTED_SUFF)
 	if [ -f /usr/bin/qvm-run-vm ]; \
-        then qvm-run-vm --dispvm 2>/dev/null zcat <$< > $@; \
+        then qvm-run-vm --no-gui --dispvm 2>/dev/null zcat <$< > $@; \
 	else zcat <$< > $@; fi
 
 ifeq ($(VERIFICATION),signature)
