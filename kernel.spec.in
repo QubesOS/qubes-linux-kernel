@@ -135,7 +135,6 @@ Patch21: 0001-fb-addr-fix-obtain-upper-32-bits.patch
 Patch22: 0001-fb-addr-fix-obtain-full-video-frame-buffer-address.patch
 Patch23: increase-reclaim-speed.patch
 Patch26: 0001-Re-enable-interrupts-before-loading-PNVM.patch
-Patch27: xhci-detach.patch
 
 %description
 Qubes Dom0 kernel.
