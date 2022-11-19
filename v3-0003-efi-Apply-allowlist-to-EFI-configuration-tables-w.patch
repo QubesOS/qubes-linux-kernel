@@ -1,0 +1,111 @@
+From ae86554a2846cd3732316405f10bce5ea9bf7f3d Mon Sep 17 00:00:00 2001
+From: Demi Marie Obenour <demi@invisiblethingslab.com>
+To: Ard Biesheuvel <ardb@kernel.org>,
+    Juergen Gross <jgross@suse.com>,
+    Stefano Stabellini <sstabellini@kernel.org>,
+    Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Cc: Demi Marie Obenour <demi@invisiblethingslab.com>,
+    Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>,
+    linux-efi@vger.kernel.org,
+    linux-kernel@vger.kernel.org,
+    xen-devel@lists.xenproject.org
+Message-Id: <ae86554a2846cd3732316405f10bce5ea9bf7f3d.1669264419.git.demi@invisiblethingslab.com>
+In-Reply-To: <b18879e0329c785d35f2aa2164413bb56419c684.1674153153.git.demi@invisiblethingslab.com>
+References: <b18879e0329c785d35f2aa2164413bb56419c684.1674153153.git.demi@invisiblethingslab.com>
+Date: Tue, 22 Nov 2022 21:44:11 -0500
+Subject: [PATCH v3 3/5] efi: Apply allowlist to EFI configuration tables when
+ running under Xen
+
+As it turns out, Xen does not guarantee that EFI boot services data
+regions in memory are preserved, which means that EFI configuration
+tables pointing into such memory regions may be corrupted before the
+dom0 OS has had a chance to inspect them.
+
+This is causing problems for Qubes OS when it attempts to perform system
+firmware updates, which requires that the contents of the EFI System
+Resource Table are valid when the fwupd userspace program runs.
+
+However, other configuration tables such as the memory attributes table
+or the runtime properties table are equally affected, and so we need a
+comprehensive workaround that works for any table type.
+
+So when running under Xen, check the EFI memory descriptor covering the
+start of the table, and disregard the table if it does not reside in
+memory that is preserved by Xen.
+
+Co-developed-by: Ard Biesheuvel <ardb@kernel.org>
+Signed-off-by: Ard Biesheuvel <ardb@kernel.org>
+Signed-off-by: Demi Marie Obenour <demi@invisiblethingslab.com>
+Tested-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/firmware/efi/efi.c |  7 +++++++
+ drivers/xen/efi.c          | 25 +++++++++++++++++++++++++
+ include/linux/efi.h        |  2 ++
+ 3 files changed, 34 insertions(+)
+
+diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+index bcb848e44e7b1350b10b7c0479c0b38d980fe37d..b49fcde06ca0ff5347047666f38b9309bd9cfe26 100644
+--- a/drivers/firmware/efi/efi.c
++++ b/drivers/firmware/efi/efi.c
+@@ -564,6 +564,13 @@ static __init int match_config_table(const efi_guid_t *guid,
+ 
+ 	for (i = 0; efi_guidcmp(table_types[i].guid, NULL_GUID); i++) {
+ 		if (!efi_guidcmp(*guid, table_types[i].guid)) {
++			if (IS_ENABLED(CONFIG_XEN_EFI) &&
++			    !xen_efi_config_table_is_usable(guid, table)) {
++				if (table_types[i].name[0])
++					pr_cont("(%s=0x%lx) may have been clobbered by Xen ",
++					        table_types[i].name, table);
++				return 1;
++			}
+ 			*(table_types[i].ptr) = table;
+ 			if (table_types[i].name[0])
+ 				pr_cont("%s=0x%lx ",
+diff --git a/drivers/xen/efi.c b/drivers/xen/efi.c
+index 3c792353b7308f9c2bf0a888eda9f827aa9177f8..fb321cd6415a40e8c4d0ad940611adcabe20ab97 100644
+--- a/drivers/xen/efi.c
++++ b/drivers/xen/efi.c
+@@ -328,3 +328,28 @@ int efi_mem_desc_lookup(u64 phys_addr, efi_memory_desc_t *out_md)
+ 
+ 	return 0;
+ }
++
++bool __init xen_efi_config_table_is_usable(const efi_guid_t *guid,
++                                           unsigned long table)
++{
++	efi_memory_desc_t md;
++	int rc;
++
++	if (!efi_enabled(EFI_PARAVIRT))
++		return true;
++
++	rc = efi_mem_desc_lookup(table, &md);
++	if (rc)
++		return false;
++
++	switch (md.type) {
++	case EFI_RUNTIME_SERVICES_CODE:
++	case EFI_RUNTIME_SERVICES_DATA:
++	case EFI_ACPI_RECLAIM_MEMORY:
++	case EFI_ACPI_MEMORY_NVS:
++	case EFI_RESERVED_TYPE:
++		return true;
++	default:
++		return false;
++	}
++}
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index b407a302b730a6cc7481afa0f582360e59faf1e0..b210b50c4bdedaafcce6f63d44f57ff8329d1cfd 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -1322,4 +1322,6 @@ struct linux_efi_coco_secret_area {
+ /* Header of a populated EFI secret area */
+ #define EFI_SECRET_TABLE_HEADER_GUID	EFI_GUID(0x1e74f542, 0x71dd, 0x4d66,  0x96, 0x3e, 0xef, 0x42, 0x87, 0xff, 0x17, 0x3b)
+ 
++bool xen_efi_config_table_is_usable(const efi_guid_t *guid, unsigned long table);
++
+ #endif /* _LINUX_EFI_H */
+-- 
+Sincerely,
+Demi Marie Obenour (she/her/hers)
+Invisible Things Lab

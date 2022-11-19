@@ -143,6 +143,11 @@ Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch25: 0001-Re-enable-interrupts-before-loading-PNVM.patch
 Patch26: 0001-sound-Disable-SG-buffer.patch
+Patch28: v3-0001-efi-memmap-Disregard-bogus-entries-instead-of-ret.patch
+Patch29: v3-0002-efi-xen-Implement-memory-descriptor-lookup-based-.patch
+Patch30: v3-0003-efi-Apply-allowlist-to-EFI-configuration-tables-w.patch
+Patch31: v3-0004-efi-Actually-enable-the-ESRT-under-Xen.patch
+Patch32: v3-0005-efi-Warn-if-trying-to-reserve-memory-under-Xen.patch
 
 %description
 Qubes Dom0 kernel.
