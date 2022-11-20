@@ -121,7 +121,7 @@ index 5c83d41..2c2faa7 100644
 +		pr_warn("leaking g.e. %#x (pfn %#lx) (total deferred %llu, total leaked %llu)\n",
 +			ref, page ? page_to_pfn(page) : -1, deferred, leaked);
  	}
--	printk("%s g.e. %#x (pfn %#lx)\n",
+-	pr_debug("%s g.e. %#x (pfn %#lx)\n",
 -	       what, ref, page ? page_to_pfn(page) : -1);
  }
  
