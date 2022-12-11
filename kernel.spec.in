@@ -146,7 +146,6 @@ Patch12: 0013-xen-pcifront-pciback-Update-pciif.h-with-err-and-res.patch
 Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch25: 0001-Re-enable-interrupts-before-loading-PNVM.patch
-Patch26: 0001-xen-pciback-Allow-setting-PCI_MSIX_FLAGS_MASKALL-too.patch
 
 %description
 Qubes Dom0 kernel.
