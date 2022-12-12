@@ -158,6 +158,10 @@ CONFIG_INTEL_PMC_CORE=m
 
 # CONFIG_XEN_VIRTIO is not set
 
+## KFENCE is a good idea, but in practice it is not a strong mitigation,
+## and it breaks PV guests: https://github.com/QubesOS/qubes-issues/issues/7935.
+# CONFIG_KFENCE is not set
+
 ################################################################################
 ## TODO: from diff to old config
 
