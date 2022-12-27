@@ -1,0 +1,30 @@
+From bcc68c3829df041bf22ee493f8eb58fce230303b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Tue, 27 Dec 2022 15:49:46 +0100
+Subject: [PATCH] sound: Disable SG-buffer
+
+This appears to be broken under Xen PV (or other Qubes-specific
+factor?), so disable it until fixed.
+---
+ sound/core/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/core/Kconfig b/sound/core/Kconfig
+index 12990d9a4dff..18798d99021d 100644
+--- a/sound/core/Kconfig
++++ b/sound/core/Kconfig
+@@ -225,8 +225,8 @@ config SND_VMASTER
+ 	bool
+ 
+ config SND_DMA_SGBUF
+-	def_bool y
+-	depends on X86
++	def_bool n
++#	depends on X86
+ 
+ config SND_CTL_LED
+ 	tristate
+-- 
+2.37.3
+
