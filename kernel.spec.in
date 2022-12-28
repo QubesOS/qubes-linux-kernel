@@ -200,11 +200,6 @@ if [ "$krel" != "%kernelrelease" ]; then
     exit 1
 fi
 
-if ! grep -q CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y .config; then
-    echo "Memory hotplug disabled!" >&2
-    exit 1
-fi
-
 make clean $MAKE_ARGS
 
 rm -f source
@@ -503,7 +498,6 @@ if [ -e /usr/lib/dracut/modules.d/90qubes-vm-simple/xen-scrub-pages-supported ];
     def_kernelopts="$def_kernelopts xen_scrub_pages=0"
 fi
 echo "$def_kernelopts " > %buildroot/%vm_install_dir/default-kernelopts-common.txt
-touch %buildroot/%vm_install_dir/memory-hotplug-supported
 
 # Modules for Qubes VM
 mkdir -p %buildroot%vm_install_dir/modules
@@ -680,7 +674,6 @@ exit 0
 %attr(0644, root, root) %vm_install_dir/initramfs
 %attr(0644, root, root) %vm_install_dir/vmlinuz
 %attr(0644, root, root) %vm_install_dir/default-kernelopts-common.txt
-%attr(0644, root, root) %vm_install_dir/memory-hotplug-supported
 
 %changelog
 @CHANGELOG@
