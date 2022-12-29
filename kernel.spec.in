@@ -124,6 +124,7 @@ Source0:        linux-%{upstream_version}.tar
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
+Source4:        @v4l2loopback@
 %if %{with_macbook_spi}
 Source6:        macbook12-spi-driver-2905d318d1a3ee1a227052490bf20eddef2592f9.tar
 %endif
@@ -232,6 +233,9 @@ tar -x -C %_builddir -zf %{SOURCE2}
 rm -rf %_builddir/u2mfn
 tar -x -C %_builddir -zf %{SOURCE3} --strip-components=2 linux-utils/kernel-modules/u2mfn
 
+rm -rf %_builddir/v4l2loopback
+tar -x -C %_builddir -zf %{SOURCE4}
+
 %if %{with_macbook_spi}
 rm -rf %_builddir/macbook12-spi-driver
 tar -x -C %_builddir -f %{SOURCE6}
@@ -262,6 +266,11 @@ fi
 # Build u2mfn module
 if [ -d "%_builddir/u2mfn" ]; then
     make -C %kernel_build_dir M=%_builddir/u2mfn modules
+fi
+
+# Build v4l2loopback module
+if [ -d "%_builddir/v4l2loopback" ]; then
+    make -C %kernel_build_dir M=%_builddir/v4l2loopback modules
 fi
 
 %if %{with_macbook_spi}
@@ -332,6 +341,9 @@ if [ -d "%_builddir/dummy-backlight" ]; then
 fi
 if [ -d "%_builddir/u2mfn" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/u2mfn
+fi
+if [ -d "%_builddir/v4l2loopback" ]; then
+    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/v4l2loopback
 fi
 %if %{with_macbook_spi}
 if [ -d "%_builddir/macbook12-spi-driver" ]; then
