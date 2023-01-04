@@ -484,29 +484,7 @@ PATH="/sbin:$PATH" dracut --nomdadmconf --nolvmconf \
     --modules "kernel-modules qubes-vm-simple" \
     --conf /dev/null --confdir /var/empty \
     -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
-    %buildroot/%vm_install_dir/initramfs %kernelrelease || exit 1
-
-# workaround for buggy dracut-044 in Fedora 25
-# https://bugzilla.redhat.com/show_bug.cgi?id=1431317
-# https://github.com/dracutdevs/dracut/issues/194
-modules_dep=$(lsinitrd "%buildroot/%vm_install_dir/initramfs" \
-    "usr/lib/modules/%kernelrelease/modules.dep")
-if [ -z "$modules_dep" ]; then
-    tmpdir=$(mktemp -d)
-    zcat "%buildroot/%vm_install_dir/initramfs" | cpio -imd -D "$tmpdir" || exit 1
-    mv "$tmpdir"/%buildroot/lib/modules/%kernelrelease/kernel \
-        "$tmpdir"/lib/modules/%kernelrelease/ || exit 1
-    depmod -F %buildroot/boot/System.map-%kernelrelease \
-        -b "$tmpdir" -a %kernelrelease || exit 1
-    pushd "$tmpdir"
-    if [ -n "$SOURCE_DATE_EPOCH" ]; then
-        find . -exec touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" {} +
-    fi
-    find . -print0 | sort -z \
-      | cpio --null -R 0:0 -H newc -o --reproducible --quiet \
-      | gzip -n > %buildroot/%vm_install_dir/initramfs || exit 1
-    popd
-fi
+    %buildroot/%vm_install_dir/initramfs %kernelrelease
 
 cp -p arch/x86/boot/bzImage %buildroot/%vm_install_dir/vmlinuz
 
