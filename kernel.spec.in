@@ -75,11 +75,6 @@ BuildRequires:  gcc-plugin-devel
 BuildRequires:  elfutils-libelf-devel
 BuildRequires:  bison
 BuildRequires:  flex
-BuildRequires:  e2fsprogs
-%if 0%{?fedora} >= 32
-# to make the filesystem
-BuildRequires:  e2fsprogs-devel
-%endif
 
 # gcc with support for BTI mitigation
 %if 0%{?fedora} == 25
@@ -136,8 +131,6 @@ Source33:       check-for-config-changes
 Source34:       gen-config
 Source100:      config-base
 Source101:      config-qubes
-Source104:      genfs-makefile
-Source105:      genfs.c
 %define modsign_cmd %{SOURCE18}
 
 Patch1: 0002-mce-hide-EBUSY-initialization-error-on-Xen.patch
@@ -257,9 +250,6 @@ mv %_builddir/$(basename %{SOURCE6} .tar) %_builddir/macbook12-spi-driver
 %build
 
 set -e
-%if 0%{?fedora} >= 32
-make -C %{_sourcedir} -f genfs-makefile GENFS=%{_builddir}/genfs
-%endif
 
 cd %kernel_build_dir
 
