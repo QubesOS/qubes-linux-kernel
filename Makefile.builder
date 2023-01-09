@@ -2,7 +2,7 @@ ifeq ($(PACKAGE_SET),dom0)
 RPM_SPEC_FILES := kernel.spec
 NO_ARCHIVE := 1
 
-INCLUDED_SOURCES = dummy-psu dummy-backlight linux-utils
+INCLUDED_SOURCES = dummy-psu dummy-backlight linux-utils v4l2loopback
 SOURCE_COPY_IN := $(INCLUDED_SOURCES)
 
 $(INCLUDED_SOURCES): SRC_SUBDIR=$@

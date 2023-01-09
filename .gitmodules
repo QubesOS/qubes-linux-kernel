@@ -8,3 +8,6 @@
 	path = linux-utils
 	url = https://github.com/QubesOS/qubes-linux-utils.git
 	branch = release4.0
+[submodule "v4l2loopback"]
+	path = v4l2loopback
+	url = https://github.com/umlaeute/v4l2loopback
