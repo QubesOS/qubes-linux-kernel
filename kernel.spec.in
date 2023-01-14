@@ -144,6 +144,7 @@ Provides:       %name-modules = %kernelrelease
 Provides:       kernel-modules = %kernelrelease
 %endif
 Provides:       kernel-modules-uname-r = %kernelrelease
+Requires(post): kmod
 AutoReqProv:    on
 
 %description modules
