@@ -391,6 +391,8 @@ sed -e 's/^\(CONFIG_GCC_PLUGIN.*\)=y/# \1 is not set/' .config > \
         %buildroot/lib/modules/%kernelrelease/build/.config
 sed -e '/^#define CONFIG_GCC_PLUGIN/d' include/generated/autoconf.h > \
         %buildroot/lib/modules/%kernelrelease/build/include/generated/autoconf.h
+sed -e '/^CONFIG_GCC_PLUGIN/d' include/config/auto.conf > \
+        %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
 
 # Copy .config to include/config/auto.conf so "make prepare" is unnecessary.
 cp %buildroot/lib/modules/%kernelrelease/build/.config %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
