@@ -204,6 +204,13 @@ pathfix.py -i "%{__python3} %{py3_shbang_opts}" -p -n \
 
 cd %kernel_build_dir
 
+# FIXME: Find a modular way to include configuration per dist
+# On GCC12+, STRUCTLEAK configs are not needed anymore
+%if 0%{?fedora} >= 37
+sed -i '/CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF_ALL=y/d' %{SOURCE101}
+sed -i 's/CONFIG_GCC_PLUGIN_STRUCTLEAK=y/CONFIG_INIT_STACK_ALL_ZERO=y/' %{SOURCE101}
+%endif
+
 # Create QubesOS config kernel
 %{SOURCE34} %{SOURCE100} %{SOURCE101}
 
