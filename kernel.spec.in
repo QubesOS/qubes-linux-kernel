@@ -416,6 +416,8 @@ sed -e 's/^\(CONFIG_GCC_PLUGIN.*\)=y/# \1 is not set/' .config > \
         %buildroot/lib/modules/%kernelrelease/build/.config
 sed -e '/^#define CONFIG_GCC_PLUGIN/d' include/generated/autoconf.h > \
         %buildroot/lib/modules/%kernelrelease/build/include/generated/autoconf.h
+sed -e '/^CONFIG_GCC_PLUGIN/d' include/config/auto.conf > \
+        %buildroot/lib/modules/%kernelrelease/build/include/config/auto.conf
 
 # Make sure the Makefile and version.h have a matching timestamp so that
 # external modules can be built
