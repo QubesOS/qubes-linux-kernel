@@ -204,6 +204,13 @@ pathfix.py -i "%{__python3} %{py3_shbang_opts}" -p -n \
 
 cd %kernel_build_dir
 
+# FIXME: Find a modular way to include configuration per dist
+# On GCC12+, STRUCTLEAK configs are not needed anymore
+%if 0%{?fedora} >= 37
+sed -i '/CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF_ALL=y/d' %{SOURCE101}
+sed -i 's/CONFIG_GCC_PLUGIN_STRUCTLEAK=y/CONFIG_INIT_STACK_ALL_ZERO=y/' %{SOURCE101}
+%endif
+
 # Create QubesOS config kernel
 %{SOURCE34} %{SOURCE100} %{SOURCE101}
 
@@ -501,11 +508,12 @@ mv  %buildroot/lib/firmware-all %buildroot/lib/firmware/%kernelrelease
 
 # Prepare initramfs for Qubes VM
 mkdir -p %buildroot/%vm_install_dir
+touch %_builddir/dummy_conf
 PATH="/sbin:$PATH" dracut --nomdadmconf --nolvmconf --no-hostonly \
     --kmoddir %buildroot/lib/modules/%kernelrelease \
     --modules "kernel-modules qubes-vm-simple busybox" \
     --omit "nss-softokn extra-modules qubes-pciback qubes-udev" \
-    --conf /dev/null --confdir /var/empty \
+    --conf %_builddir/dummy_conf --confdir /var/empty \
     -d "xenblk xen-blkfront cdrom ext4 jbd2 crc16 dm_snapshot" \
     %buildroot/%vm_install_dir/initramfs %kernelrelease
 
