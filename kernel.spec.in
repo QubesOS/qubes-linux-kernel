@@ -3,16 +3,15 @@
 #
 
 %define variant qubes
-%define plainrel @REL@%{?dist}
-%define rel %{plainrel}.%{variant}
+%define plainrel @REL@
 %define version %(echo '@VERSION@' | sed 's/~rc.*/.0/')
 %define upstream_version %(echo '@VERSION@' | sed 's/~rc/-rc/')
 %if "%{version}" != "%{upstream_version}"
 %define prerelease 1
-%define rel 0.%(echo '@VERSION@' | sed 's/.*~rc/rc/').%{plainrel}.%{variant}
+%define rel 0.%(echo '@VERSION@' | sed 's/.*~rc/rc/').%{plainrel}.%{variant}%{?dist}
 %else
 %define prerelease 0
-%define rel %{plainrel}.%{variant}
+%define rel %{plainrel}.%{variant}%{?dist}
 %endif
 
 %define _buildshell /bin/bash
@@ -27,7 +26,7 @@
 %define build_src_dir %my_builddir/linux-%upstream_version
 %define src_install_dir /usr/src/kernels/%kernelrelease
 %define kernel_build_dir %my_builddir/linux-obj
-%define vm_install_dir /var/lib/qubes/vm-kernels/%upstream_version-%{plainrel}
+%define vm_install_dir /var/lib/qubes/vm-kernels/%upstream_version-%{plainrel}%{?dist}
 
 %define install_vdso 1
 %define debuginfodir /usr/lib/debug
