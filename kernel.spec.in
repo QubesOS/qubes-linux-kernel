@@ -143,7 +143,6 @@ Patch16: 0001-usbip-tweak-clear-halt-with-simple-reset.patch
 Patch19: increase-reclaim-speed.patch
 Patch25: 0001-Re-enable-interrupts-before-loading-PNVM.patch
 Patch26: 0001-sound-Disable-SG-buffer.patch
-Patch27: 0001-x86-acpi-fix-suspend-with-Xen.patch
 
 %description
 Qubes Dom0 kernel.
