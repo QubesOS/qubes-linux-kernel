@@ -629,22 +629,22 @@ if [ "$current_default_package" = "%{name}-qubes-vm" ]; then
 
 # If qubes-prefs isn't installed yet, the default kernel will be set by %post
 # of qubes-core-dom0
-type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %upstream_version-%plainrel
+type qubes-prefs &>/dev/null && qubes-prefs --set default-kernel %upstream_version-%plainrel%{?dist}
 fi
 
 SOURCE_DATE_EPOCH=$(stat -c %%Y %vm_install_dir/initramfs)
 export SOURCE_DATE_EPOCH
-qubes-prepare-vm-kernel --modules-only --include-devel %kernelrelease "%upstream_version-%{plainrel}"
+qubes-prepare-vm-kernel --modules-only --include-devel %kernelrelease "%upstream_version-%{plainrel}%{?dist}"
 
 exit 0
 
 %preun qubes-vm
 
-if [ "$(qubes-prefs -g default-kernel)" == "%upstream_version-%plainrel" ]; then
+if [ "$(qubes-prefs -g default-kernel)" == "%upstream_version-%plainrel%{?dist}" ]; then
     echo "This kernel version is set as default VM kernel, cannot remove"
     exit 1
 fi
-if qvm-ls --kernel | grep -qw "%upstream_version-%plainrel"; then
+if qvm-ls --kernel | grep -qw "%upstream_version-%plainrel%{?dist}"; then
     echo "This kernel version is used by at least one VM, cannot remove"
     exit 1
 fi
