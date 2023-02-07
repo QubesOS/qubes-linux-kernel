@@ -1,5 +1,11 @@
 From d0fd57434c89edf09d97524741b50990a823f8c6 Mon Sep 17 00:00:00 2001
 From: Demi Marie Obenour <demi@invisiblethingslab.com>
+To: Juergen Gross <jgross@suse.com>,
+    Stefano Stabellini <sstabellini@kernel.org>,
+    Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>,
+    xen-devel@lists.xenproject.org,
+    linux-kernel@vger.kernel.org
 Date: Mon, 18 Apr 2022 12:25:00 -0400
 Subject: [PATCH] xen: speed up grant-table reclaim
 
@@ -25,12 +31,16 @@ a large volume of log messages that bothered users.  Use pr_debug
 instead, which suppresses the messages by default.  Developers can
 enable them using the dynamic debug mechanism.
 
-Fixes QubesOS/qubes-issues#7410 (memory leak)
-Fixes QubesOS/qubes-issues#7359 (excessive logging)
+Fixes: QubesOS/qubes-issues#7410 (memory leak)
+Fixes: QubesOS/qubes-issues#7359 (excessive logging)
+Fixes: 569ca5b3f94c ("xen/gnttab: add deferred freeing logic")
+Cc: stable@vger.kernel.org
+Signed-off-by: Demi Marie Obenour <demi@invisiblethingslab.com>
 ---
 Anyone have suggestions for improving the grant mechanism?  Argo isn't
 a good option, as in the GUI protocol there are substantial performance
-wins to be had by using true shared memory.
+wins to be had by using true shared memory.  Resending as I forgot the
+Signed-off-by on the first submission.  Sorry about that.
 
  drivers/xen/grant-table.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
