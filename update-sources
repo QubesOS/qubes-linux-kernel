@@ -42,7 +42,7 @@ if [ -z "$FC_LATEST" ]; then
 fi
 
 # Filter allowed branches
-if [[ ! "$BRANCH" =~ ^stable-[0-9]+\.[0-9]+$ ]] && [ "$BRANCH" != "master" ]; then
+if [[ ! "$BRANCH" =~ ^stable-[0-9]+\.[0-9]+$ ]] && [ "$BRANCH" != "main" ]; then
     echo "Cannot determine kernel branch to use."
     exit 1
 fi
@@ -61,15 +61,15 @@ echo "$LATEST_KERNEL_VERSION" > version
 make get-sources
 
 STABLE_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever="$FC_LATEST" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1)"
-if [ "$BRANCH" == "master" ]; then
+if [ "$BRANCH" == "main" ]; then
     TESTING_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --enablerepo=updates-testing --releasever="$FC_LATEST" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1)"
     RAWHIDE_KERNEL="$(dnf -q repoquery kernel --disablerepo=* --enablerepo=fedora --enablerepo=updates --releasever=rawhide | grep -v "rc[0-9]*" | sort -V | tail -1 | cut -d ':' -f2 | cut -d '-' -f1 || true)"
 fi
 
-if [ "$BRANCH" == "master" ] && { distance_version "$TESTING_KERNEL" "$LATEST_KERNEL_VERSION"; }; then
+if [ "$BRANCH" == "main" ] && { distance_version "$TESTING_KERNEL" "$LATEST_KERNEL_VERSION"; }; then
     "$LOCALDIR/get-fedora-latest-config" --releasever "$FC_LATEST" --include-testing
     mv config-base-"$TESTING_KERNEL" config-base
-elif [ "$BRANCH" == "master" ] && { distance_version "$RAWHIDE_KERNEL" "$LATEST_KERNEL_VERSION"; }; then
+elif [ "$BRANCH" == "main" ] && { distance_version "$RAWHIDE_KERNEL" "$LATEST_KERNEL_VERSION"; }; then
     "$LOCALDIR/get-fedora-latest-config" --releasever rawhide
     mv config-base-"$RAWHIDE_KERNEL" config-base
 elif distance_version "$STABLE_KERNEL" "$LATEST_KERNEL_VERSION"; then
