@@ -19,7 +19,7 @@ index 06b642b23a07..15769cadd687 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
 @@ -784,6 +784,15 @@ static void register_disk(struct device *parent, struct gendisk *disk,
- 	return 0;
+ 	return ret;
  }
  
 +/* copied (not moved) from far down below, to have fewer patch hunks */
