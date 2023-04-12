@@ -42,7 +42,7 @@ HASH_FILE := $(SRC_FILE).sha512
 endif
 SRC_TARFILE := linux-${VERSION}.tar
 
-SPI_BASE_URL := https://github.com/PatrickVerner/macbook12-spi-driver/archive
+SPI_BASE_URL := https://github.com/roadrunner2/macbook12-spi-driver/archive
 SPI_REVISION := f85d028a41fbc928048c8ad248735501e76a2ce9
 SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
 SPI_SRC_FILE := macbook12-spi-driver-$(SPI_REVISION).tar.gz

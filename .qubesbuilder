@@ -15,6 +15,6 @@ source:
     pubkeys:
     - kernel.org-2-key.asc
     - kernel.org-1-key.asc
-  - url: https://github.com/PatrickVerner/macbook12-spi-driver/archive/f85d028a41fbc928048c8ad248735501e76a2ce9.tar.gz#/macbook12-spi-driver-f85d028a41fbc928048c8ad248735501e76a2ce9.tar.gz
+  - url: https://github.com/roadrunner2/macbook12-spi-driver/archive/f85d028a41fbc928048c8ad248735501e76a2ce9.tar.gz#/macbook12-spi-driver-f85d028a41fbc928048c8ad248735501e76a2ce9.tar.gz
     uncompress: true
     sha256: macbook12-spi-driver-f85d028a41fbc928048c8ad248735501e76a2ce9.tar.sha256
