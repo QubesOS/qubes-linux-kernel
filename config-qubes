@@ -158,6 +158,12 @@ CONFIG_INTEL_PMC_CORE=m
 
 # CONFIG_XEN_VIRTIO is not set
 
+## Without kernel preemption, long-running operations in the dom0 kernel (such
+## as dm-thin metadata lookups or dm-crypt encryption and decryption) can make
+## the entire system less responsive.  It is easy to trigger this with e.g.
+## a parallel kernel build.
+CONFIG_PREEMPT=y
+
 ################################################################################
 ## TODO: from diff to old config
 
