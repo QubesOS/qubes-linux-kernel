@@ -1,0 +1,25 @@
+From 3e4d6ef627749a90cdedc0e7ddae3eabe7c73bda Mon Sep 17 00:00:00 2001
+From: Augsch123 <130238014+Augsch123@users.noreply.github.com>
+Date: Wed, 17 May 2023 09:57:33 +0800
+Subject: [PATCH] amdgpu timeout
+
+---
+ drivers/gpu/drm/amd/amdgpu/amdgpu_psp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/amd/amdgpu/amdgpu_psp.c b/drivers/gpu/drm/amd/amdgpu/amdgpu_psp.c
+index 3f5d13035..fb27ed88d 100644
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_psp.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_psp.c
+@@ -603,7 +603,7 @@ psp_cmd_submit_buf(struct psp_context *psp,
+ {
+ 	int ret;
+ 	int index;
+-	int timeout = 20000;
++	int timeout = 50000;
+ 	bool ras_intr = false;
+ 	bool skip_unsupport = false;
+ 
+-- 
+2.30.2
+
