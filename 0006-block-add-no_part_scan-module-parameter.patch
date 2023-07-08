@@ -41,9 +41,9 @@ index 06b642b23a07..15769cadd687 100644
 +	if (disk_no_part_scan)
 +		disk->flags |= GENHD_FL_NO_PART;
 +
- 	/*
- 	 * If the driver provides an explicit major number it also must provide
- 	 * the number of minors numbers supported, and those will be used to
+ 	/* Mark bdev as having a submit_bio, if needed */
+ 	disk->part0->bd_has_submit_bio = disk->fops->submit_bio != NULL;
+ 
 -- 
 2.25.4
 
