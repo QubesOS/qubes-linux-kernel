@@ -38,8 +38,8 @@ index 0c6b49fcb..72764a424 100644
 +	 */
 +	iwl_trans_interrupts(mvm->trans, true);
 +
- 	ret = iwl_pnvm_load(mvm->trans, &mvm->notif_wait);
+ 	ret = iwl_pnvm_load(mvm->trans, &mvm->notif_wait,
+ 			    &mvm->fw->ucode_capa);
  	if (ret) {
- 		IWL_ERR(mvm, "Timeout waiting for PNVM load!\n");
 -- 
 2.39.2
