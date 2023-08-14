@@ -158,6 +158,22 @@ CONFIG_INTEL_PMC_CORE=m
 
 # CONFIG_XEN_VIRTIO is not set
 
+## INTEL_MEI_HDCP and DRM_AMD_DC_PDCP are for High-bandwidth Digital Content
+## Protection, and INTEL_MEI_PXP is for Protected Xe Path.  Since the Intel CSME
+## and AMD Secure Processor must never be passed through to a VM, these are only
+## usable if there is an Intel or AMD GPU attached to dom0.  However, dom0 does
+## not include any programs that can use these modules, so the modules are
+## unused.  Worse, if HDCP *was* used, it would, it would allow external
+## displays (which are not trusted) to communicate with the (closed-source and
+## often out-of-date) CSME or Secure Processor firmware, which is even more
+## privileged than dom0.
+
+# CONFIG_DRM_AMD_DC_HDCP is not set
+# CONFIG_INTEL_MEI_HDCP is not set
+
+## PXP serves no purpose without userspace tools Qubes OS does not have.
+# CONFIG_INTEL_MEI_PXP is not set
+
 ################################################################################
 ## TODO: from diff to old config
 
