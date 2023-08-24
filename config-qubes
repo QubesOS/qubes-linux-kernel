@@ -171,3 +171,9 @@ CONFIG_INTEL_PMC_CORE=m
 ## sensors from 0f976d972a1671a303fad30a5e690304b0b82ee0
 ##
 ## Intel ME driver e0f8e9ca81b80d897b190f48a4af80eff3198cb1
+
+
+## for early framebuffer under coreboot / Heads
+CONFIG_GOOGLE_FIRMWARE=y
+CONFIG_GOOGLE_COREBOOT_TABLE=y
+CONFIG_GOOGLE_MEMCONSOLE_COREBOOT=y
