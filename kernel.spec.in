@@ -144,6 +144,10 @@ Patch25: 0001-Re-enable-interrupts-before-loading-PNVM.patch
 Patch26: 0001-sound-Disable-SG-buffer.patch
 Patch27: 0001-amdgpu-timeout.patch
 Patch28: 0001-iwlwifi-avoid-writing-to-MSI-X-page-when-MSI-X-is-no.patch
+
+# S0ix support:
+Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
+
 %description
 Qubes Dom0 kernel.
 
