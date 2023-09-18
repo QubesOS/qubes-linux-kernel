@@ -1,0 +1,47 @@
+From 3a3cbf4f4e6289ecc421ebea610e68e95aaf37ec Mon Sep 17 00:00:00 2001
+:
+: Waiting for upstream review:
+: https://lore.kernel.org/xen-devel/20230313134102.3157-1-simon@invisiblethingslab.com/
+:
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Mon, 13 Mar 2023 14:01:47 +0100
+Subject: [PATCH] xen/events: Add wakeup support to xen-pirq
+
+This allows entering and exiting s2idle. Actual S0ix residency is
+another topic [1].
+
+Without this the ACPI code currently ignores the error enable_irq_wake()
+returns when being used on a xen-pirq and the system goes to idle for
+ever since the wakeup IRQ doesn't gets enabled. With [2] the error is
+handled and the system refuses to go to s2idle.
+
+Link: https://lore.kernel.org/xen-devel/9051e484-b128-715a-9253-48af8e47bb9d@invisiblethingslab.com/ # [1]
+Link: https://lore.kernel.org/linux-acpi/20230313125344.2893-1-simon@invisiblethingslab.com/ # [2]
+Signed-off-by: Simon Gaiser <simon@invisiblethingslab.com>
+---
+
+While I think that the set of flags I set is correct, I'm not familiar
+with that code, so please pay special attention during review if they
+are actually correct for xen-pirq.
+
+ drivers/xen/events/events_base.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+index c7715f8bd452..991082f04f05 100644
+--- a/drivers/xen/events/events_base.c
++++ b/drivers/xen/events/events_base.c
+@@ -2173,6 +2173,10 @@ static struct irq_chip xen_pirq_chip __read_mostly = {
+ 	.irq_set_affinity	= set_affinity_irq,
+ 
+ 	.irq_retrigger		= retrigger_dynirq,
++
++	.flags                  = IRQCHIP_SKIP_SET_WAKE |
++				  IRQCHIP_ENABLE_WAKEUP_ON_SUSPEND |
++				  IRQCHIP_MASK_ON_SUSPEND,
+ };
+ 
+ static struct irq_chip xen_percpu_chip __read_mostly = {
+-- 
+2.39.2
+

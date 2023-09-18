@@ -1,0 +1,51 @@
+From 930cbdf09bc1818f0380f42b262b4a44d40aafbf Mon Sep 17 00:00:00 2001
+:
+: Upstreamed. Included since 6.4.
+:
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Mon, 13 Mar 2023 15:00:47 +0100
+Subject: [PATCH v2] ACPI: s2idle: Log when enabling wakeup IRQ fails
+
+enable_irq_wake() can fail. Previously acpi_s2idle_prepare() silently
+ignored it's return code. Based on [1] we should try to continue even in
+case of an error, so just log a warning for now.
+
+Discovered when trying to go into s2idle under Xen. This leads to a
+system that can't be woken, since xen-pirq currently doesn't support
+setting wakeup IRQs [2]. With this you get at least some helpful log
+message if you have access to console messages.
+
+Link: https://lore.kernel.org/linux-acpi/20230313125344.2893-1-simon@invisiblethingslab.com/ # v1
+Link: https://lore.kernel.org/linux-acpi/CAJZ5v0jahjt58nP6P5+xRdtD_ndYPvq4ecMVz6nfGu9tf5iaUw@mail.gmail.com/ # [1]
+Link: https://lore.kernel.org/xen-devel/20230313134102.3157-1-simon@invisiblethingslab.com/ # [2]
+Signed-off-by: Simon Gaiser <simon@invisiblethingslab.com>
+---
+v2:
+ - Based on feedback switched to only logging a warning instead of
+   returning an error.
+---
+ drivers/acpi/sleep.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index 4ca667251272..6b30dea94fae 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -722,7 +722,13 @@ int acpi_s2idle_begin(void)
+ int acpi_s2idle_prepare(void)
+ {
+ 	if (acpi_sci_irq_valid()) {
+-		enable_irq_wake(acpi_sci_irq);
++		int error;
++
++		error = enable_irq_wake(acpi_sci_irq);
++		if (error)
++			pr_warn("Warning: Failed to enable wakeup from IRQ %d: %d\n",
++				acpi_sci_irq,
++				error);
+ 		acpi_ec_set_gpe_wake_mask(ACPI_GPE_ENABLE);
+ 	}
+ 
+-- 
+2.39.2
+
