@@ -537,6 +537,9 @@ if [ -e /usr/lib/dracut/modules.d/90qubes-vm-simple/xen-scrub-pages-supported ];
     def_kernelopts="$def_kernelopts xen_scrub_pages=0"
 fi
 echo "$def_kernelopts " > %buildroot/%vm_install_dir/default-kernelopts-common.txt
+%if 0%{?fedora} >= 37
+touch %buildroot/%vm_install_dir/memory-hotplug-supported
+%endif
 
 # Create a dummy modules.img with roughly the size the real one will have.
 # That way, rpm will know that this package requires some additional
@@ -690,6 +693,9 @@ exit 0
 %attr(0644, root, root) %vm_install_dir/initramfs
 %attr(0644, root, root) %vm_install_dir/vmlinuz
 %attr(0644, root, root) %vm_install_dir/default-kernelopts-common.txt
+%if 0%{?fedora} >= 37
+%attr(0644, root, root) %vm_install_dir/memory-hotplug-supported
+%endif
 
 %changelog
 @CHANGELOG@
