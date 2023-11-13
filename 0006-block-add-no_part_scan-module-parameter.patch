@@ -39,7 +39,7 @@ index 06b642b23a07..15769cadd687 100644
  	elevator_init_mq(disk->queue);
  
 +	if (disk_no_part_scan)
-+		disk->flags |= GENHD_FL_NO_PART_SCAN;
++		disk->flags |= GENHD_FL_NO_PART;
 +
  	/*
  	 * If the driver provides an explicit major number it also must provide
