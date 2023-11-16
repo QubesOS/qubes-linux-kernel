@@ -145,7 +145,7 @@ Patch26: 0001-sound-Disable-SG-buffer.patch
 Patch27: 0001-amdgpu-timeout.patch
 Patch28: 0001-iwlwifi-avoid-writing-to-MSI-X-page-when-MSI-X-is-no.patch
 Patch29: 0001-xen-pciback-Consider-INTx-disabled-when-MSI-MSI-X-is.patch
-Patch30: 0001-Revert-dm-crypt-allocate-compound-pages-if-possible.patch
+Patch30: 0001-swiotlb-xen-provide-the-max_mapping_size-method.patch
 
 # S0ix support:
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
