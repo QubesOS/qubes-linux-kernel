@@ -1,0 +1,171 @@
+From e29761a8d5d68d7432659d601af60f556e3136a9 Mon Sep 17 00:00:00 2001
+From: Juergen Gross <jgross@suse.com>
+Date: Fri, 1 Dec 2023 08:03:39 +0100
+Subject: [PATCH] xen/events: fix race when unbinding an event channel
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When unbinding an event channel the unbind function should only return
+to the caller when no interrupt handler can be active any more.
+
+When switching from a rwlock to RCU for freeing event channels this
+assumption was broken.
+
+Fix that by replacing the "is_active" flag of an event channel with an
+atomic used to keep track of event channel freeing AND interrupt
+handler activity.
+
+Rearrange struct irq_info a little bit to avoid adding new padding
+holes.
+
+Fixes: 87797fad6cce ("xen/events: replace evtchn_rwlock with RCU")
+Reported-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ drivers/xen/events/events_base.c | 51 ++++++++++++++++++++++----------
+ 1 file changed, 35 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+index f5edb9e27e3c..c480bc498ba8 100644
+--- a/drivers/xen/events/events_base.c
++++ b/drivers/xen/events/events_base.c
+@@ -106,7 +106,7 @@ struct irq_info {
+ #define EVT_MASK_REASON_EXPLICIT	0x01
+ #define EVT_MASK_REASON_TEMPORARY	0x02
+ #define EVT_MASK_REASON_EOI_PENDING	0x04
+-	u8 is_active;		/* Is event just being handled? */
++	bool is_static;           /* Is event channel static */
+ 	unsigned irq;
+ 	evtchn_port_t evtchn;   /* event channel */
+ 	unsigned short cpu;     /* cpu bound */
+@@ -114,7 +114,23 @@ struct irq_info {
+ 	unsigned int irq_epoch; /* If eoi_cpu valid: irq_epoch of event */
+ 	u64 eoi_time;           /* Time in jiffies when to EOI. */
+ 	raw_spinlock_t lock;
+-	bool is_static;           /* Is event channel static */
++
++	/*
++	 * When freeing an event channel it is marked with EVT_ACT_FREEING.
++	 * When an IRQ handler is starting the event channel is marked with
++	 * EVT_ACT_HANDLER | EVT_ACT_EOI.
++	 * When leaving the IRQ handler EVT_ACT_HANDLER is cleared. EVT_ACT_EOI
++	 * is cleared either at the same time or in case of a late-EOI event
++	 * when the EOI is signalled.
++	 * A IRQ handler may only be entered if none of the flags is set.
++	 * Freeing an event channel is done via RCU, but the freeing function
++	 * starting the RCU process may only return if EVT_ACT_HANDLER is not
++	 * set (no handler is active any more).
++	 */
++	atomic_t active;	/* Is event just being handled? */
++#define EVT_ACT_HANDLER		0x00000001	/* IRQ handler active */
++#define EVT_ACT_EOI		0x00000002	/* EOI pending */
++#define EVT_ACT_FREEING		0x00000004	/* even channel being freed */
+ 
+ 	union {
+ 		unsigned short virq;
+@@ -640,8 +656,8 @@ static void xen_irq_lateeoi_locked(struct irq_info *info, bool spurious)
+ 
+ 	info->eoi_time = 0;
+ 
+-	/* is_active hasn't been reset yet, do it now. */
+-	smp_store_release(&info->is_active, 0);
++	/* EVT_ACT_EOI hasn't been reset yet, do it now. */
++	atomic_fetch_andnot_release(EVT_ACT_EOI, &info->active);
+ 	do_unmask(info, EVT_MASK_REASON_EOI_PENDING);
+ }
+ 
+@@ -792,9 +808,9 @@ static void xen_free_irq(struct irq_info *info)
+ }
+ 
+ /* Not called for lateeoi events. */
+-static void event_handler_exit(struct irq_info *info)
++static void event_handler_exit(struct irq_info *info, int flag)
+ {
+-	smp_store_release(&info->is_active, 0);
++	atomic_fetch_andnot_release(EVT_ACT_HANDLER | flag, &info->active);
+ 	clear_evtchn(info->evtchn);
+ }
+ 
+@@ -819,7 +835,7 @@ static void do_eoi_pirq(struct irq_info *info)
+ 	if (!VALID_EVTCHN(info->evtchn))
+ 		return;
+ 
+-	event_handler_exit(info);
++	event_handler_exit(info, EVT_ACT_EOI);
+ 
+ 	if (pirq_needs_eoi(info)) {
+ 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_eoi, &eoi);
+@@ -968,6 +984,8 @@ static void __unbind_from_irq(struct irq_info *info, unsigned int irq)
+ 			return;
+ 	}
+ 
++	atomic_fetch_or_acquire(EVT_ACT_FREEING, &info->active);
++
+ 	evtchn = info->evtchn;
+ 
+ 	if (VALID_EVTCHN(evtchn)) {
+@@ -997,6 +1015,10 @@ static void __unbind_from_irq(struct irq_info *info, unsigned int irq)
+ 		xen_irq_info_cleanup(info);
+ 	}
+ 
++	/* Wait until all IRQ handlers are gone. */
++	while (atomic_read_acquire(&info->active) & EVT_ACT_HANDLER)
++		cpu_relax();
++
+ 	xen_free_irq(info);
+ }
+ 
+@@ -1669,7 +1691,8 @@ void handle_irq_for_port(evtchn_port_t port, struct evtchn_loop_ctrl *ctrl)
+ 		}
+ 	}
+ 
+-	if (xchg_acquire(&info->is_active, 1))
++	/* Only enter handler if not: freed, handler active, EOI pending. */
++	if (atomic_cmpxchg(&info->active, 0, EVT_ACT_HANDLER | EVT_ACT_EOI))
+ 		return;
+ 
+ 	dev = (info->type == IRQT_EVTCHN) ? info->u.interdomain : NULL;
+@@ -1846,7 +1869,7 @@ static void do_ack_dynirq(struct irq_info *info)
+ 	evtchn_port_t evtchn = info->evtchn;
+ 
+ 	if (VALID_EVTCHN(evtchn))
+-		event_handler_exit(info);
++		event_handler_exit(info, EVT_ACT_EOI);
+ }
+ 
+ static void ack_dynirq(struct irq_data *data)
+@@ -1874,11 +1897,7 @@ static void lateeoi_ack_dynirq(struct irq_data *data)
+ 
+ 	if (VALID_EVTCHN(evtchn)) {
+ 		do_mask(info, EVT_MASK_REASON_EOI_PENDING);
+-		/*
+-		 * Don't call event_handler_exit().
+-		 * Need to keep is_active non-zero in order to ignore re-raised
+-		 * events after cpu affinity changes while a lateeoi is pending.
+-		 */
++		event_handler_exit(info, 0);
+ 		clear_evtchn(evtchn);
+ 	}
+ }
+@@ -1890,7 +1909,7 @@ static void lateeoi_mask_ack_dynirq(struct irq_data *data)
+ 
+ 	if (VALID_EVTCHN(evtchn)) {
+ 		do_mask(info, EVT_MASK_REASON_EXPLICIT);
+-		event_handler_exit(info);
++		event_handler_exit(info, EVT_ACT_EOI);
+ 	}
+ }
+ 
+@@ -2011,7 +2030,7 @@ void xen_clear_irq_pending(int irq)
+ 	evtchn_port_t evtchn = info ? info->evtchn : 0;
+ 
+ 	if (VALID_EVTCHN(evtchn))
+-		event_handler_exit(info);
++		event_handler_exit(info, EVT_ACT_EOI);
+ }
+ EXPORT_SYMBOL(xen_clear_irq_pending);
+ 
+-- 
+2.35.3
+
