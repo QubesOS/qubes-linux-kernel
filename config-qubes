@@ -178,3 +178,8 @@ CONFIG_PREEMPT=y
 ## sensors from 0f976d972a1671a303fad30a5e690304b0b82ee0
 ##
 ## Intel ME driver e0f8e9ca81b80d897b190f48a4af80eff3198cb1
+
+## Avoid kernel conflict with EfiACPIMemoryNVS region on some
+## AMD Threadripper platforms
+CONFIG_PHYSICAL_START=0x200000
+CONFIG_PHYSICAL_ALIGN=0x200000
