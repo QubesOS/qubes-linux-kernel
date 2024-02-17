@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-6.7.3-200.fc39.x86_64.rpm)
+# Base config based on Fedora's config (kernel-core-6.7.4-200.fc39.x86_64.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 13.2.1 20231011 (Red Hat 13.2.1-4)"
@@ -30,7 +30,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="6.7.3-200.fc39.x86_64"
+CONFIG_BUILD_SALT="6.7.4-200.fc39.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -5373,7 +5373,6 @@ CONFIG_MFD_SM501=m
 CONFIG_MFD_SM501_GPIO=y
 # CONFIG_MFD_SKY81452 is not set
 CONFIG_MFD_SYSCON=y
-# CONFIG_MFD_TI_AM335X_TSCADC is not set
 # CONFIG_MFD_LP3943 is not set
 # CONFIG_MFD_LP8788 is not set
 # CONFIG_MFD_TI_LMU is not set
