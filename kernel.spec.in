@@ -147,6 +147,7 @@ Patch28: 0001-iwlwifi-avoid-writing-to-MSI-X-page-when-MSI-X-is-no.patch
 
 # S0ix support:
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
+Patch62: xen-pm-use-suspend.patch
 
 %description
 Qubes Dom0 kernel.
