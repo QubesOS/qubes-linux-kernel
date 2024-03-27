@@ -43,8 +43,8 @@ index 54165f3569e8..af6340b1e16f 100644
 --- a/arch/x86/kernel/cpu/mce/core.c
 +++ b/arch/x86/kernel/cpu/mce/core.c
 @@ -51,6 +51,10 @@
- #include <asm/msr.h>
  #include <asm/reboot.h>
+ #include <asm/tdx.h>
  
 +#ifdef CONFIG_XEN_MCE_LOG
 +#include <xen/xen.h>
