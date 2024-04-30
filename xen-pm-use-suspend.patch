@@ -1,0 +1,101 @@
+From 895c01cc7e63404250fd9763c4fb91620ad63a4c Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Tue, 30 Apr 2024 14:27:33 +0200
+Subject: [PATCH] Add experimental flag to use suspend instad of freeze for Xen
+ VM suspend
+
+When suspending a VM the Xen driver currently uses the "freeze" methods
+for going to sleep. This doesn't put devices in low power state, at
+least for some drivers (for example USB). But for S0ix we need to put
+all (real) devices into their low power state. For this the "suspend"
+methods needs to be used.
+
+(See Documentation/driver-api/pm/devices.rst for description of those
+methods.)
+
+To be able to include this in a stable release put this behind an
+experimental flag such that by default the old behavior is unmodified.
+This flag is unstable and likely will go away.
+
+TODO: If this should be upstreamed it needs to be clarified when the old
+behavior in xenbus_frontend_dev_resume is needed (save/restore, I guess)
+and the new behavior adapted accordingly.
+---
+ drivers/xen/manage.c                       | 14 ++++++++++----
+ drivers/xen/xenbus/xenbus_probe_frontend.c |  5 +++++
+ 2 files changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index c16df629907e..1b723c68cc3c 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -46,6 +46,9 @@ struct suspend_info {
+ 
+ static RAW_NOTIFIER_HEAD(xen_resume_notifier);
+ 
++bool __read_mostly xen_use_suspend;
++core_param(qubes_exp_pm_use_suspend, xen_use_suspend, bool, 0);
++
+ void xen_resume_notifier_register(struct notifier_block *nb)
+ {
+ 	raw_notifier_chain_register(&xen_resume_notifier, nb);
+@@ -113,7 +116,10 @@ static void do_suspend(void)
+ 		goto out_thaw;
+ 	}
+ 
+-	err = dpm_suspend_start(PMSG_FREEZE);
++	pr_info("Using %s for sleep/wakeup\n",
++		xen_use_suspend ? "suspend/resume" :"freeze/restore/thaw");
++
++	err = dpm_suspend_start(xen_use_suspend ? PMSG_SUSPEND : PMSG_FREEZE);
+ 	if (err) {
+ 		pr_err("%s: dpm_suspend_start %d\n", __func__, err);
+ 		goto out_thaw;
+@@ -122,7 +128,7 @@ static void do_suspend(void)
+ 	printk(KERN_DEBUG "suspending xenstore...\n");
+ 	xs_suspend();
+ 
+-	err = dpm_suspend_end(PMSG_FREEZE);
++	err = dpm_suspend_end(xen_use_suspend ? PMSG_SUSPEND : PMSG_FREEZE);
+ 	if (err) {
+ 		pr_err("dpm_suspend_end failed: %d\n", err);
+ 		si.cancelled = 0;
+@@ -143,7 +149,7 @@ static void do_suspend(void)
+ 
+ 	xen_arch_resume();
+ 
+-	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
++	dpm_resume_start(xen_use_suspend ? PMSG_RESUME : (si.cancelled ? PMSG_THAW : PMSG_RESTORE));
+ 
+ 	if (err) {
+ 		pr_err("failed to start xen_suspend: %d\n", err);
+@@ -156,7 +162,7 @@ static void do_suspend(void)
+ 	else
+ 		xs_suspend_cancel();
+ 
+-	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
++	dpm_resume_end(xen_use_suspend ? PMSG_RESUME : (si.cancelled ? PMSG_THAW : PMSG_RESTORE));
+ 
+ out_thaw:
+ 	thaw_processes();
+diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
+index fcb335bb7b18..5caa5b2369fb 100644
+--- a/drivers/xen/xenbus/xenbus_probe_frontend.c
++++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
+@@ -98,8 +98,13 @@ static void xenbus_frontend_delayed_resume(struct work_struct *w)
+ 	xenbus_dev_resume(&xdev->dev);
+ }
+ 
++extern bool __read_mostly xen_use_suspend;
++
+ static int xenbus_frontend_dev_resume(struct device *dev)
+ {
++	if (xen_use_suspend)
++		return xenbus_dev_cancel(dev);
++
+ 	/*
+ 	 * If xenstored is running in this domain, we cannot access the backend
+ 	 * state at the moment, so we need to defer xenbus_dev_resume
+-- 
+2.43.0
+
