@@ -1,4 +1,4 @@
-From c7fcd9707db89f169135298bf0351d4931ee2b1f Mon Sep 17 00:00:00 2001
+From 5be0986f3e697c6b9b1f9d7427984b23d02ca80c Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Mon, 11 Jun 2012 22:49:31 +0200
 Subject: [PATCH] pvops: respect 'removable' xenstore flag for block devices
@@ -10,18 +10,18 @@ by normal user.
  1 file changed, 7 insertions(+)
 
 diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 3b889ea950c2..59f57e55a36b 100644
+index 67aa63dabcff..d5c0da5fe1cb 100644
 --- a/drivers/block/xen-blkfront.c
 +++ b/drivers/block/xen-blkfront.c
-@@ -2347,6 +2347,7 @@ static void blkfront_connect(struct blkfront_info *info)
- 	unsigned int physical_sector_size;
+@@ -2314,6 +2314,7 @@ static void blkfront_connect(struct blkfront_info *info)
+ 	unsigned long long sectors;
  	int err, i;
  	struct blkfront_ring_info *rinfo;
 +	int removable;
  
  	switch (info->connected) {
  	case BLKIF_STATE_CONNECTED:
-@@ -2411,6 +2412,12 @@ static void blkfront_connect(struct blkfront_info *info)
+@@ -2378,6 +2379,12 @@ static void blkfront_connect(struct blkfront_info *info)
  		}
  	}
  
@@ -31,9 +31,9 @@ index 3b889ea950c2..59f57e55a36b 100644
 +	if (!err && removable)
 +		info->vdisk_info |= VDISK_REMOVABLE;
 +
- 	err = xlvbd_alloc_gendisk(sectors, info, sector_size,
- 				  physical_sector_size);
+ 	err = xlvbd_alloc_gendisk(sectors, info);
  	if (err) {
+ 		xenbus_dev_fatal(info->xbdev, err, "xlvbd_add at %s",
 -- 
-2.25.4
+2.45.2
 
