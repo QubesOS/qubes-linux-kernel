@@ -1,0 +1,136 @@
+From 59dfd8ce5ae0680da665746194ca7f76bcc83f71 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Mon, 15 Jul 2024 16:55:56 +0200
+Subject: [PATCH] PCI: add a reset quirk for Intel I219LM ethernet adapter
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The device does support FLR, has the relevant registers in the config
+space, but fails to link them to the pci caps list. Fix it by linking
+them manually, so the standard pci_af_flr() will find it. The fixup
+needs to be repeated after reset.
+
+The fixup will be visible via sysfs, which is intended side effect so
+that libvirt can see FLR as supported too.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/pci/pci.c    |  2 +-
+ drivers/pci/pci.h    |  1 +
+ drivers/pci/quirks.c | 66 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 68 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 35fb1f17a589..ba3e4732f125 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -4491,7 +4491,7 @@ int pcie_reset_flr(struct pci_dev *dev, bool probe)
+ }
+ EXPORT_SYMBOL_GPL(pcie_reset_flr);
+ 
+-static int pci_af_flr(struct pci_dev *dev, bool probe)
++int pci_af_flr(struct pci_dev *dev, bool probe)
+ {
+ 	int pos;
+ 	u8 cap;
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index fd44565c4756..9dfc05e3d0b3 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -600,6 +600,7 @@ void pcie_ecrc_get_policy(char *str);
+ static inline void pcie_set_ecrc_checking(struct pci_dev *dev) { }
+ static inline void pcie_ecrc_get_policy(char *str) { }
+ #endif
++int pci_af_flr(struct pci_dev *dev, bool probe);
+ 
+ struct pci_dev_reset_methods {
+ 	u16 vendor;
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 568410e64ce6..9b77e6182500 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -4194,6 +4194,70 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
+ 	return 0;
+ }
+ 
++#define PCI_DEVICE_ID_INTEL_I219LM 0x550A
++#define I219_PCI_MSI_POS 0xd0
++#define I219_PCI_AF_POS 0xe0
++
++/* FLR fixup for Intel I219LM Ethernet controller.
++ * The device does support FLR, has the relevant registers in the config space,
++ * but fails to link them to the pci caps list. Fix it by linking them
++ * manually, so the standard pci_af_flr() will find it. The fixup needs to be
++ * repeated after reset, so do that in probe stage.
++ * The fixup will be visible via sysfs, which is intended side effect so that
++ * libvirt can see FLR as supported too.
++ */
++static void fixup_intel_i219lm_flr(struct pci_dev *dev)
++{
++	int pos;
++	u8 cap;
++
++	pos = pci_find_capability(dev, PCI_CAP_ID_AF);
++	if (pos)
++		return;
++
++	/*
++	 * If not found, check if we can find it - the last listed cap should
++	 * be MSI at 0xd0 (I219_PCI_MSI_POS), and AF should be at 0xe0
++	 * (I219_PCI_AF_POS).
++	 */
++
++	pos = pci_find_capability(dev, PCI_CAP_ID_MSI);
++	if (pos != I219_PCI_MSI_POS)
++		return;
++
++	pci_read_config_byte(dev, pos + PCI_CAP_LIST_NEXT, &cap);
++	/*
++	 * Linked to something else already? Already linked to PCI_AF was
++	 * handled earlier.
++	 */
++	if (cap)
++		return;
++	/* Check if PCI_AF indeed is at I219_PCI_AF_POS. */
++	pci_read_config_byte(dev, I219_PCI_AF_POS, &cap);
++	if (cap != PCI_CAP_ID_AF)
++		return;
++
++	/* All sanity checks done, link the cap */
++	pci_write_config_byte(dev, pos + PCI_CAP_LIST_NEXT, I219_PCI_AF_POS);
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_I219LM,
++			 fixup_intel_i219lm_flr);
++
++static int reset_i219lm_dev(struct pci_dev *dev, bool probe)
++{
++	int ret;
++
++	/* Call normal FLR, but re-apply fixup_intel_i219lm_flr() afterwards. */
++	ret = pci_af_flr(dev, probe);
++	if (ret)
++		return ret;
++
++	if (!probe)
++		fixup_intel_i219lm_flr(dev);
++
++	return 0;
++}
++
+ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+ 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
+ 		 reset_intel_82599_sfp_virtfn },
+@@ -4209,6 +4273,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+ 		reset_chelsio_generic_dev },
+ 	{ PCI_VENDOR_ID_HUAWEI, PCI_DEVICE_ID_HINIC_VF,
+ 		reset_hinic_vf_dev },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_I219LM,
++		reset_i219lm_dev },
+ 	{ 0 }
+ };
+ 
+-- 
+2.45.2
+
