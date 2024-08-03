@@ -70,6 +70,9 @@ BuildRequires:  busybox
 BuildRequires:  bc
 BuildRequires:  openssl
 BuildRequires:  openssl-devel
+%if 0%{?fedora} >= 41
+BuildRequires:  openssl-devel-engine
+%endif
 BuildRequires:  python3-devel
 BuildRequires:  gcc-plugin-devel
 BuildRequires:  elfutils-libelf-devel
