@@ -51,7 +51,7 @@ diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
 index 568410e64ce6..9b77e6182500 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -4194,6 +4194,70 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
+@@ -4194,6 +4194,74 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
  	return 0;
  }
  
@@ -107,6 +107,10 @@ index 568410e64ce6..9b77e6182500 100644
 +static int reset_i219lm_dev(struct pci_dev *dev, bool probe)
 +{
 +	int ret;
++
++	/* Ensure AF FLR is visible before using it */
++	if (!probe)
++		fixup_intel_i219lm_flr(dev);
 +
 +	/* Call normal FLR, but re-apply fixup_intel_i219lm_flr() afterwards. */
 +	ret = pci_af_flr(dev, probe);
