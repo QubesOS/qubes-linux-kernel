@@ -416,7 +416,6 @@ if [ -f tools/objtool/objtool ]; then
     pushd %build_src_dir
     cp -a --parents tools/objtool %buildroot/lib/modules/%kernelrelease/build/
     cp -a --parents tools/build/Build.include %buildroot/lib/modules/%kernelrelease/build/
-    cp -a --parents tools/build/Build %buildroot/lib/modules/%kernelrelease/build/
     cp -a --parents tools/build/fixdep.c %buildroot/lib/modules/%kernelrelease/build/
     cp -a --parents tools/scripts/utilities.mak %buildroot/lib/modules/%kernelrelease/build/
     cp -a --parents tools/lib/str_error_r.c %buildroot/lib/modules/%kernelrelease/build/
