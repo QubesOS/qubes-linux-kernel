@@ -646,6 +646,8 @@ Requires(post): qubes-prepare-vm-kernel >= 2
 Requires(post): kernel-devel = %kernelrelease
 Requires(post): kernel-modules = %kernelrelease
 
+# needed for changed Linux compression parameters
+Conflicts:      xen-libs < 2001:4.17.5-5
 Provides:       kernel-qubes-vm = %kernelrelease
 
 %description qubes-vm
