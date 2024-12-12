@@ -646,10 +646,6 @@ Requires(post): qubes-prepare-vm-kernel >= 2
 Requires(post): kernel-devel = %kernelrelease
 Requires(post): kernel-modules = %kernelrelease
 
-Conflicts:      sysfsutils < 2.0
-# root-lvm only works with newer udevs
-Conflicts:      udev < 118
-Conflicts:      lvm2 < 2.02.33
 Provides:       kernel-qubes-vm = %kernelrelease
 
 %description qubes-vm
