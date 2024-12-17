@@ -1,4 +1,4 @@
-From 59dfd8ce5ae0680da665746194ca7f76bcc83f71 Mon Sep 17 00:00:00 2001
+From 8f14220e1eedf12788ca6055a04bab936eb70421 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Mon, 15 Jul 2024 16:55:56 +0200
@@ -19,14 +19,14 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  drivers/pci/pci.c    |  2 +-
  drivers/pci/pci.h    |  1 +
- drivers/pci/quirks.c | 66 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 68 insertions(+), 1 deletion(-)
+ drivers/pci/quirks.c | 70 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 72 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 35fb1f17a589..ba3e4732f125 100644
+index 0b29ec6e8e5e..63aa06fd99d0 100644
 --- a/drivers/pci/pci.c
 +++ b/drivers/pci/pci.c
-@@ -4491,7 +4491,7 @@ int pcie_reset_flr(struct pci_dev *dev, bool probe)
+@@ -4583,7 +4583,7 @@ int pcie_reset_flr(struct pci_dev *dev, bool probe)
  }
  EXPORT_SYMBOL_GPL(pcie_reset_flr);
  
@@ -36,22 +36,22 @@ index 35fb1f17a589..ba3e4732f125 100644
  	int pos;
  	u8 cap;
 diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index fd44565c4756..9dfc05e3d0b3 100644
+index 2e40fc63ba31..2b438c262bf8 100644
 --- a/drivers/pci/pci.h
 +++ b/drivers/pci/pci.h
-@@ -600,6 +600,7 @@ void pcie_ecrc_get_policy(char *str);
- static inline void pcie_set_ecrc_checking(struct pci_dev *dev) { }
- static inline void pcie_ecrc_get_policy(char *str) { }
+@@ -755,6 +755,7 @@ static inline int pcie_lbms_count(struct pci_dev *port, unsigned long *val)
+ 	return -EOPNOTSUPP;
+ }
  #endif
 +int pci_af_flr(struct pci_dev *dev, bool probe);
  
  struct pci_dev_reset_methods {
  	u16 vendor;
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 568410e64ce6..9b77e6182500 100644
+index 76f4df75b08a..cde5a6351626 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -4194,6 +4194,74 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
+@@ -4208,6 +4208,74 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
  	return 0;
  }
  
@@ -126,7 +126,7 @@ index 568410e64ce6..9b77e6182500 100644
  static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
  	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
  		 reset_intel_82599_sfp_virtfn },
-@@ -4209,6 +4273,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+@@ -4223,6 +4291,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
  		reset_chelsio_generic_dev },
  	{ PCI_VENDOR_ID_HUAWEI, PCI_DEVICE_ID_HINIC_VF,
  		reset_hinic_vf_dev },
@@ -136,5 +136,5 @@ index 568410e64ce6..9b77e6182500 100644
  };
  
 -- 
-2.45.2
+2.46.0
 
