@@ -202,12 +202,9 @@ sed -i -e 's/^EXTRAVERSION = -rc.*/EXTRAVERSION =/' Makefile
 	scripts/diffconfig \
 	scripts/bloat-o-meter \
 	scripts/jobserver-exec \
-	tools/perf/tests/attr.py \
-	tools/perf/scripts/python/stat-cpi.py \
-	tools/perf/scripts/python/sched-migration.py \
+	tools \
 	Documentation \
-	scripts/clang-tools/gen_compile_commands.py \
-	scripts/clang-tools/run-clang-tools.py
+	scripts/clang-tools
 %endif
 
 cd %kernel_build_dir
