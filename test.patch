@@ -1,0 +1,43 @@
+On Fri, Jan 03, 2025 at 02:00:44PM +0100, Borislav Petkov wrote:
+> Adding the author in Fixes to Cc
+
+Thanks, Boris!
+ 
+> On Fri, Jan 03, 2025 at 07:56:31AM +0100, Juergen Gross wrote:
+> > The recently introduced ROX cache for modules is assuming large page
+> > support in 64-bit mode without testing the related feature bit. This
+> > results in breakage when running as a Xen PV guest, as in this mode
+> > large pages are not supported.
+
+The ROX cache does not assume support for large pages, it just had a bug
+when dealing with base pages and the patch below should fix it.
+
+Restricting ROX cache only for configurations that support large pages
+makes sense on it's own because there's no real benefit from the cache on
+such systems, but it does not fix the issue but rather covers it up.
+
+diff --git a/mm/execmem.c b/mm/execmem.c
+index be6b234c032e..0090a6f422aa 100644
+--- a/mm/execmem.c
++++ b/mm/execmem.c
+@@ -266,6 +266,7 @@ static int execmem_cache_populate(struct execmem_range *range, size_t size)
+ {
+ 	unsigned long vm_flags = VM_ALLOW_HUGE_VMAP;
+ 	unsigned long start, end;
++	unsigned int page_shift;
+ 	struct vm_struct *vm;
+ 	size_t alloc_size;
+ 	int err = -ENOMEM;
+@@ -296,8 +297,9 @@ static int execmem_cache_populate(struct execmem_range *range, size_t size)
+ 	if (err)
+ 		goto err_free_mem;
+ 
++	page_shift = get_vm_area_page_order(vm) + PAGE_SHIFT;
+ 	err = vmap_pages_range_noflush(start, end, range->pgprot, vm->pages,
+-				       PMD_SHIFT);
++				       page_shift);
+ 	if (err)
+ 		goto err_free_mem;
+ 
+-- 
+2.45.2
