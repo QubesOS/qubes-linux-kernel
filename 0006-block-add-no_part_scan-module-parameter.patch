@@ -1,4 +1,4 @@
-From afe073973e6e402938790ca3b1b37d24422d36ba Mon Sep 17 00:00:00 2001
+From 9dd3b03210805ce0f76327cc18f7d07a40b275a2 Mon Sep 17 00:00:00 2001
 From: Rusty Bird <rustybird@openmailbox.org>
 Date: Mon, 11 Jul 2016 13:05:38 +0000
 Subject: [PATCH] block: add no_part_scan module parameter
@@ -11,18 +11,17 @@ kernel's various partition table parsers for them.
 The parameter's current value can be changed at any time by writing to
 the /sys/module/block/parameters/no_part_scan file.
 ---
- block/genhd.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ block/genhd.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 diff --git a/block/genhd.c b/block/genhd.c
-index 06b642b23a07..15769cadd687 100644
+index 79230c109fca..292a7c8c2188 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -784,6 +784,15 @@ static void register_disk(struct device *parent, struct gendisk *disk,
+@@ -382,6 +382,14 @@ int disk_scan_partitions(struct gendisk *disk, blk_mode_t mode)
  	return ret;
  }
  
-+/* copied (not moved) from far down below, to have fewer patch hunks */
 +#undef MODULE_PARAM_PREFIX
 +#define MODULE_PARAM_PREFIX     "block."
 +
@@ -32,9 +31,9 @@ index 06b642b23a07..15769cadd687 100644
 +MODULE_PARM_DESC(no_part_scan, "When adding block devices, always mark them as not to be scanned for partitions");
 +
  /**
-  * device_add_disk - add disk information to kernel list
+  * add_disk_fwnode - add disk information to kernel list with fwnode
   * @parent: parent device for the disk
-@@ -812,6 +821,9 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
+@@ -412,6 +420,9 @@ int __must_check add_disk_fwnode(struct device *parent, struct gendisk *disk,
  	 */
  	elevator_init_mq(disk->queue);
  
@@ -45,5 +44,5 @@ index 06b642b23a07..15769cadd687 100644
  	if (disk->fops->submit_bio)
  		bdev_set_flag(disk->part0, BD_HAS_SUBMIT_BIO);
 -- 
-2.25.4
+2.46.0
 

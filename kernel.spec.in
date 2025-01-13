@@ -120,7 +120,11 @@ Provides:       kernel-uname-r = %kernelrelease
 
 ExclusiveArch:  x86_64
 
+%if %prerelease
+Source0:        linux-%{upstream_version}.tar.gz
+%else
 Source0:        linux-%{upstream_version}.tar
+%endif
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
@@ -152,6 +156,8 @@ Patch31: 0001-PCI-add-a-reset-quirk-for-Intel-I219LM-ethernet-adap.patch
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
 Patch62: xen-pm-use-suspend.patch
 Patch63: xen-pciback-pm-suspend.patch
+
+Patch99: test.patch
 
 %description
 Qubes Dom0 kernel.
@@ -202,12 +208,9 @@ sed -i -e 's/^EXTRAVERSION = -rc.*/EXTRAVERSION =/' Makefile
 	scripts/diffconfig \
 	scripts/bloat-o-meter \
 	scripts/jobserver-exec \
-	tools/perf/tests/attr.py \
-	tools/perf/scripts/python/stat-cpi.py \
-	tools/perf/scripts/python/sched-migration.py \
+	tools \
 	Documentation \
-	scripts/clang-tools/gen_compile_commands.py \
-	scripts/clang-tools/run-clang-tools.py
+	scripts/clang-tools
 %endif
 
 cd %kernel_build_dir
