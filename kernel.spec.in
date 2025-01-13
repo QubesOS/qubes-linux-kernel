@@ -120,7 +120,11 @@ Provides:       kernel-uname-r = %kernelrelease
 
 ExclusiveArch:  x86_64
 
+%if %prerelease
+Source0:        linux-%{upstream_version}.tar.gz
+%else
 Source0:        linux-%{upstream_version}.tar
+%endif
 Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
