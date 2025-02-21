@@ -1,4 +1,4 @@
-From 9dd3b03210805ce0f76327cc18f7d07a40b275a2 Mon Sep 17 00:00:00 2001
+From 544cc18f2477e761b34fa525eea6a3359bc4ed95 Mon Sep 17 00:00:00 2001
 From: Rusty Bird <rustybird@openmailbox.org>
 Date: Mon, 11 Jul 2016 13:05:38 +0000
 Subject: [PATCH] block: add no_part_scan module parameter
@@ -15,10 +15,10 @@ the /sys/module/block/parameters/no_part_scan file.
  1 file changed, 11 insertions(+)
 
 diff --git a/block/genhd.c b/block/genhd.c
-index 79230c109fca..292a7c8c2188 100644
+index e9375e20d866..718d457626d0 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -382,6 +382,14 @@ int disk_scan_partitions(struct gendisk *disk, blk_mode_t mode)
+@@ -389,6 +389,14 @@ int disk_scan_partitions(struct gendisk *disk, blk_mode_t mode)
  	return ret;
  }
  
@@ -33,16 +33,16 @@ index 79230c109fca..292a7c8c2188 100644
  /**
   * add_disk_fwnode - add disk information to kernel list with fwnode
   * @parent: parent device for the disk
-@@ -412,6 +420,9 @@ int __must_check add_disk_fwnode(struct device *parent, struct gendisk *disk,
- 	 */
- 	elevator_init_mq(disk->queue);
+@@ -428,6 +436,9 @@ int __must_check add_disk_fwnode(struct device *parent, struct gendisk *disk,
+ 		bdev_set_flag(disk->part0, BD_HAS_SUBMIT_BIO);
+ 	}
  
 +	if (disk_no_part_scan)
 +		disk->flags |= GENHD_FL_NO_PART;
 +
- 	/* Mark bdev as having a submit_bio, if needed */
- 	if (disk->fops->submit_bio)
- 		bdev_set_flag(disk->part0, BD_HAS_SUBMIT_BIO);
+ 	/*
+ 	 * If the driver provides an explicit major number it also must provide
+ 	 * the number of minors numbers supported, and those will be used to
 -- 
-2.46.0
+2.48.0
 
