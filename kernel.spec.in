@@ -150,6 +150,9 @@ Patch27: 0001-amdgpu-timeout.patch
 Patch28: 0001-iwlwifi-avoid-writing-to-MSI-X-page-when-MSI-X-is-no.patch
 Patch30: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
 Patch31: 0001-PCI-add-a-reset-quirk-for-Intel-I219LM-ethernet-adap.patch
+Patch32: 0001-xen-pci-Do-not-register-devices-with-segments-0x1000.patch
+Patch33: 0002-PCI-vmd-Disable-MSI-remapping-bypass-under-Xen.patch
+Patch34: 0003-PCI-MSI-Convert-pci_msi_ignore_mask-to-per-MSI-domai.patch
 
 # S0ix support:
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
