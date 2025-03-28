@@ -42,12 +42,6 @@ HASH_FILE := linux-${VERSION}.tar.sha256
 endif
 SRC_TARFILE := linux-${VERSION}.tar
 
-SPI_BASE_URL := https://github.com/roadrunner2/macbook12-spi-driver/archive
-SPI_REVISION :=  2905d318d1a3ee1a227052490bf20eddef2592f9
-SPI_SRC_URL := $(SPI_BASE_URL)/$(SPI_REVISION).tar.gz
-SPI_SRC_FILE := macbook12-spi-driver-$(SPI_REVISION).tar.gz
-SPI_SRC_TARFILE := macbook12-spi-driver-$(SPI_REVISION).tar
-
 URL := $(SRC_BASEURL)/$(SRC_FILE)
 URL_SIGN := $(SRC_BASEURL)/$(SIGN_FILE)
 
@@ -58,7 +52,7 @@ endif
 verrel:
 	@echo $(NAME)-$(VERSION)-$(RELEASE)
 
-get-sources: $(SRC_TARFILE) $(SPI_SRC_TARFILE)
+get-sources: $(SRC_TARFILE)
 	git submodule update --init --recursive
 
 ifeq ($(FETCH_CMD),)
@@ -69,7 +63,7 @@ endif
 linux-keyring.gpg: $(sort $(wildcard kernel.org-*.asc))
 	cat $^ | gpg --dearmor >$@
 
-.INTERMEDIATE: $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)
+.INTERMEDIATE: $(SRC_TARFILE)$(UNTRUSTED_SUFF)
 %.tar$(UNTRUSTED_SUFF): %.tar.xz$(UNTRUSTED_SUFF)
 	if [ -f /usr/bin/qvm-run-vm ]; \
         then qvm-run-vm --no-gui --dispvm 2>/dev/null xzcat <$< > $@; \
@@ -96,20 +90,12 @@ $(SRC_TARFILE): $(SRC_TARFILE)$(UNTRUSTED_SUFF) $(HASH_FILE)
 	@mv $< $@
 endif
 
-$(SPI_SRC_TARFILE): $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE).sha256
-	@sha256sum --status --strict -c <(printf "$(file <$(SPI_SRC_TARFILE).sha256)  -\n") <$(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF) || \
-		{ echo "Wrong SHA256 checksum on $(SPI_SRC_TARFILE)$(UNTRUSTED_SUFF)!"; exit 1; }
-	@mv $< $@
-
 $(SRC_FILE)$(UNTRUSTED_SUFF):
 	@$(FETCH_CMD) $@ -- $(URL)
 
 .SECONDARY: $(SIGN_FILE)
 $(SIGN_FILE):
 	@$(FETCH_CMD) $(SIGN_FILE) -- $(URL_SIGN)
-
-$(SPI_SRC_FILE)$(UNTRUSTED_SUFF):
-	@$(FETCH_CMD) $@ -L -- $(SPI_SRC_URL)
 
 verify-sources:
 	@true
@@ -118,9 +104,6 @@ verify-sources:
 clean-sources:
 ifneq ($(SRC_FILE), None)
 	-rm $(SRC_FILE)$(UNTRUSTED_SUFF) $(SRC_TARFILE) $(SIGN_FILE)
-endif
-ifneq ($(SPI_SRC_FILE), None)
-	-rm $(SPI_SRC_FILE)$(UNTRUSTED_SUFF) $(SPI_SRC_TARFILE)
 endif
 
 .PHONY: update-sources
