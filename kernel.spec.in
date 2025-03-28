@@ -33,9 +33,6 @@
 %define install_vdso 1
 %define debuginfodir /usr/lib/debug
 
-# should macbook spi driver be included
-%define with_macbook_spi 0
-
 # debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
 %define with_debuginfo 0
 
@@ -125,9 +122,6 @@ Source1:        @dummy-psu@
 Source2:        @dummy-backlight@
 Source3:        @linux-utils@
 Source4:        @v4l2loopback@
-%if %{with_macbook_spi}
-Source6:        macbook12-spi-driver-2905d318d1a3ee1a227052490bf20eddef2592f9.tar
-%endif
 Source16:       guards
 Source17:       apply-patches
 Source18:       mod-sign.sh
@@ -262,12 +256,6 @@ tar -x -C %_builddir -zf %{SOURCE3} --strip-components=2 linux-utils/kernel-modu
 rm -rf %_builddir/v4l2loopback
 tar -x -C %_builddir -zf %{SOURCE4}
 
-%if %{with_macbook_spi}
-rm -rf %_builddir/macbook12-spi-driver
-tar -x -C %_builddir -f %{SOURCE6}
-mv %_builddir/$(basename %{SOURCE6} .tar) %_builddir/macbook12-spi-driver
-%endif
-
 %build
 
 set -e
@@ -295,13 +283,6 @@ fi
 if [ -d "%_builddir/v4l2loopback" ]; then
     make -C %kernel_build_dir M=%_builddir/v4l2loopback modules
 fi
-
-%if %{with_macbook_spi}
-# Build applespi, apple-ibridge, apple-ib-tb, apple-ib-als modules
-if [ -d "%_builddir/macbook12-spi-driver" ]; then
-    make -C %kernel_build_dir M=%_builddir/macbook12-spi-driver modules
-fi
-%endif
 
 %define __modsign_install_post \
   if [ "%{signmodules}" -eq "1" ]; then \
@@ -368,11 +349,6 @@ fi
 if [ -d "%_builddir/v4l2loopback" ]; then
     make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/v4l2loopback
 fi
-%if %{with_macbook_spi}
-if [ -d "%_builddir/macbook12-spi-driver" ]; then
-    make modules_install $MAKE_ARGS INSTALL_MOD_PATH=%buildroot M=%_builddir/macbook12-spi-driver
-fi
-%endif
 
 mkdir -p %buildroot/%src_install_dir
 
