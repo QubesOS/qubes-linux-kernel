@@ -67,6 +67,7 @@ BuildRequires:  busybox
 BuildRequires:  bc
 BuildRequires:  openssl
 BuildRequires:  openssl-devel
+BuildRequires:  libuuid-devel
 %if 0%{?fedora} >= 41
 BuildRequires:  openssl-devel-engine
 %endif
