@@ -9,13 +9,13 @@ source:
   - dummy-backlight
   - v4l2loopback
   files:
-  - url: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-@VERSION@.tar.xz
-    signature: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-@VERSION@.tar.sign
-    uncompress: true
+#  - url: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-@VERSION@.tar.xz
+#    signature: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-@VERSION@.tar.sign
+#    uncompress: true
 ## for -rc kernels, use this:
-#  - git-url: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-#    git-basename: linux-@VERSION@
-#    tag: v@VERSION@
+  - git-url: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+    git-basename: linux-@VERSION@
+    tag: v@VERSION@
     pubkeys:
     - kernel.org-2-key.asc
     - kernel.org-1-key.asc
