@@ -34,18 +34,19 @@
 %define debuginfodir /usr/lib/debug
 
 # debuginfo build is disabled by default to save disk space (it needs 2-3GB build time)
-%define with_debuginfo 0
+%define with_debuginfo 1
 
 # Sign all modules
 %global signmodules 1
 
 %if !%{with_debuginfo}
-%global debug_package %{nil}
 %define _build_id_links none
 %define setup_config --enable CONFIG_DEBUG_INFO_NONE \\\
         --disable CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT \\\
         --disable CONFIG_DEBUG_INFO
+%define _enable_debug_packages 0
 %else
+%define _build_id_links alldebug
 %define setup_config --enable CONFIG_DEBUG_INFO \\\
         --enable CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT \\\
         --disable CONFIG_DEBUG_INFO_REDUCED
@@ -91,6 +92,15 @@ BuildRequires: gcc-c++
 # Required for CONFIG_DEBUG_INFO_BTF
 BuildRequires: dwarves
 %endif
+
+# Copied from Fedora's spec, to fix debuginfo package
+%undefine _include_minidebuginfo
+%undefine _find_debuginfo_dwz_opts
+%undefine _unique_build_ids
+%undefine _unique_debug_names
+%undefine _unique_debug_srcs
+%undefine _debugsource_packages
+%undefine _debuginfo_subpackages
 
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
