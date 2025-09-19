@@ -1,4 +1,4 @@
-From 544cc18f2477e761b34fa525eea6a3359bc4ed95 Mon Sep 17 00:00:00 2001
+From a4b4ac197ecfb96377e06dc8a0fbb9d5c3867e77 Mon Sep 17 00:00:00 2001
 From: Rusty Bird <rustybird@openmailbox.org>
 Date: Mon, 11 Jul 2016 13:05:38 +0000
 Subject: [PATCH] block: add no_part_scan module parameter
@@ -15,11 +15,11 @@ the /sys/module/block/parameters/no_part_scan file.
  1 file changed, 11 insertions(+)
 
 diff --git a/block/genhd.c b/block/genhd.c
-index e9375e20d866..718d457626d0 100644
+index 8171a6bc3210f..755652ad806a9 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -389,6 +389,14 @@ int disk_scan_partitions(struct gendisk *disk, blk_mode_t mode)
- 	return ret;
+@@ -424,6 +424,14 @@ static void add_disk_final(struct gendisk *disk)
+ 	set_bit(GD_ADDED, &disk->state);
  }
  
 +#undef MODULE_PARAM_PREFIX
@@ -30,10 +30,10 @@ index e9375e20d866..718d457626d0 100644
 +module_param_named(no_part_scan, disk_no_part_scan, bool, S_IRUGO|S_IWUSR);
 +MODULE_PARM_DESC(no_part_scan, "When adding block devices, always mark them as not to be scanned for partitions");
 +
- /**
-  * add_disk_fwnode - add disk information to kernel list with fwnode
-  * @parent: parent device for the disk
-@@ -428,6 +436,9 @@ int __must_check add_disk_fwnode(struct device *parent, struct gendisk *disk,
+ static int __add_disk(struct device *parent, struct gendisk *disk,
+ 		      const struct attribute_group **groups,
+ 		      struct fwnode_handle *fwnode)
+@@ -447,6 +455,9 @@ static int __add_disk(struct device *parent, struct gendisk *disk,
  		bdev_set_flag(disk->part0, BD_HAS_SUBMIT_BIO);
  	}
  
@@ -44,5 +44,5 @@ index e9375e20d866..718d457626d0 100644
  	 * If the driver provides an explicit major number it also must provide
  	 * the number of minors numbers supported, and those will be used to
 -- 
-2.48.0
+2.49.0
 
