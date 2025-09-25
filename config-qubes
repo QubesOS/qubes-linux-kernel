@@ -66,6 +66,31 @@ CONFIG_SECURITY_YAMA=y
 CONFIG_STACKPROTECTOR=y
 CONFIG_STACKPROTECTOR_STRONG=y
 
+## Use the SLUB allocator
+CONFIG_SLUB=y
+
+## and turn on debugging checks by default
+CONFIG_SLUB_DEBUG=y
+CONFIG_SLUB_DEBUG_ON=y
+
+## Make some heap exploits harder
+
+# CONFIG_SLAB_MERGE_DEFAULT is not set
+CONFIG_SLAB_FREELIST_RANDOM=y
+CONFIG_SLAB_FREELIST_HARDENED=y
+CONFIG_SHUFFLE_PAGE_ALLOCATOR=y
+
+## Internal consistency checks
+CONFIG_DEBUG_LIST=y
+CONFIG_DEBUG_PLIST=y
+CONFIG_DEBUG_SG=y
+CONFIG_DEBUG_NOTIFIERS=y
+CONFIG_BUG_ON_DATA_CORRUPTION=y
+
+
+## Lots of low-level attack surface; keep off
+# CONFIG_MODIFY_LDT_SYSCALL is not set
+
 
 ################################################################################
 ## Disable PCI hotplug to prevent DMA attacks via ExpressCard or Thunderbolt
