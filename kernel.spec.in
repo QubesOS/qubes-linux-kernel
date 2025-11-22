@@ -14,6 +14,9 @@
 %define rel %{plainrel}.%{variant}%{?dist}
 %endif
 
+# Work around broken shebang mangling: https://github.com/QubesOS/qubes-issues/issues/10417
+%undefine       __brp_mangle_shebangs
+
 %define name_suffix -latest
 
 %define _buildshell /bin/bash
