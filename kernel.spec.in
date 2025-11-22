@@ -438,7 +438,7 @@ xargs --no-run-if-empty chmod u+x < modnames
 
 # Generate a list of modules for block and networking.
 
-fgrep /drivers/ modnames | xargs --no-run-if-empty nm -upA |
+grep -F /drivers/ modnames | xargs --no-run-if-empty nm -upA |
 sed -n 's,^.*/\([^/]*\.ko\):  *U \(.*\)$,\1 \2,p' > drivers.undef
 
 collect_modules_list()
