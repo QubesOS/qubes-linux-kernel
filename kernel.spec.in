@@ -676,6 +676,9 @@ exit 0
 %if 0%{?fedora} >= 37
 %attr(0644, root, root) %vm_install_dir/memory-hotplug-supported
 %endif
+%if %{with_debuginfo}
+%{debuginfodir}/lib/modules/%kernelrelease/vmlinux
+%endif
 
 %changelog
 @CHANGELOG@
