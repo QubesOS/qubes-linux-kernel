@@ -180,3 +180,12 @@ CONFIG_PREEMPT=y
 ## AMD Threadripper platforms
 CONFIG_PHYSICAL_START=0x200000
 CONFIG_PHYSICAL_ALIGN=0x200000
+
+## AMD XDNA cannot work under Xen.  It requires PASID, which Xen does
+## not expose to any guest.  Also, AMDXDNA breaks booting under Xen
+## unless it is patched to fail to probe there.
+##
+## See <https://github.com/QubesOS/qubes-issues/issues/10275> and
+## <https://lore.kernel.org/dri-devel/20251213054513.87925-1-superm1@kernel.org/t/#u>
+## for details.
+# CONFIG_DRM_ACCEL_AMDXDNA is not set
