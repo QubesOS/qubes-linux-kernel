@@ -1,0 +1,165 @@
+From 0292f843bff05c1b266c32e9e802ca3f01e030f0 Mon Sep 17 00:00:00 2001
+From: Juergen Gross <jgross@suse.com>
+Date: Mon, 26 Jan 2026 08:45:17 +0100
+Subject: [PATCH 2/2] xen/xenbus: better handle backend crash
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the backend domain crashes, coordinated device cleanup is not
+possible (as it involves waiting for the backend state change). In that
+case, toolstack forcefully removes frontend xenstore entries.
+xenbus_dev_changed() handles this case, and triggers device cleanup.
+It's possible that toolstack manages to connect new device in that
+place, before xenbus_dev_changed() notices the old one is missing. If
+that happens, new one won't be probed and will forever remain in
+XenbusStateInitialising.
+
+Fix this by checking the frontend's state in Xenstore. In case it has
+been reset to XenbusStateInitialising by Xen tools, consider this
+being the result of an unplug+plug operation.
+
+It's important that cleanup on such unplug doesn't modify Xenstore
+entries (especially the "state" key) as it belong to the new device
+to be probed - changing it would derail establishing connection to the
+new backend (most likely, closing the device before it was even
+connected). Handle this case by setting new xenbus_device->vanished
+flag to true, and check it before changing state entry.
+
+And even if xenbus_dev_changed() correctly detects the device was
+forcefully removed, the cleanup handling is still racy. Since this whole
+handling doesn't happened in a single Xenstore transaction, it's possible
+that toolstack might put a new device there already. Avoid re-creating
+the state key (which in the case of loosing the race would actually
+close newly attached device).
+
+The problem does not apply to frontend domain crash, as this case
+involves coordinated cleanup.
+
+Problem originally reported at
+https://lore.kernel.org/xen-devel/aOZvivyZ9YhVWDLN@mail-itl/T/#t,
+including reproduction steps.
+
+Based-on-patch-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ drivers/xen/xenbus/xenbus_client.c | 13 +++++++++--
+ drivers/xen/xenbus/xenbus_probe.c  | 36 ++++++++++++++++++++++++++++++
+ include/xen/xenbus.h               |  1 +
+ 3 files changed, 48 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index 6ed0cd8e9676..00ee8f62c28c 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -226,8 +226,9 @@ __xenbus_switch_state(struct xenbus_device *dev,
+ 	struct xenbus_transaction xbt;
+ 	int current_state;
+ 	int err, abort;
++	bool vanished = false;
+ 
+-	if (state == dev->state)
++	if (state == dev->state || dev->vanished)
+ 		return 0;
+ 
+ again:
+@@ -242,6 +243,10 @@ __xenbus_switch_state(struct xenbus_device *dev,
+ 	err = xenbus_scanf(xbt, dev->nodename, "state", "%d", &current_state);
+ 	if (err != 1)
+ 		goto abort;
++	if (current_state != dev->state && current_state == XenbusStateInitialising) {
++		vanished = true;
++		goto abort;
++	}
+ 
+ 	err = xenbus_printf(xbt, dev->nodename, "state", "%d", state);
+ 	if (err) {
+@@ -256,7 +261,7 @@ __xenbus_switch_state(struct xenbus_device *dev,
+ 		if (err == -EAGAIN && !abort)
+ 			goto again;
+ 		xenbus_switch_fatal(dev, depth, err, "ending transaction");
+-	} else
++	} else if (!vanished)
+ 		dev->state = state;
+ 
+ 	return 0;
+@@ -940,6 +945,10 @@ enum xenbus_state xenbus_read_driver_state(const struct xenbus_device *dev,
+ 					   const char *path)
+ {
+ 	enum xenbus_state result;
++
++	if (dev && dev->vanished)
++		return XenbusStateUnknown;
++
+ 	int err = xenbus_gather(XBT_NIL, path, "state", "%d", &result, NULL);
+ 	if (err)
+ 		result = XenbusStateUnknown;
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index d4f1dbf7cbc4..47e992032014 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -444,6 +444,9 @@ static void xenbus_cleanup_devices(const char *path, struct bus_type *bus)
+ 		info.dev = NULL;
+ 		bus_for_each_dev(bus, NULL, &info, cleanup_dev);
+ 		if (info.dev) {
++			dev_warn(&info.dev->dev,
++				 "device forcefully removed from xenstore\n");
++			info.dev->vanished = true;
+ 			device_unregister(&info.dev->dev);
+ 			put_device(&info.dev->dev);
+ 		}
+@@ -659,6 +662,39 @@ void xenbus_dev_changed(const char *node, struct xen_bus_type *bus)
+ 		return;
+ 
+ 	dev = xenbus_device_find(root, &bus->bus);
++	/*
++	 * Backend domain crash results in not coordinated frontend removal,
++	 * without going through XenbusStateClosing. If this is a new instance
++	 * of the same device Xen tools will have reset the state to
++	 * XenbusStateInitializing.
++	 * It might be that the backend crashed early during the init phase of
++	 * device setup, in which case the known state would have been
++	 * XenbusStateInitializing. So test the backend domid to match the
++	 * saved one. In case the new backend happens to have the same domid as
++	 * the old one, we can just carry on, as there is no inconsistency
++	 * resulting in this case.
++	 */
++	if (dev && !strcmp(bus->root, "device")) {
++		enum xenbus_state state = xenbus_read_driver_state(dev, dev->nodename);
++		unsigned int backend = xenbus_read_unsigned(root, "backend-id",
++							    dev->otherend_id);
++
++		if (state == XenbusStateInitialising &&
++		    (state != dev->state || backend != dev->otherend_id)) {
++			/*
++			 * State has been reset, assume the old one vanished
++			 * and new one needs to be probed.
++			 */
++			dev_warn(&dev->dev,
++				 "state reset occurred, reconnecting\n");
++			dev->vanished = true;
++		}
++		if (dev->vanished) {
++			device_unregister(&dev->dev);
++			put_device(&dev->dev);
++			dev = NULL;
++		}
++	}
+ 	if (!dev)
+ 		xenbus_probe_node(bus, type, root);
+ 	else
+diff --git a/include/xen/xenbus.h b/include/xen/xenbus.h
+index 15319da65b7f..8ca15743af7f 100644
+--- a/include/xen/xenbus.h
++++ b/include/xen/xenbus.h
+@@ -80,6 +80,7 @@ struct xenbus_device {
+ 	const char *devicetype;
+ 	const char *nodename;
+ 	const char *otherend;
++	bool vanished;
+ 	int otherend_id;
+ 	struct xenbus_watch otherend_watch;
+ 	struct device dev;
+-- 
+2.53.0
+
