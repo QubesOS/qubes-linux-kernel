@@ -1,4 +1,4 @@
-From 4859917799b85e3eeb6582f784e13ea244245849 Mon Sep 17 00:00:00 2001
+From 3eae20a41127e9b24ff1f2c4c08fa2c1e5906982 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Mon, 15 Jul 2024 16:55:56 +0200
@@ -23,23 +23,23 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  3 files changed, 72 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index e9448d55113bd..4492049395fce 100644
+index 8479c2e1f74f..2465c9acf60b 100644
 --- a/drivers/pci/pci.c
 +++ b/drivers/pci/pci.c
-@@ -4559,7 +4559,7 @@ int pcie_reset_flr(struct pci_dev *dev, bool probe)
+@@ -4385,7 +4385,7 @@ int pcie_reset_flr(struct pci_dev *dev, bool probe)
  }
  EXPORT_SYMBOL_GPL(pcie_reset_flr);
  
 -static int pci_af_flr(struct pci_dev *dev, bool probe)
 +int pci_af_flr(struct pci_dev *dev, bool probe)
  {
+ 	int ret;
  	int pos;
- 	u8 cap;
 diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 12215ee72afb6..8e83b7905cb37 100644
+index 13d998fbacce..cb7acc605fea 100644
 --- a/drivers/pci/pci.h
 +++ b/drivers/pci/pci.h
-@@ -850,6 +850,7 @@ void pcie_reset_lbms(struct pci_dev *port);
+@@ -1128,6 +1128,7 @@ void pcie_reset_lbms(struct pci_dev *port);
  #else
  static inline void pcie_reset_lbms(struct pci_dev *port) {}
  #endif
@@ -48,10 +48,10 @@ index 12215ee72afb6..8e83b7905cb37 100644
  struct pci_dev_reset_methods {
  	u16 vendor;
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index d7f4ee634263c..a8ddc34902ab0 100644
+index 48946cca4be7..8960d3ae370a 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -4205,6 +4205,74 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
+@@ -4239,6 +4239,74 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
  	return 0;
  }
  
@@ -126,7 +126,7 @@ index d7f4ee634263c..a8ddc34902ab0 100644
  static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
  	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
  		 reset_intel_82599_sfp_virtfn },
-@@ -4220,6 +4288,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+@@ -4254,6 +4322,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
  		reset_chelsio_generic_dev },
  	{ PCI_VENDOR_ID_HUAWEI, PCI_DEVICE_ID_HINIC_VF,
  		reset_hinic_vf_dev },
@@ -136,5 +136,5 @@ index d7f4ee634263c..a8ddc34902ab0 100644
  };
  
 -- 
-2.49.0
+2.52.0
 
