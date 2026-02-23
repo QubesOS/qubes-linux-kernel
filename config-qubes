@@ -78,7 +78,7 @@ CONFIG_STACKPROTECTOR_STRONG=y
 
 # CONFIG_DEFAULT_SECURITY_SELINUX is not set
 CONFIG_DEFAULT_SECURITY_DAC=y
-CONFIG_LSM="yama,loadpin,safesetid,integrity"
+CONFIG_LSM="landlock,yama,loadpin,safesetid,integrity"
 
 
 ################################################################################
