@@ -1,4 +1,4 @@
-From 895c01cc7e63404250fd9763c4fb91620ad63a4c Mon Sep 17 00:00:00 2001
+From 7e1526209cf972f51281558f1cb979d18e49cdd1 Mon Sep 17 00:00:00 2001
 From: Simon Gaiser <simon@invisiblethingslab.com>
 Date: Tue, 30 Apr 2024 14:27:33 +0200
 Subject: [PATCH] Add experimental flag to use suspend instad of freeze for Xen
@@ -26,10 +26,10 @@ and the new behavior adapted accordingly.
  2 files changed, 15 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index c16df629907e..1b723c68cc3c 100644
+index e20c40a62e64..dec7b7d544c9 100644
 --- a/drivers/xen/manage.c
 +++ b/drivers/xen/manage.c
-@@ -46,6 +46,9 @@ struct suspend_info {
+@@ -47,6 +47,9 @@ struct suspend_info {
  
  static RAW_NOTIFIER_HEAD(xen_resume_notifier);
  
@@ -39,7 +39,7 @@ index c16df629907e..1b723c68cc3c 100644
  void xen_resume_notifier_register(struct notifier_block *nb)
  {
  	raw_notifier_chain_register(&xen_resume_notifier, nb);
-@@ -113,7 +116,10 @@ static void do_suspend(void)
+@@ -114,7 +117,10 @@ static void do_suspend(void)
  		goto out_thaw;
  	}
  
@@ -51,7 +51,7 @@ index c16df629907e..1b723c68cc3c 100644
  	if (err) {
  		pr_err("%s: dpm_suspend_start %d\n", __func__, err);
  		goto out_resume_end;
-@@ -122,7 +128,7 @@ static void do_suspend(void)
+@@ -123,7 +129,7 @@ static void do_suspend(void)
  	printk(KERN_DEBUG "suspending xenstore...\n");
  	xs_suspend();
  
@@ -60,7 +60,7 @@ index c16df629907e..1b723c68cc3c 100644
  	if (err) {
  		pr_err("dpm_suspend_end failed: %d\n", err);
  		si.cancelled = 0;
-@@ -143,7 +149,7 @@ static void do_suspend(void)
+@@ -144,7 +150,7 @@ static void do_suspend(void)
  
  	xen_arch_resume();
  
@@ -69,7 +69,7 @@ index c16df629907e..1b723c68cc3c 100644
  
  	if (err) {
  		pr_err("failed to start xen_suspend: %d\n", err);
-@@ -156,7 +162,7 @@ static void do_suspend(void)
+@@ -158,7 +164,7 @@ static void do_suspend(void)
  		xs_suspend_cancel();
  
  out_resume_end:
@@ -79,23 +79,23 @@ index c16df629907e..1b723c68cc3c 100644
  out_thaw:
  	thaw_processes();
 diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
-index fcb335bb7b18..5caa5b2369fb 100644
+index f04707d1f667..d9273b9f35a5 100644
 --- a/drivers/xen/xenbus/xenbus_probe_frontend.c
 +++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
-@@ -98,8 +98,13 @@ static void xenbus_frontend_delayed_resume(struct work_struct *w)
- 	xenbus_dev_resume(&xdev->dev);
+@@ -98,8 +98,13 @@ static void xenbus_frontend_delayed_restore(struct work_struct *w)
+ 	xenbus_dev_restore(&xdev->dev);
  }
  
 +extern bool __read_mostly xen_use_suspend;
 +
- static int xenbus_frontend_dev_resume(struct device *dev)
+ static int xenbus_frontend_dev_restore(struct device *dev)
  {
 +	if (xen_use_suspend)
-+		return xenbus_dev_cancel(dev);
++		return xenbus_dev_thaw(dev);
 +
  	/*
  	 * If xenstored is running in this domain, we cannot access the backend
  	 * state at the moment, so we need to defer xenbus_dev_resume
 -- 
-2.43.0
+2.52.0
 
