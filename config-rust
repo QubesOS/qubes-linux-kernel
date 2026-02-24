@@ -4,3 +4,9 @@
 
 ## Add Rust support in the first place
 CONFIG_RUST=y
+
+## fancy panic messages
+CONFIG_DRM_PANIC_SCREEN="qr_code"
+CONFIG_DRM_PANIC_SCREEN_QR_CODE=y
+CONFIG_DRM_PANIC_SCREEN_QR_CODE_URL="https://qr.qubes-os.org/panic_report/#"
+CONFIG_DRM_PANIC_SCREEN_QR_VERSION=40
