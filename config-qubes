@@ -22,7 +22,6 @@ CONFIG_KERNEL_XZ=y
 CONFIG_IKCONFIG=y
 CONFIG_IKCONFIG_PROC=y
 
-
 ################################################################################
 ## Enable some more hardening options
 
