@@ -1,0 +1,45 @@
+From git@z Thu Jan  1 00:00:00 1970
+Subject: [PATCH] rust: bindgen: disable GCC latent entropy plugin
+From: stijn@linux-ipv6.be
+Date: Sun, 21 Dec 2025 10:16:59 +0200
+Message-Id: <20251221081659.1742800-1-stijn@linux-ipv6.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+When CONFIG_GCC_PLUGIN_LATENT_ENTROPY and CONFIG_RUST are enabled, rust
+bindgen fails due to latent_entropy being undeclared:
+
+  BINDGEN rust/bindings/bindings_generated.rs
+./include/linux/random.h:24:39: error: use of undeclared identifier 'latent_entropy'
+./include/linux/random.h:24:62: error: use of undeclared identifier 'latent_entropy'
+Unable to generate bindings: clang diagnosed error: ./include/linux/random.h:24:39: error: use of undeclared identifier 'latent_entropy'
+./include/linux/random.h:24:62: error: use of undeclared identifier 'latent_entropy'
+
+Fix this by adding DISABLE_LATENT_ENTROPY_PLUGIN to
+bindgen_extra_c_flags.
+
+Fixes: 2f7ab1267dc9 ("Kbuild: add Rust support")
+Signed-off-by: Stijn Tintel <stijn@linux-ipv6.be>
+---
+ rust/Makefile | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/rust/Makefile b/rust/Makefile
+index 5d357dce1704d..633dec548f6e0 100644
+--- a/rust/Makefile
++++ b/rust/Makefile
+@@ -412,6 +412,10 @@ bindgen_extra_c_flags += -enable-trivial-auto-var-init-zero-knowing-it-will-be-r
+ endif
+ endif
+ 
++ifdef CONFIG_GCC_PLUGIN_LATENT_ENTROPY
++bindgen_extra_c_flags += $(DISABLE_LATENT_ENTROPY_PLUGIN)
++endif
++
+ bindgen_c_flags = $(filter-out $(bindgen_skip_c_flags), $(c_flags)) \
+ 	$(bindgen_extra_c_flags)
+ endif
+-- 
+2.51.2
+

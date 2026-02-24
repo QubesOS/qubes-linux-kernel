@@ -1,0 +1,6 @@
+## Qubes specific config settings that depends on Rust support.
+##
+## Lines starting with ## are comments.
+
+## Add Rust support in the first place
+CONFIG_RUST=y
