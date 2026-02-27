@@ -149,6 +149,12 @@ Patch30: 0004-pvops-respect-removable-xenstore-flag-for-block-devi.patch
 Patch31: 0001-PCI-add-a-reset-quirk-for-Intel-I219LM-ethernet-adap.patch
 Patch33: 0001-xen-xenbus-better-handle-backend-crash.patch
 
+Patch40: 0001-xen-use-correct-end-address-of-kernel-for-conflict-c.patch
+Patch41: 0002-xen-introduce-generic-helper-checking-for-memory-map.patch
+Patch42: 0003-xen-move-checks-for-e820-conflicts-further-up.patch
+Patch43: 0004-xen-move-max_pfn-in-xen_memory_setup-out-of-function.patch
+Patch44: 0005-xen-tolerate-ACPI-NVS-memory-overlapping-with-Xen-al.patch
+
 # S0ix support:
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
 Patch62: xen-pm-use-suspend.patch
