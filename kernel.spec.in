@@ -162,6 +162,7 @@ Patch34: 0001-rust-fixup.patch
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
 Patch62: xen-pm-use-suspend.patch
 Patch63: xen-pciback-pm-suspend.patch
+Patch64: xen-pciback-pm-runtime.patch
 
 %description
 Qubes Dom0 kernel.
