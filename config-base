@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-6.18.12-200.fc43.rpm)
+# Base config based on Fedora's config (kernel-core-6.18.13-200.fc43.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 15.2.1 20260123 (Red Hat 15.2.1-7)"
@@ -36,7 +36,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="6.18.12-200.fc43.x86_64"
+CONFIG_BUILD_SALT="6.18.13-200.fc43.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -3902,7 +3902,6 @@ CONFIG_ATH9K_COMMON_DEBUG=y
 CONFIG_ATH9K_BTCOEX_SUPPORT=y
 CONFIG_ATH9K=m
 CONFIG_ATH9K_PCI=y
-CONFIG_ATH9K_AHB=y
 CONFIG_ATH9K_DEBUGFS=y
 # CONFIG_ATH9K_STATION_STATISTICS is not set
 # CONFIG_ATH9K_DYNACK is not set
