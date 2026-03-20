@@ -186,3 +186,9 @@ CONFIG_PHYSICAL_ALIGN=0x200000
 ## <https://lore.kernel.org/dri-devel/20251213054513.87925-1-superm1@kernel.org/t/#u>
 ## for details.
 # CONFIG_DRM_ACCEL_AMDXDNA is not set
+
+
+## Make it easy to debug memory issues, description says it's low overhead,
+## suitable for production. And configure it to require kernel cmdline opt-in.
+CONFIG_MEM_ALLOC_PROFILING=y
+# CONFIG_MEM_ALLOC_PROFILING_ENABLED_BY_DEFAULT is not set
