@@ -526,6 +526,8 @@ def_kernelopts="$def_kernelopts rd_NO_PLYMOUTH rd.plymouth.enable=0 plymouth.ena
 %if 0%{?fedora} >= 37
 def_kernelopts="$def_kernelopts clocksource=tsc"
 %endif
+# (currently) required for vchan
+def_kernelopts="$def_kernelopts xen_privcmd.unrestricted"
 if [ -e /usr/lib/dracut/modules.d/90qubes-vm-simple/xen-scrub-pages-supported ]; then
     # set xen_scrub_pages=0 _only_ when included initramfs does support
     # re-enabling it
