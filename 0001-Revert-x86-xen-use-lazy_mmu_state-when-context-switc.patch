@@ -1,0 +1,58 @@
+From f7e6973e3014a618a63e7f8679226f5fa9775e1d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Tue, 7 Apr 2026 17:15:39 +0200
+Subject: [PATCH] Revert "x86/xen: use lazy_mmu_state when context-switching"
+
+This reverts commit 291b3abed657cb3c485cce7753e0913dc408cf85.
+---
+ arch/x86/include/asm/thread_info.h | 4 +++-
+ arch/x86/xen/enlighten_pv.c        | 3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 0067684afb5b..e71e0e8362ed 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -100,7 +100,8 @@ struct thread_info {
+ #define TIF_FORCED_TF		24	/* true if TF in eflags artificially */
+ #define TIF_SINGLESTEP		25	/* reenable singlestep on user return*/
+ #define TIF_BLOCKSTEP		26	/* set when we want DEBUGCTLMSR_BTF */
+-#define TIF_ADDR32		27	/* 32-bit address space on 64 bits */
++#define TIF_LAZY_MMU_UPDATES	27	/* task is updating the mmu lazily */
++#define TIF_ADDR32		28	/* 32-bit address space on 64 bits */
+ 
+ #define _TIF_SSBD		BIT(TIF_SSBD)
+ #define _TIF_SPEC_IB		BIT(TIF_SPEC_IB)
+@@ -113,6 +114,7 @@ struct thread_info {
+ #define _TIF_FORCED_TF		BIT(TIF_FORCED_TF)
+ #define _TIF_BLOCKSTEP		BIT(TIF_BLOCKSTEP)
+ #define _TIF_SINGLESTEP		BIT(TIF_SINGLESTEP)
++#define _TIF_LAZY_MMU_UPDATES	BIT(TIF_LAZY_MMU_UPDATES)
+ #define _TIF_ADDR32		BIT(TIF_ADDR32)
+ 
+ /* flags to check in __switch_to() */
+diff --git a/arch/x86/xen/enlighten_pv.c b/arch/x86/xen/enlighten_pv.c
+index 6e459e47cafd..8a19a88190ee 100644
+--- a/arch/x86/xen/enlighten_pv.c
++++ b/arch/x86/xen/enlighten_pv.c
+@@ -426,6 +426,7 @@ static void xen_start_context_switch(struct task_struct *prev)
+ 
+ 	if (this_cpu_read(xen_lazy_mode) == XEN_LAZY_MMU) {
+ 		arch_leave_lazy_mmu_mode();
++		set_ti_thread_flag(task_thread_info(prev), TIF_LAZY_MMU_UPDATES);
+ 	}
+ 	enter_lazy(XEN_LAZY_CPU);
+ }
+@@ -436,7 +437,7 @@ static void xen_end_context_switch(struct task_struct *next)
+ 
+ 	xen_mc_flush();
+ 	leave_lazy(XEN_LAZY_CPU);
+-	if (__task_lazy_mmu_mode_active(next))
++	if (test_and_clear_ti_thread_flag(task_thread_info(next), TIF_LAZY_MMU_UPDATES))
+ 		arch_enter_lazy_mmu_mode();
+ }
+ 
+-- 
+2.52.0
+
