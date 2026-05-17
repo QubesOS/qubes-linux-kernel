@@ -189,24 +189,6 @@ cd linux-%upstream_version
 # drop EXTRAVERSION - possible -rc suffix already included in %release
 sed -i -e 's/^EXTRAVERSION = -rc.*/EXTRAVERSION =/' Makefile
 
-# Mangle /usr/bin/python shebangs to /usr/bin/python3
-# Mangle all Python shebangs to be Python 3 explicitly
-# -p preserves timestamps
-# -n prevents creating ~backup files
-# -i specifies the interpreter for the shebang
-# This fixes errors such as
-# *** ERROR: ambiguous python shebang in /usr/bin/kvm_stat: #!/usr/bin/python. Change it to python3 (or python2) explicitly.
-# We patch all sources below for which we got a report/error.
-%py3_shebang_fix \
-	tools/kvm/kvm_stat/kvm_stat \
-	scripts/show_delta \
-	scripts/diffconfig \
-	scripts/bloat-o-meter \
-	scripts/jobserver-exec \
-	tools \
-	Documentation \
-	scripts/clang-tools
-
 cd %kernel_build_dir
 
 # Rust requires newer toolchain
