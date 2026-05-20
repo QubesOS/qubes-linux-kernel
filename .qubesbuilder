@@ -4,7 +4,6 @@ host:
     - kernel.spec
 source:
   modules:
-  - linux-utils
   - dummy-psu
   - dummy-backlight
   - v4l2loopback
