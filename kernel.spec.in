@@ -59,9 +59,9 @@ Summary:        The Xen Kernel
 Version:        %{version}
 Epoch:          1000
 Release:        %{rel}
-License:        GPL v2 only
+License:        GPL-2.0-only
 Group:          System/Kernel
-Url:            http://www.kernel.org/
+Url:            https://www.kernel.org
 AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
 BuildRequires:  qubes-kernel-vm-support
@@ -87,21 +87,13 @@ BuildRequires:  bindgen-cli
 BuildRequires:  rustfmt
 %endif
 
-# gcc with support for BTI mitigation
-%if 0%{?fedora} == 25
-BuildRequires:  gcc >= 6.4.1-1.qubes1
-Requires:       xen-libs >= 2001:4.8.5-15
-%else
 BuildRequires:  gcc
-%endif
 
 # Needed for building GCC hardened plugins
 BuildRequires: gcc-c++
 
-%if 0%{?fedora} >= 32
 # Required for CONFIG_DEBUG_INFO_BTF
 BuildRequires: dwarves
-%endif
 
 Provides:       multiversion(kernel)
 Provides:       %name = %kernelrelease
@@ -168,7 +160,7 @@ Qubes Dom0 kernel.
 
 %package modules
 Summary:        Kernel modules
-License:        GPL v2 only
+License:        GPL-2.0-only
 Provides:       multiversion(kernel)
 Provides:       %name-modules = %kernelrelease
 %if "%{?name_suffix}" != ""
@@ -197,34 +189,7 @@ cd linux-%upstream_version
 # drop EXTRAVERSION - possible -rc suffix already included in %release
 sed -i -e 's/^EXTRAVERSION = -rc.*/EXTRAVERSION =/' Makefile
 
-%if 0%{?fedora} >= 31 || 0%{?rhel} >= 8
-# Mangle /usr/bin/python shebangs to /usr/bin/python3
-# Mangle all Python shebangs to be Python 3 explicitly
-# -p preserves timestamps
-# -n prevents creating ~backup files
-# -i specifies the interpreter for the shebang
-# This fixes errors such as
-# *** ERROR: ambiguous python shebang in /usr/bin/kvm_stat: #!/usr/bin/python. Change it to python3 (or python2) explicitly.
-# We patch all sources below for which we got a report/error.
-%py3_shebang_fix \
-	tools/kvm/kvm_stat/kvm_stat \
-	scripts/show_delta \
-	scripts/diffconfig \
-	scripts/bloat-o-meter \
-	scripts/jobserver-exec \
-	tools \
-	Documentation \
-	scripts/clang-tools
-%endif
-
 cd %kernel_build_dir
-
-# FIXME: Find a modular way to include configuration per dist
-# On GCC12+, STRUCTLEAK configs are not needed anymore
-%if 0%{?fedora} >= 37
-sed -i '/CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF_ALL=y/d' %{SOURCE101}
-sed -i 's/CONFIG_GCC_PLUGIN_STRUCTLEAK=y/CONFIG_INIT_STACK_ALL_ZERO=y/' %{SOURCE101}
-%endif
 
 # Rust requires newer toolchain
 %if 0%{?fedora} >= 41
@@ -239,11 +204,6 @@ cat %{SOURCE102} >> %{SOURCE101}
 %build_src_dir/scripts/config \
         --set-str CONFIG_BUILD_SALT "%{kernelrelease}" %{setup_config}
 
-%if 0%{?fedora} < 32
-# No new enough dwarves package available
-%build_src_dir/scripts/config \
-        --disable CONFIG_DEBUG_INFO_BTF
-%endif
 
 MAKE_ARGS="$MAKE_ARGS -C %build_src_dir O=$PWD KERNELRELEASE=%{kernelrelease}"
 
@@ -523,9 +483,7 @@ cp -p arch/x86/boot/bzImage %buildroot/%vm_install_dir/vmlinuz
 # default kernel options for this kernel
 def_kernelopts="root=/dev/mapper/dmroot ro nomodeset console=hvc0"
 def_kernelopts="$def_kernelopts rd_NO_PLYMOUTH rd.plymouth.enable=0 plymouth.enable=0"
-%if 0%{?fedora} >= 37
 def_kernelopts="$def_kernelopts clocksource=tsc"
-%endif
 # (currently) required for vchan
 def_kernelopts="$def_kernelopts xen_privcmd.unrestricted"
 if [ -e /usr/lib/dracut/modules.d/90qubes-vm-simple/xen-scrub-pages-supported ]; then
@@ -534,9 +492,8 @@ if [ -e /usr/lib/dracut/modules.d/90qubes-vm-simple/xen-scrub-pages-supported ];
     def_kernelopts="$def_kernelopts xen_scrub_pages=0"
 fi
 echo "$def_kernelopts " > %buildroot/%vm_install_dir/default-kernelopts-common.txt
-%if 0%{?fedora} >= 37
+
 touch %buildroot/%vm_install_dir/memory-hotplug-supported
-%endif
 
 # Create a dummy modules.img with roughly the size the real one will have.
 # That way, rpm will know that this package requires some additional
@@ -588,7 +545,7 @@ fi
 
 %package devel
 Summary:        Development files necessary for building kernel modules
-License:        GPL v2 only
+License:        GPL-2.0-only
 Group:          Development/Sources
 Provides:       multiversion(kernel)
 Provides:       %name-devel = %kernelrelease
@@ -626,9 +583,9 @@ fi
 Summary:        The Xen Kernel
 Version:        %{version}
 Release:        %{rel}
-License:        GPL v2 only
+License:        GPL-2.0-only
 Group:          System/Kernel
-Url:            http://www.kernel.org/
+Url:            https://www.kernel.org
 AutoReqProv:    on
 BuildRequires:  coreutils module-init-tools sparse
 Provides:       multiversion(kernel-qubes-vm)
@@ -688,9 +645,7 @@ exit 0
 %attr(0644, root, root) %vm_install_dir/initramfs
 %attr(0644, root, root) %vm_install_dir/vmlinuz
 %attr(0644, root, root) %vm_install_dir/default-kernelopts-common.txt
-%if 0%{?fedora} >= 37
 %attr(0644, root, root) %vm_install_dir/memory-hotplug-supported
-%endif
 
 %changelog
 @CHANGELOG@
