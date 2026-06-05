@@ -1,0 +1,51 @@
+Date: Tue, 2 Jun 2026 11:48:23 -0700
+From: Borislav Petkov <bp@alien8.de>
+To: Penny Zheng <penny.zheng@amd.com>
+Cc: x86@kernel.org, ray.huang@amd.com, Jason.Andryuk@amd.com,
+	stefano.stabellini@amd.com,
+	Mario Limonciello <mario.limonciello@amd.com>,
+	Yazen Ghannam <yazen.ghannam@amd.com>,
+	Thomas Gleixner <tglx@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+	Dave Hansen <dave.hansen@linux.intel.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xenproject.org,
+	linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 0/2] x86/amd_node: harden amd_smn_init() against Xen
+ dom0 topology
+Message-ID: <20260602184823.GKah8ld2QJLm28xoa9@fat_crate.local>
+
+On Wed, May 06, 2026 at 01:55:17PM +0800, Penny Zheng wrote:
+> While booting a recent linux-next kernel as a Xen PVH dom0 on x86, the kernel
+> oopses very early during fs_initcall:
+> 
+>   Oops: divide error: 0000 [#1] SMP NOPTI
+>   RIP: 0010:amd_smn_init+0x188/0x2e0
+> 
+> Followed: on a kernel that survives the divide, it will fail by a NULL pointer
+> dereference from the first SMN consumer (amd_pmc_probe -> amd_smn_read).
+> 
+> Root cause
+> ==========
+> 
+> To prevent each dom0 vCPU from looking like an SMT sibling of another
+> vCPU, Xen synthesizes guest x2APIC IDs as vcpu_index * 2. This spacing every
+> vCPU's APIC ID by 2 can push the synthesized IDs past the package-field
+> boundary. Linux then infers more "packages" and therefore more AMD
+> nodes via amd_num_nodes() than the platform actually has, while the
+> PCI-side host-bridge scan correctly reports the number of root complex.
+
+Does that work?
+
+diff --git a/arch/x86/kernel/amd_node.c b/arch/x86/kernel/amd_node.c
+index 0be01725a2a4..0f1ad1883883 100644
+--- a/arch/x86/kernel/amd_node.c
++++ b/arch/x86/kernel/amd_node.c
+@@ -249,6 +249,9 @@ static int __init amd_smn_init(void)
+ 	u16 count, num_roots, roots_per_node, node, num_nodes;
+ 	struct pci_dev *root;
+ 
++	if (cpu_feature_enabled(X86_FEATURE_HYPERVISOR))
++		return 0;
++
+ 	if (!cpu_feature_enabled(X86_FEATURE_ZEN))
+ 		return 0;
+ 

@@ -158,6 +158,8 @@ Patch31: 0001-PCI-add-a-reset-quirk-for-Intel-I219LM-ethernet-adap.patch
 Patch32: 0001-Revert-e1000e-change-k1-configuration-on-MTP-and-lat.patch
 Patch33: 0001-xen-xenbus-better-handle-backend-crash.patch
 Patch34: 0001-rust-fixup.patch
+Patch35: usb-1.patch
+Patch36: usb-2.patch
 
 # S0ix support:
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
