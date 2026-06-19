@@ -1,0 +1,68 @@
+From: Penny Zheng <penny.zheng@amd.com>
+To: <x86@kernel.org>
+CC: <ray.huang@amd.com>, <Jason.Andryuk@amd.com>,
+	<stefano.stabellini@amd.com>, Penny Zheng <penny.zheng@amd.com>, "Mario
+ Limonciello" <mario.limonciello@amd.com>, Yazen Ghannam
+	<yazen.ghannam@amd.com>, Thomas Gleixner <tglx@kernel.org>, Ingo Molnar
+	<mingo@redhat.com>, Borislav Petkov <bp@alien8.de>, Dave Hansen
+	<dave.hansen@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	<xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v1 2/2] x86/amd_node: reject SMN access when amd_smn_init() did not complete
+Date: Wed, 6 May 2026 13:55:19 +0800
+Message-ID: <20260506055528.476493-3-penny.zheng@amd.com>
+
+amd_smn_init() can fail early (e.g. -ENODEV when num_roots < num_nodes,
+-ENOMEM from kcalloc) without setting smn_exclusive. In that case
+amd_roots stays NULL, but the existing __amd_smn_rw() ordering dereferenced
+amd_roots[node] before the smn_exclusive guard. The first SMN consumer (e.g.
+amd_pmc_probe -> amd_smn_read) then hit a NULL pointer dereference
+instead of getting -ENODEV.
+
+Move the smn_exclusive check to the very beginning of __amd_smn_rw()
+so a failed init is rejected before any deref. Also zero *value in
+amd_smn_read() on the error path so callers never read uninitialized
+data via the subsequent PCI_POSSIBLE_ERROR() check.
+
+Signed-off-by: Penny Zheng <penny.zheng@amd.com>
+---
+ arch/x86/kernel/amd_node.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/amd_node.c b/arch/x86/kernel/amd_node.c
+index c896060fe0df..cb9ed022c53c 100644
+--- a/arch/x86/kernel/amd_node.c
++++ b/arch/x86/kernel/amd_node.c
+@@ -88,6 +88,9 @@ static int __amd_smn_rw(u8 i_off, u8 d_off, u16 node, u32 address, u32 *value, b
+ 	struct pci_dev *root;
+ 	int err = -ENODEV;
+ 
++	if (!smn_exclusive)
++		return err;
++
+ 	if (node >= amd_num_nodes())
+ 		return err;
+ 
+@@ -95,9 +98,6 @@ static int __amd_smn_rw(u8 i_off, u8 d_off, u16 node, u32 address, u32 *value, b
+ 	if (!root)
+ 		return err;
+ 
+-	if (!smn_exclusive)
+-		return err;
+-
+ 	guard(mutex)(&smn_mutex);
+ 
+ 	err = pci_write_config_dword(root, i_off, address);
+@@ -116,6 +116,11 @@ int __must_check amd_smn_read(u16 node, u32 address, u32 *value)
+ {
+ 	int err = __amd_smn_rw(SMN_INDEX_OFFSET, SMN_DATA_OFFSET, node, address, value, false);
+ 
++	if (err) {
++		*value = 0;
++		return err;
++	}
++
+ 	if (PCI_POSSIBLE_ERROR(*value)) {
+ 		err = -ENODEV;
+ 		*value = 0;
+-- 
+2.43.0
