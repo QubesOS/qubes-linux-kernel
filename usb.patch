@@ -1,0 +1,23 @@
+diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+index ffcb5a961ce8..a4816db5cacd 100644
+--- a/drivers/thunderbolt/nhi.c
++++ b/drivers/thunderbolt/nhi.c
+@@ -1241,6 +1241,8 @@ int nhi_probe(struct tb_nhi *nhi)
+ 			return dev_err_probe(dev, res, "NHI specific init failed\n");
+ 	}
+ 
++	init_completion(&nhi->domain_released);
++
+ 	tb = nhi_select_cm(nhi);
+ 	if (!tb)
+ 		return dev_err_probe(dev, -ENODEV,
+@@ -1248,8 +1250,6 @@ int nhi_probe(struct tb_nhi *nhi)
+ 
+ 	dev_dbg(dev, "NHI initialized, starting thunderbolt\n");
+ 
+-	init_completion(&nhi->domain_released);
+-
+ 	res = tb_domain_add(tb, host_reset);
+ 	if (res) {
+ 		/*
+
