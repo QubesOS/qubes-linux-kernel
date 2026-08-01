@@ -1,0 +1,33 @@
+From 2ee49295c56339e22ffdd7547a86a0c707cbcf23 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 30 Jul 2026 16:11:49 +0200
+Subject: [PATCH] xen/xenbus: log more information when device state got reset
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Ease diagnosing what actually changed.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/xen/xenbus/xenbus_probe.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index eb260eceb4d2..a259c8f0fff4 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -686,7 +686,8 @@ void xenbus_dev_changed(const char *node, struct xen_bus_type *bus)
+ 			 * and new one needs to be probed.
+ 			 */
+ 			dev_warn(&dev->dev,
+-				 "state reset occurred, reconnecting\n");
++				 "state reset occurred (xenstore state %u, local state %u, xenstore backend %u, local backend %u), reconnecting\n",
++				 state, dev->state, backend, dev->otherend_id);
+ 			dev->vanished = true;
+ 		}
+ 		if (dev->vanished) {
+-- 
+2.54.0
+

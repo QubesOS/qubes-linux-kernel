@@ -1,0 +1,46 @@
+From 00fcc430d3b5e9d1e4b4da3e8eccb4fe0eac7876 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Sat, 1 Aug 2026 01:19:18 +0200
+Subject: [PATCH] xen/xenbus: check otherend_id only after it has been
+ initialized
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When device just got initialized (for example on module load), the
+otherend_id field is initialized only after
+xenbus_read_otherend_details() gets called. If xenstore watch triggers
+xenbus_dev_changed() before that, it might consider still zeroed
+otherend_id field (not matching actual xenstore content) as a sign of
+device state reset. It can happen because xenstore watch are handled in
+another thread (xenwatch), which can run in parallel to the initial
+device probe running at module load. In that case, it would call
+device_unregister(), which would deadlock against device probe from
+module init.
+
+Fix this by considering dev->otherend_id change only after dev->otherend
+is set (which happen after otherend_id is initialized).
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ drivers/xen/xenbus/xenbus_probe.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index a259c8f0fff4..b42d8d2e5a33 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -680,7 +680,8 @@ void xenbus_dev_changed(const char *node, struct xen_bus_type *bus)
+ 							    dev->otherend_id);
+ 
+ 		if (state == XenbusStateInitialising &&
+-		    (state != dev->state || backend != dev->otherend_id)) {
++		    (state != dev->state ||
++		     (dev->otherend && backend != dev->otherend_id))) {
+ 			/*
+ 			 * State has been reset, assume the old one vanished
+ 			 * and new one needs to be probed.
+-- 
+2.54.0
+
