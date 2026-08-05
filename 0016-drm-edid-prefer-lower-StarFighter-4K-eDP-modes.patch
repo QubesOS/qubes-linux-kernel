@@ -1,0 +1,115 @@
+From 1e7cb1a0939140b2493043ec1445149d2cde00ed Mon Sep 17 00:00:00 2001
+From: Sean Rhodes <sean@starlabs.systems>
+Date: Tue, 4 Aug 2026 15:51:27 +0100
+Subject: [PATCH] drm/edid: prefer lower StarFighter 4K eDP modes for Qubes
+
+Qubes dom0 currently runs an X11 desktop where the StarFighter 4K
+panel native 3840x2400 mode is expensive enough to make desktop use
+noticeably slower.
+
+Keep all advertised panel modes available, but when the machine is a
+Star Labs StarFighter and the internal eDP mode list contains the
+3840x2400 panel mode, mark a lower 16:10 mode as preferred instead.
+Prefer 1920x1200 when present because it is exactly half the panel
+native width and height, and fall back to 2560x1600 if that is the
+available lower 16:10 mode.
+
+This only changes the DRM_MODE_TYPE_PREFERRED flag; users can still
+select 3840x2400 manually. This is intended as a Qubes downstream
+policy patch rather than an upstream Linux quirk.
+
+Signed-off-by: Sean Rhodes <sean@starlabs.systems>
+---
+ drivers/gpu/drm/drm_edid.c | 62 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index 046b5e86a787..52486f39d395 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -31,6 +31,7 @@
+ #include <linux/bitfield.h>
+ #include <linux/byteorder/generic.h>
+ #include <linux/cec.h>
++#include <linux/dmi.h>
+ #include <linux/export.h>
+ #include <linux/hdmi.h>
+ #include <linux/i2c.h>
+@@ -3021,6 +3022,66 @@ static void edid_fixup_preferred(struct drm_connector *connector)
+ 	preferred_mode->type |= DRM_MODE_TYPE_PREFERRED;
+ }
+ 
++static const struct dmi_system_id qubes_starfighter_dmi_ids[] = {
++	{
++		.matches = {
++			DMI_EXACT_MATCH(DMI_SYS_VENDOR, "Star Labs"),
++			DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "StarFighter"),
++		},
++	},
++	{ }
++};
++
++static struct drm_display_mode *
++qubes_starfighter_find_mode(struct drm_connector *connector,
++			    int hdisplay, int vdisplay)
++{
++	struct drm_display_mode *mode, *preferred = NULL;
++	int preferred_vrefresh = 0;
++
++	list_for_each_entry(mode, &connector->probed_modes, head) {
++		int vrefresh;
++
++		if (mode->hdisplay != hdisplay || mode->vdisplay != vdisplay)
++			continue;
++
++		vrefresh = drm_mode_vrefresh(mode);
++		if (!preferred ||
++		    MODE_REFRESH_DIFF(vrefresh, 60) <
++		    MODE_REFRESH_DIFF(preferred_vrefresh, 60)) {
++			preferred = mode;
++			preferred_vrefresh = vrefresh;
++		}
++	}
++
++	return preferred;
++}
++
++static void qubes_starfighter_fixup_preferred(struct drm_connector *connector)
++{
++	struct drm_display_mode *mode, *preferred_mode;
++
++	if (connector->connector_type != DRM_MODE_CONNECTOR_eDP)
++		return;
++
++	if (!dmi_check_system(qubes_starfighter_dmi_ids))
++		return;
++
++	if (!qubes_starfighter_find_mode(connector, 3840, 2400))
++		return;
++
++	preferred_mode = qubes_starfighter_find_mode(connector, 1920, 1200);
++	if (!preferred_mode)
++		preferred_mode = qubes_starfighter_find_mode(connector, 2560, 1600);
++	if (!preferred_mode)
++		return;
++
++	list_for_each_entry(mode, &connector->probed_modes, head)
++		mode->type &= ~DRM_MODE_TYPE_PREFERRED;
++
++	preferred_mode->type |= DRM_MODE_TYPE_PREFERRED;
++}
++
+ static bool
+ mode_is_rb(const struct drm_display_mode *mode)
+ {
+@@ -6972,6 +7033,7 @@ static int _drm_edid_connector_add_modes(struct drm_connector *connector,
+ 	if (drm_edid_has_internal_quirk(connector, EDID_QUIRK_PREFER_LARGE_60) ||
+ 	    drm_edid_has_internal_quirk(connector, EDID_QUIRK_PREFER_LARGE_75))
+ 		edid_fixup_preferred(connector);
++	qubes_starfighter_fixup_preferred(connector);
+ 
+ 	return num_modes;
+ }
+-- 
+2.53.0
+
