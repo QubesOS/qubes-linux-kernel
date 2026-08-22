@@ -164,6 +164,7 @@ Patch37: 0002-ALSA-hda-realtek-Add-StarFighter-HDA-SSID.patch
 Patch38: 0001-xen-xenbus-log-more-information-when-device-state-go.patch
 Patch39: 0001-xen-xenbus-check-otherend_id-only-after-it-has-been-.patch
 Patch40: 0001-drm_xe_limit_sg_segment_size_to_page_size_on_xen_pv.patch
+Patch41: 0001-asus-wmi-without-pci-hotplug.patch
 
 # S0ix support:
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
