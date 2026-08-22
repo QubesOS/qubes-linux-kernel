@@ -1,0 +1,178 @@
+diff -rupN a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+--- a/drivers/platform/x86/Kconfig	2026-08-21 20:33:40.376616788 +0000
++++ b/drivers/platform/x86/Kconfig	2026-08-21 20:37:41.136969179 +0000
+@@ -272,8 +272,6 @@ config ASUS_WMI
+ 	depends on INPUT
+ 	depends on HWMON
+ 	depends on BACKLIGHT_CLASS_DEVICE
+-	depends on RFKILL || RFKILL = n
+-	depends on HOTPLUG_PCI
+ 	depends on ACPI_VIDEO || ACPI_VIDEO = n
+ 	depends on SERIO_I8042 || SERIO_I8042 = n
+ 	select INPUT_SPARSEKMAP
+diff -rupN a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+--- a/drivers/platform/x86/asus-wmi.c	2026-08-21 20:34:23.808936821 +0000
++++ b/drivers/platform/x86/asus-wmi.c	2026-08-22 06:18:19.332321406 +0000
+@@ -29,12 +29,16 @@
+ #include <linux/minmax.h>
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ #include <linux/pci_hotplug.h>
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ #include <linux/platform_data/x86/asus-wmi.h>
+ #include <linux/platform_device.h>
+ #include <linux/platform_profile.h>
+ #include <linux/power_supply.h>
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ #include <linux/rfkill.h>
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+@@ -166,6 +170,7 @@ static const struct dmi_system_id asus_r
+ 	{ },
+ };
+ 
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ static bool ashs_present(void)
+ {
+ 	int i = 0;
+@@ -175,6 +180,7 @@ static bool ashs_present(void)
+ 	}
+ 	return false;
+ }
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 
+ struct bios_args {
+ 	u32 arg0;
+@@ -220,11 +226,13 @@ struct asus_wmi_debug {
+ 	u32 ctrl_param;
+ };
+ 
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ struct asus_rfkill {
+ 	struct asus_wmi *asus;
+ 	struct rfkill *rfkill;
+ 	u32 dev_id;
+ };
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 
+ enum fan_type {
+ 	FAN_TYPE_NONE = 0,
+@@ -268,12 +276,14 @@ struct asus_wmi {
+ 	struct work_struct lightbar_led_work;
+ 	struct work_struct kbd_led_work;
+ 
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ 	struct asus_rfkill wlan;
+ 	struct asus_rfkill bluetooth;
+ 	struct asus_rfkill wimax;
+ 	struct asus_rfkill wwan3g;
+ 	struct asus_rfkill gps;
+ 	struct asus_rfkill uwb;
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 
+ 	int tablet_switch_event_code;
+ 	u32 tablet_switch_dev_id;
+@@ -325,11 +335,13 @@ struct asus_wmi {
+ 	bool panel_overdrive_available;
+ 	u32 mini_led_dev_id;
+ 
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ 	struct hotplug_slot hotplug_slot;
+ 	struct mutex hotplug_lock;
+ 	struct mutex wmi_lock;
+ 	struct workqueue_struct *hotplug_workqueue;
+ 	struct work_struct hotplug_work;
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 
+ 	bool fnlock_locked;
+ 
+@@ -2160,6 +2172,7 @@ error:
+ 
+ /* RF *************************************************************************/
+ 
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ /*
+  * PCI hotplug (for wlan rfkill)
+  */
+@@ -2574,6 +2587,7 @@ exit:
+ 
+ 	return result;
+ }
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 
+ /* Panel Overdrive ************************************************************/
+ #if IS_ENABLED(CONFIG_ASUS_WMI_DEPRECATED_ATTRS)
+@@ -5128,11 +5142,13 @@ static int asus_wmi_add(struct platform_
+ 	    (ASUS_WMI_DSTS_PRESENCE_BIT | ASUS_WMI_DSTS_USER_BIT))
+ 		asus->driver->wlan_ctrl_by_user = 1;
+ 
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ 	if (!(asus->driver->wlan_ctrl_by_user && ashs_present())) {
+ 		err = asus_wmi_rfkill_init(asus);
+ 		if (err)
+ 			goto fail_rfkill;
+ 	}
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 
+ 	if (asus->driver->quirks->wmi_force_als_set)
+ 		asus_wmi_set_als();
+@@ -5181,10 +5197,14 @@ static int asus_wmi_add(struct platform_
+ fail_wmi_handler:
+ 	asus_wmi_backlight_exit(asus);
+ fail_backlight:
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ 	asus_wmi_rfkill_exit(asus);
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ fail_screenpad:
+ 	asus_screenpad_exit(asus);
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ fail_rfkill:
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 	asus_wmi_led_exit(asus);
+ fail_leds:
+ fail_hwmon:
+@@ -5212,7 +5232,9 @@ static void asus_wmi_remove(struct platf
+ 	asus_screenpad_exit(asus);
+ 	asus_wmi_input_exit(asus);
+ 	asus_wmi_led_exit(asus);
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ 	asus_wmi_rfkill_exit(asus);
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 	asus_wmi_debugfs_exit(asus);
+ 	asus_wmi_sysfs_exit(asus->platform_device);
+ 	asus_fan_set_auto(asus);
+@@ -5226,6 +5248,7 @@ static void asus_wmi_remove(struct platf
+ 
+ static int asus_hotk_thaw(struct device *device)
+ {
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ 	struct asus_wmi *asus = dev_get_drvdata(device);
+ 
+ 	if (asus->wlan.rfkill) {
+@@ -5239,6 +5262,7 @@ static int asus_hotk_thaw(struct device
+ 		wlan = asus_wmi_get_devstate_simple(asus, ASUS_WMI_DEVID_WLAN);
+ 		asus_wmi_set_devstate(ASUS_WMI_DEVID_WLAN, wlan, NULL);
+ 	}
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 
+ 	return 0;
+ }
+@@ -5261,6 +5285,7 @@ static int asus_hotk_resume(struct devic
+ static int asus_hotk_restore(struct device *device)
+ {
+ 	struct asus_wmi *asus = dev_get_drvdata(device);
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
+ 	int bl;
+ 
+ 	/* Refresh both wlan rfkill state and pci hotplug */
+@@ -5288,6 +5313,7 @@ static int asus_hotk_restore(struct devi
+ 		bl = !asus_wmi_get_devstate_simple(asus, ASUS_WMI_DEVID_UWB);
+ 		rfkill_set_sw_state(asus->uwb.rfkill, bl);
+ 	}
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
+ 	if (!IS_ERR_OR_NULL(asus->kbd_led.dev))
+ 		kbd_led_update(asus);
+ 	if (asus->oobe_state_available) {

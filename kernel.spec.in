@@ -148,6 +148,7 @@ Patch35: 0001-xen-xenbus-log-more-information-when-device-state-go.patch
 Patch36: 0001-xen-xenbus-check-otherend_id-only-after-it-has-been-.patch
 Patch37: 0001-ALSA-hda-realtek-Limit-Star-Labs-internal-mic-boost.patch
 Patch38: 0002-ALSA-hda-realtek-Add-StarFighter-HDA-SSID.patch
+Patch39: 0001-asus-wmi-without-pci-hotplug.patch
 
 # S0ix support:
 Patch61: xen-events-Add-wakeup-support-to-xen-pirq.patch
