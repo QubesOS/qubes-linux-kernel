@@ -1,0 +1,69 @@
+From git@z Thu Jan  1 00:00:00 1970
+Subject: [PATCH] drm/xe: Limit sg segment size to PAGE_SIZE on Xen PV
+From: Szymon Acedański <accek@invisiblethingslab.com>
+Date: Thu, 20 Aug 2026 12:12:12 +0200
+Message-Id: <20260820101212.1608543-1-accek@invisiblethingslab.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+Fixes display corruption on Xen PV dom0, where DMA buffers are not
+guaranteed machine-contiguous, in which case bounce buffering kicks
+in, breaking xe's memory coherency assumptions.
+
+Apply the same workaround i915 carries in i915_sg_segment_size() since
+commit 78a07fe777c4 ("drm/i915: stop abusing swiotlb_max_segment").
+
+Fixes: dd08ebf6c352 ("drm/xe: Introduce a new DRM driver for Intel GPUs")
+Reported-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+Closes: https://gitlab.freedesktop.org/drm/xe/kernel/-/work_items/8382
+Link: https://lore.kernel.org/xen-devel/aYtznP_tT6xNPwf-@mail-itl/
+Link: https://lore.kernel.org/all/20221020110308.1582518-1-hch@lst.de/ # i915 counterpart
+Cc: stable@vger.kernel.org # v6.8+
+Signed-off-by: Szymon Acedański <accek@invisiblethingslab.com>
+---
+ drivers/gpu/drm/xe/xe_bo.h | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/drivers/gpu/drm/xe/xe_bo.h b/drivers/gpu/drm/xe/xe_bo.h
+index e8081af..152bfcf 100644
+--- a/drivers/gpu/drm/xe/xe_bo.h
++++ b/drivers/gpu/drm/xe/xe_bo.h
+@@ -9,6 +9,8 @@
+ 
+ #include <drm/ttm/ttm_tt.h>
+ 
++#include <xen/xen.h>
++
+ #include "xe_bo_types.h"
+ #include "xe_macros.h"
+ #include "xe_validation.h"
+@@ -575,6 +577,23 @@ static inline unsigned int xe_sg_segment_size(struct device *dev)
+ 	struct scatterlist __maybe_unused sg;
+ 	size_t max = BIT_ULL(sizeof(sg.length) * 8) - 1;
+ 
++	/*
++	 * For Xen PV guests pages aren't contiguous in DMA (machine) address
++	 * space.  The DMA API takes care of that both in dma_alloc_* (by
++	 * calling into the hypervisor to make the pages contiguous) and in
++	 * dma_map_* (by bounce buffering).  But xe (like i915, see commit
++	 * 78a07fe777c4) ignores the coherency aspects of the DMA API and thus
++	 * can't cope with bounce buffering actually happening, so add a hack
++	 * here to force small allocations and mappings when running in PV
++	 * mode on Xen.
++	 *
++	 * Note this will still break if bounce buffering is required for other
++	 * reasons, like confidential computing hypervisors or PCIe root ports
++	 * with addressing limitations.
++	 */
++	if (xen_pv_domain())
++		return PAGE_SIZE;
++
+ 	max = min_t(size_t, max, dma_max_mapping_size(dev));
+ 
+ 	/*
+
+base-commit: b4f95affc66ef76342c1f6bf3849f6c8ade6b9d6
+-- 
+2.53.0
+
