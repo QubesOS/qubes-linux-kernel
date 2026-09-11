@@ -35,8 +35,8 @@ index 06b642b23a07..15769cadd687 100644
   * device_add_disk - add disk information to kernel list
   * @parent: parent device for the disk
 @@ -812,6 +821,9 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
- 	 */
- 	elevator_init_mq(disk->queue);
+ 	if (blk_queue_is_zoned(disk->queue))
+ 		disk->flags |= GENHD_FL_NO_PART;
  
 +	if (disk_no_part_scan)
 +		disk->flags |= GENHD_FL_NO_PART;
