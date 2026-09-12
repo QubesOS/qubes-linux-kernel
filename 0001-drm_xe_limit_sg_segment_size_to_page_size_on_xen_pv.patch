@@ -30,7 +30,7 @@ index e8081af..152bfcf 100644
 --- a/drivers/gpu/drm/xe/xe_bo.h
 +++ b/drivers/gpu/drm/xe/xe_bo.h
 @@ -9,6 +9,8 @@
- 
+ #include <drm/drm_prime.h>
  #include <drm/ttm/ttm_tt.h>
  
 +#include <xen/xen.h>

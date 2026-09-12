@@ -34,8 +34,8 @@ index 8171a6bc3210f..755652ad806a9 100644
  		      const struct attribute_group **groups,
  		      struct fwnode_handle *fwnode)
 @@ -447,6 +455,9 @@ static int __add_disk(struct device *parent, struct gendisk *disk,
- 		bdev_set_flag(disk->part0, BD_HAS_SUBMIT_BIO);
- 	}
+ 	if (blk_queue_is_zoned(disk->queue))
+ 		disk->flags |= GENHD_FL_NO_PART;
  
 +	if (disk_no_part_scan)
 +		disk->flags |= GENHD_FL_NO_PART;
