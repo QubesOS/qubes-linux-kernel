@@ -1,0 +1,342 @@
+From 67693cbca14f3ac40a9bf84f4574f5bbe7cc98c2 Mon Sep 17 00:00:00 2001
+From: Vertex X7-53 <vertex@glassway.net>
+Date: Sun, 17 Aug 2025 01:34:00 +0100
+Subject: [PATCH] xen/pciback: Improve runtime power management
+
+An important part of S0ix runtime power management is the control of PCI device D-states.
+Without both the device and any applicable PCI bridges in D3cold, the PMC will
+keep power applied to the bus, and in most cases this will prevent the CPU from reaching states lower than Package C2.
+
+The vast majority of devices depend on PME (Power Management Events) to
+wake from D3cold, so Linux will not attempt to put them into deeper
+sleep states if it detects the device does not support PME.
+PMEs can be delivered a variety of different ways, which include interrupts
+on the pcieport, ACPI events, and the setting of the PME status register in
+the PCI configuration space. Up until now, Xen has not supported the
+passthrough of PMEs to domains, and masks the relevant PME bits in the configuration space.
+
+This first patch is a modification to the dom0 kernel, specifically pciback.
+We enable support for runtime PM in pciback, to allow the dom0 kernel
+to suspend upstream bridges. Then we allow domains to read PME capability registers.
+When dom0 receives a PME, it forwards this to pciback, and pciback then sets
+a special emulated flag on the device. This flag is cleared by the guest when it
+resets the register to 0, after handling the event. We also respond to requests
+from the guest to change the power state and place pciback in a PM state
+in dom0 depending on this, in order for dom0 to opportunistically suspend place any upstream pciports.
+---
+ .../xen/xen-pciback/conf_space_capability.c   | 131 ++++++++++++------
+ drivers/xen/xen-pciback/pci_stub.c            |  61 ++++----
+ drivers/xen/xen-pciback/pciback.h             |   2 +
+ 3 files changed, 127 insertions(+), 67 deletions(-)
+
+diff --git a/drivers/xen/xen-pciback/conf_space_capability.c b/drivers/xen/xen-pciback/conf_space_capability.c
+index cf568e899ee2..58201e20a0a1 100644
+--- a/drivers/xen/xen-pciback/conf_space_capability.c
++++ b/drivers/xen/xen-pciback/conf_space_capability.c
+@@ -8,8 +8,12 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
++#include <linux/pm.h>
++#include <linux/pm_runtime.h>
++#include <linux/pm_wakeup.h>
+ #include "pciback.h"
+ #include "conf_space.h"
++#include "../../pci/pci.h"
+ 
+ static LIST_HEAD(capabilities);
+ struct xen_pcibk_config_capability {
+@@ -91,89 +95,130 @@ static const struct config_field caplist_vpd[] = {
+ 	{}
+ };
+ 
+-static int pm_caps_read(struct pci_dev *dev, int offset, u16 *value,
++static int pm_ctrl_read(struct pci_dev *dev, int offset, u16 *value,
+ 			void *data)
+ {
+-	int err;
+ 	u16 real_value;
+ 
+-	err = pci_read_config_word(dev, offset, &real_value);
+-	if (err)
+-		goto out;
++	pm_runtime_barrier(&dev->dev);
+ 
+-	*value = real_value & ~PCI_PM_CAP_PME_MASK;
++	const struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(dev);
+ 
+-out:
+-	return err;
++	/* Driver domains have no ability to wake devices from D3cold on their own, as they have no access to ACPI.
++	 * As a substitute, we fake D3hot to the guest so the register read succeeds. When the guest sends us a wakeup command,
++	 * we'll carry out the necessary steps to wake the device from D3cold using runtime PM functions.
++	 */
++	pci_read_config_word(dev, offset, &real_value);
++	if (PCI_POSSIBLE_ERROR(real_value))
++		/* No soft reset needed by the guest, because the host side will perform one on transition out of D3cold. */
++		real_value = PCI_D3hot | PCI_PM_CTRL_NO_SOFT_RESET;
++
++	if (dev_data->pme_enabled)
++		real_value |= PCI_PM_CTRL_PME_ENABLE;
++	if (dev_data->pme_status)
++		real_value |= (PCI_PM_CTRL_PME_STATUS | PCI_PM_CTRL_PME_ENABLE);
++
++	*value = real_value;
++
++	return 0;
+ }
+ 
+-/* PM_OK_BITS specifies the bits that the driver domain is allowed to change.
+- * Can't allow driver domain to enable PMEs - they're shared */
+-#define PM_OK_BITS (PCI_PM_CTRL_PME_STATUS|PCI_PM_CTRL_DATA_SEL_MASK)
++/* PM_OK_BITS specifies the bits that the driver domain is allowed to change. */
++/* The guest doesn't actually get to write to the PME_ENABLE register, the host does this in pm suspend */
++#define PM_OK_BITS PCI_PM_CTRL_DATA_SEL_MASK
+ 
+ static int pm_ctrl_write(struct pci_dev *dev, int offset, u16 new_value,
+ 			 void *data)
+ {
+ 	int err;
++	int pm_err;
+ 	u16 old_value;
+ 	pci_power_t new_state;
++	pci_power_t current_state;
+ 
+-	err = pci_read_config_word(dev, offset, &old_value);
+-	if (err)
+-		goto out;
++	pm_runtime_barrier(&dev->dev);
++
++	/* PME status is RW1CS */
++	struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(dev);
++	if (new_value & PCI_PM_CTRL_PME_STATUS) {
++		dev_data->pme_status = 0;
++	}
++
++	bool pme_request = new_value & PCI_PM_CTRL_PME_ENABLE;
++	bool pme_changed = !!dev_data->pme_enabled != pme_request;
++	if (pme_changed)
++		dev_data->pme_enabled = pme_request;
++
++	if (pme_changed && pme_request) {
++		dev_dbg(&dev->dev, "PME commanded to enabled\n");
++		pm_runtime_enable(&dev->dev);
++	}
+ 
+ 	new_state = (__force pci_power_t)(new_value & PCI_PM_CTRL_STATE_MASK);
+ 
+-	new_value &= PM_OK_BITS;
+-	if ((old_value & PM_OK_BITS) != new_value) {
+-		new_value = (old_value & ~PM_OK_BITS) | new_value;
+-		err = pci_write_config_word(dev, offset, new_value);
+-		if (err)
+-			goto out;
++	/* First, use pm ops to transition state */
++	if (dev->current_state != new_state)
++		dev_dbg(&dev->dev, "transitioning power state from %x to %x\n", dev->current_state, new_state);
++
++	if (pm_runtime_enabled(&dev->dev)) {
++		if (new_state < PCI_D3hot) {
++			pm_err = pm_runtime_resume(&dev->dev);
++			if (pm_err < 0) dev_err(&dev->dev, "failed to resume device: %d\n", pm_err);
++		} else if (new_state >= PCI_D3hot) {
++			pm_err = pm_runtime_suspend(&dev->dev);
++			if (pm_err < 0) dev_err(&dev->dev, "failed to suspend device: %d\n", pm_err);
++		}
+ 	}
+ 
+-	/* Let pci core handle the power management change */
+-	dev_dbg(&dev->dev, "set power state to %x\n", new_state);
+-	err = pci_set_power_state(dev, new_state);
+-	if (err) {
+-		err = PCIBIOS_SET_FAILED;
+-		goto out;
++	if (pme_changed && !pme_request) {
++		/* Prevent ACPI from enabling suspend during runtime PM logic
++		 * If we disable runtime power management, we must also wake up the device */
++		dev_dbg(&dev->dev, "PME commanded to disabled\n");
++		pm_runtime_resume(&dev->dev);
++		pm_runtime_disable(&dev->dev);
+ 	}
+ 
+- out:
+-	return err;
+-}
++	current_state = dev->current_state;
++	if (current_state == PCI_D3cold)
++		current_state = PCI_D3hot;
+ 
+-/* Ensure PMEs are disabled */
+-static void *pm_ctrl_init(struct pci_dev *dev, int offset)
+-{
+-	int err;
+-	u16 value;
++	/* Otherwise, set it manually */
++	if (current_state != new_state) {
++		err = pci_set_power_state(dev, new_state);
++		if (err) {
++			dev_err(&dev->dev, "failed to manually set pci power state to %x: %d\n", new_state, err);
++			err = PCIBIOS_SET_FAILED;
++			goto out;
++		}
++	}
+ 
+-	err = pci_read_config_word(dev, offset, &value);
++	/* This must happen here, after pm_runtime_resume is called */
++	err = pci_read_config_word(dev, offset, &old_value);
+ 	if (err)
+ 		goto out;
+ 
+-	if (value & PCI_PM_CTRL_PME_ENABLE) {
+-		value &= ~PCI_PM_CTRL_PME_ENABLE;
+-		err = pci_write_config_word(dev, offset, value);
++	new_value &= PM_OK_BITS;
++	if ((old_value & PM_OK_BITS) != new_value) {
++		new_value = (old_value & ~PM_OK_BITS) | new_value;
++		err = pci_write_config_word(dev, offset, new_value);
++		if (err)
++			goto out;
+ 	}
+ 
+-out:
+-	return err ? ERR_PTR(err) : NULL;
++ out:
++	return err;
+ }
+ 
+ static const struct config_field caplist_pm[] = {
+ 	{
+ 		.offset     = PCI_PM_PMC,
+ 		.size       = 2,
+-		.u.w.read   = pm_caps_read,
++		.u.w.read   = xen_pcibk_read_config_word,
+ 	},
+ 	{
+ 		.offset     = PCI_PM_CTRL,
+ 		.size       = 2,
+-		.init       = pm_ctrl_init,
+-		.u.w.read   = xen_pcibk_read_config_word,
++		.u.w.read   = pm_ctrl_read,
+ 		.u.w.write  = pm_ctrl_write,
+ 	},
+ 	{
+diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+index 073b259747e9..6bfb0c5f0f55 100644
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -18,6 +18,11 @@
+ #include <linux/wait.h>
+ #include <linux/sched.h>
+ #include <linux/atomic.h>
++#include <linux/device.h>
++#include <linux/pci.h>
++#include <linux/pm.h>
++#include <linux/pm_runtime.h>
++#include <linux/pm_wakeup.h>
+ #include <xen/events.h>
+ #include <xen/pci.h>
+ #include <xen/xen.h>
+@@ -151,6 +156,11 @@ static void pcistub_device_release(struct kref *kref)
+ 	/* Disable the device */
+ 	xen_pcibk_reset_device(dev);
+ 
++	/* Undo any suspend work done */
++	if (dev->dev.power.disable_depth)
++		pm_runtime_enable(&dev->dev);
++	pm_runtime_get_noresume(&dev->dev);
++
+ 	kfree(dev_data);
+ 	pci_set_drvdata(dev, NULL);
+ 
+@@ -494,6 +504,10 @@ static int pcistub_init_device(struct pcistub_device *psdev)
+ 	xen_pcibk_reset_device(dev);
+ 
+ 	pci_set_dev_assigned(dev);
++
++	pm_runtime_disable(&dev->dev);
++	pm_runtime_put_noidle(&dev->dev);
++
+ 	return 0;
+ 
+ config_release:
+@@ -1042,33 +1056,30 @@ static void xen_pcibk_error_resume(struct pci_dev *dev)
+ 	return;
+ }
+ 
+-static int xen_pcibk_suspend_noirq(struct device *dev) {
+-	// Imitate pci_pm_suspend_noirq but with per-device opt-in and force
+-	// option.
++static int xen_pcibk_prepare(struct device *dev) {
++	// Clear PME bit
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci_dev);
++	dev_data->pme_status = 0;
+ 
+-	pci_save_state(pci_dev);
++	return 1;
++}
+ 
+-	if (dev_data->pm_suspend) {
+-		if (pci_dev->skip_bus_pm || !pci_power_manageable(pci_dev)) {
+-			if (!dev_data->pm_suspend_force) {
+-				pci_info(pci_dev, "Skipping device suspend\n");
+-				return 0;
+-			} else {
+-				pci_info(pci_dev, "Forcing device suspend\n");
+-			}
+-		}
+-		int err = pci_prepare_to_sleep(pci_dev);
+-		if (err) {
+-			pci_err(pci_dev, "Suspending device failed: %i\n", err);
+-		} else {
+-			pci_info(pci_dev, "Device suspended. It's now in %s\n",
+-				 pci_power_name(pci_dev->current_state));
+-		}
+-	} else {
+-		pci_info(pci_dev, "Backend-side device suspend not enabled\n");
+-	}
++/* Prevent resuspending the device until the PME is handled by the guest */
++static int xen_pcibk_pm_runtime_idle(struct device *dev)
++{
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci_dev);
++	return dev_data->pme_status ? -EBUSY : 0;
++}
++
++static int xen_pcibk_pm_runtime_resume(struct device *dev)
++{
++	/* PME bit is always asserted on wakeup, regardless of whether the device supports it or not
++	 * This is a non-issue, since guest kernel logic will just wake up the device if it isn't already awake */
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct xen_pcibk_dev_data *dev_data = pci_get_drvdata(pci_dev);
++	dev_data->pme_status = 1;
+ 
+ 	return 0;
+ }
+@@ -1082,7 +1093,9 @@ static const struct pci_error_handlers xen_pcibk_error_handler = {
+ };
+ 
+ static const struct dev_pm_ops xen_pcibk_pm_ops = {
+-	.suspend_noirq = xen_pcibk_suspend_noirq,
++	.prepare = xen_pcibk_prepare,
++	.runtime_idle = xen_pcibk_pm_runtime_idle,
++	.runtime_resume = xen_pcibk_pm_runtime_resume,
+ };
+ 
+ /*
+diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
+index cf6df6964664..724f5f977231 100644
+--- a/drivers/xen/xen-pciback/pciback.h
++++ b/drivers/xen/xen-pciback/pciback.h
+@@ -56,6 +56,8 @@ struct xen_pcibk_dev_data {
+ 	unsigned int isr_on:1; /* Whether the IRQ handler is installed. */
+ 	unsigned int ack_intr:1; /* .. and ACK-ing */
+ 	unsigned long handled;
++	unsigned int pme_enabled:1;
++	unsigned int pme_status:1;
+ 	unsigned int irq; /* Saved in case device transitions to MSI/MSI-X */
+ 	char irq_name[]; /* xen-pcibk[000:04:00.0] */
+ };
+-- 
+2.49.0
+
