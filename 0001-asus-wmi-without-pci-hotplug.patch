@@ -119,21 +119,19 @@ diff -rupN a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
  
  	if (asus->driver->quirks->wmi_force_als_set)
  		asus_wmi_set_als();
-@@ -5181,10 +5197,14 @@ static int asus_wmi_add(struct platform_
- fail_wmi_handler:
+@@ -5181,8 +5197,12 @@ static int asus_wmi_add(struct platform_
+ fail_screenpad:
  	asus_wmi_backlight_exit(asus);
  fail_backlight:
 +#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
  	asus_wmi_rfkill_exit(asus);
 +#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
- fail_screenpad:
- 	asus_screenpad_exit(asus);
 +#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
  fail_rfkill:
 +#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
  	asus_wmi_led_exit(asus);
  fail_leds:
- fail_hwmon:
+ fail_custom_fan_curve:
 @@ -5212,7 +5232,9 @@ static void asus_wmi_remove(struct platf
  	asus_screenpad_exit(asus);
  	asus_wmi_input_exit(asus);
