@@ -1,0 +1,12 @@
+diff --git a/drivers/gpu/drm/xe/xe_pci.c b/drivers/gpu/drm/xe/xe_pci.c
+index 5f2a0b19839d..f482209e3c08 100644
+--- a/drivers/gpu/drm/xe/xe_pci.c
++++ b/drivers/gpu/drm/xe/xe_pci.c
+@@ -405,6 +405,7 @@ static const struct xe_device_desc lnl_desc = {
+ 	.needs_scratch = true,
+ 	.va_bits = 48,
+ 	.vm_max_level = 4,
++	.has_sriov = true,
+ };
+ 
+ static const u16 bmg_g21_ids[] = { INTEL_BMG_G21_IDS(NOP), 0 };
