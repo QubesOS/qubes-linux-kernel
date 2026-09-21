@@ -51,15 +51,16 @@ diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
 index 48946cca4be7..8960d3ae370a 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -4239,6 +4239,74 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
+@@ -4239,6 +4239,77 @@ static int reset_hinic_vf_dev(struct pci_dev *pdev, bool probe)
  	return 0;
  }
  
 +#define PCI_DEVICE_ID_INTEL_I219LM 0x550A
++#define PCI_DEVICE_ID_INTEL_I219V_REV10 0x15BC
 +#define I219_PCI_MSI_POS 0xd0
 +#define I219_PCI_AF_POS 0xe0
 +
-+/* FLR fixup for Intel I219LM Ethernet controller.
++/* FLR fixup for Intel I219LM and Intel I219-V (rev 10) Ethernet controller.
 + * The device does support FLR, has the relevant registers in the config space,
 + * but fails to link them to the pci caps list. Fix it by linking them
 + * manually, so the standard pci_af_flr() will find it. The fixup needs to be
@@ -67,7 +68,7 @@ index 48946cca4be7..8960d3ae370a 100644
 + * The fixup will be visible via sysfs, which is intended side effect so that
 + * libvirt can see FLR as supported too.
 + */
-+static void fixup_intel_i219lm_flr(struct pci_dev *dev)
++static void fixup_intel_i219_flr(struct pci_dev *dev)
 +{
 +	int pos;
 +	u8 cap;
@@ -102,23 +103,25 @@ index 48946cca4be7..8960d3ae370a 100644
 +	pci_write_config_byte(dev, pos + PCI_CAP_LIST_NEXT, I219_PCI_AF_POS);
 +}
 +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_I219LM,
-+			 fixup_intel_i219lm_flr);
++			 fixup_intel_i219_flr);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_I219V_REV10,
++			 fixup_intel_i219_flr);
 +
-+static int reset_i219lm_dev(struct pci_dev *dev, bool probe)
++static int reset_i219_dev(struct pci_dev *dev, bool probe)
 +{
 +	int ret;
 +
 +	/* Ensure AF FLR is visible before using it */
 +	if (!probe)
-+		fixup_intel_i219lm_flr(dev);
++		fixup_intel_i219_flr(dev);
 +
-+	/* Call normal FLR, but re-apply fixup_intel_i219lm_flr() afterwards. */
++	/* Call normal FLR, but re-apply fixup_intel_i219_flr() afterwards. */
 +	ret = pci_af_flr(dev, probe);
 +	if (ret)
 +		return ret;
 +
 +	if (!probe)
-+		fixup_intel_i219lm_flr(dev);
++		fixup_intel_i219_flr(dev);
 +
 +	return 0;
 +}
@@ -126,12 +129,14 @@ index 48946cca4be7..8960d3ae370a 100644
  static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
  	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
  		 reset_intel_82599_sfp_virtfn },
-@@ -4254,6 +4322,8 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+@@ -4254,6 +4325,10 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
  		reset_chelsio_generic_dev },
  	{ PCI_VENDOR_ID_HUAWEI, PCI_DEVICE_ID_HINIC_VF,
  		reset_hinic_vf_dev },
 +	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_I219LM,
-+		reset_i219lm_dev },
++		reset_i219_dev },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_I219V_REV10,
++		reset_i219_dev },
  	{ 0 }
  };
  
