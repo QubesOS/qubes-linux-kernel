@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-7.2.9-300.fc45.rpm)
+# Base config based on Fedora's config (kernel-core-7.2.11-300.fc45.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 16.1.1 20260515 (Red Hat 16.1.1-2)"
@@ -23,6 +23,7 @@ CONFIG_CC_HAS_NO_PROFILE_FN_ATTR=y
 CONFIG_CC_HAS_COUNTED_BY=y
 CONFIG_CC_HAS_COUNTED_BY_PTR=y
 CONFIG_CC_HAS_MULTIDIMENSIONAL_NONSTRING=y
+CONFIG_CC_OPT_INLINE_MEMSET="-finline-stringops=memset"
 CONFIG_LD_CAN_USE_KEEP_IN_OVERLAY=y
 CONFIG_PAHOLE_VERSION=0
 CONFIG_IRQ_WORK=y
@@ -38,7 +39,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="7.2.9-300.fc45.x86_64"
+CONFIG_BUILD_SALT="7.2.11-300.fc45.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
