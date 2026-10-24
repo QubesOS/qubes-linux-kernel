@@ -1,4 +1,4 @@
-# Base config based on Fedora's config (kernel-core-7.2.11-300.fc45.rpm)
+# Base config based on Fedora's config (kernel-core-7.2.12-300.fc45.rpm)
 # Only modification is `yes '' | make oldconfig` to drop config settings which
 # depend on Fedora patches and adjust for the small version difference.
 CONFIG_CC_VERSION_TEXT="gcc (GCC) 16.1.1 20260515 (Red Hat 16.1.1-2)"
@@ -39,7 +39,7 @@ CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_UAPI_HEADER_TEST=y
 CONFIG_LOCALVERSION=""
 # CONFIG_LOCALVERSION_AUTO is not set
-CONFIG_BUILD_SALT="7.2.11-300.fc45.x86_64"
+CONFIG_BUILD_SALT="7.2.12-300.fc45.x86_64"
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_BZIP2=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -11059,7 +11059,7 @@ CONFIG_EROFS_FS_ZIP_DEFLATE=y
 CONFIG_EROFS_FS_ZIP_ZSTD=y
 CONFIG_EROFS_FS_ZIP_ACCEL=y
 # CONFIG_EROFS_FS_PCPU_KTHREAD is not set
-# CONFIG_EROFS_FS_PAGE_CACHE_SHARE is not set
+CONFIG_EROFS_FS_PAGE_CACHE_SHARE=y
 CONFIG_VBOXSF_FS=m
 CONFIG_NETWORK_FILESYSTEMS=y
 CONFIG_NFS_FS=m
