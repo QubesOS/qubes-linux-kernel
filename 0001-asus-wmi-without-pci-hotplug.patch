@@ -14,8 +14,8 @@ diff -rupN a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
 --- a/drivers/platform/x86/asus-wmi.c	2026-08-21 20:34:23.808936821 +0000
 +++ b/drivers/platform/x86/asus-wmi.c	2026-08-22 06:18:19.332321406 +0000
 @@ -29,12 +29,16 @@
- #include <linux/minmax.h>
  #include <linux/module.h>
+ #include <linux/mutex.h>
  #include <linux/pci.h>
 +#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
  #include <linux/pci_hotplug.h>
@@ -75,14 +75,13 @@ diff -rupN a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
  
  	int tablet_switch_event_code;
  	u32 tablet_switch_dev_id;
-@@ -325,11 +335,13 @@ struct asus_wmi {
+@@ -325,10 +335,12 @@ struct asus_wmi {
  	bool panel_overdrive_available;
  	u32 mini_led_dev_id;
  
 +#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
  	struct hotplug_slot hotplug_slot;
  	struct mutex hotplug_lock;
- 	struct mutex wmi_lock;
  	struct workqueue_struct *hotplug_workqueue;
  	struct work_struct hotplug_work;
 +#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
