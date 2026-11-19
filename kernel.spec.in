@@ -130,6 +130,8 @@ Source17:       apply-patches
 Source18:       mod-sign.sh
 Source33:       check-for-config-changes
 Source34:       gen-config
+Source50:       t2-patches.tar.gz
+Source51:       config-t2
 Source100:      config-base
 Source101:      config-qubes
 Source102:      config-rust
@@ -182,6 +184,10 @@ mkdir -p %kernel_build_dir
 cd linux-%upstream_version
 %autopatch -p1
 
+# Apply Apple T2 Mac patches
+tar -x -C %_builddir -zf %{SOURCE50}
+%{SOURCE17} %_builddir/t2-patches/series.conf %_builddir/t2-patches
+
 # drop EXTRAVERSION - possible -rc suffix already included in %release
 sed -i -e 's/^EXTRAVERSION = -rc.*/EXTRAVERSION =/' Makefile
 
@@ -191,6 +197,9 @@ cd %kernel_build_dir
 %if 0%{?fedora} >= 41
 cat %{SOURCE102} >> %{SOURCE101}
 %endif
+
+# Merge Apple T2 Mac config
+cat %{SOURCE51} >> %{SOURCE101}
 
 # Create QubesOS config kernel
 %{SOURCE34} %{SOURCE100} %{SOURCE101}
