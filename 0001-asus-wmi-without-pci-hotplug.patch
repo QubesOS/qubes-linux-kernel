@@ -14,8 +14,8 @@ diff -rupN a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
 --- a/drivers/platform/x86/asus-wmi.c	2026-08-21 20:34:23.808936821 +0000
 +++ b/drivers/platform/x86/asus-wmi.c	2026-08-22 06:18:19.332321406 +0000
 @@ -29,12 +29,16 @@
- #include <linux/minmax.h>
  #include <linux/module.h>
+ #include <linux/mutex.h>
  #include <linux/pci.h>
 +#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
  #include <linux/pci_hotplug.h>
@@ -119,12 +119,14 @@ diff -rupN a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
  
  	if (asus->driver->quirks->wmi_force_als_set)
  		asus_wmi_set_als();
-@@ -5181,8 +5197,10 @@ static int asus_wmi_add(struct platform_
+@@ -5181,8 +5197,12 @@ static int asus_wmi_add(struct platform_
  fail_screenpad:
  	asus_wmi_backlight_exit(asus);
  fail_backlight:
 +#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
  	asus_wmi_rfkill_exit(asus);
++#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
++#if IS_ENABLED(CONFIG_HOTPLUG_PCI)
  fail_rfkill:
 +#endif /* IS_ENABLED(CONFIG_HOTPLUG_PCI) */
  	asus_wmi_led_exit(asus);
