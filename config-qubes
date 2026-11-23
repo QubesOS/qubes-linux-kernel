@@ -86,13 +86,6 @@ CONFIG_PARAVIRT_SPINLOCKS=y
 
 
 ################################################################################
-## Disable DEBUG_WX. Xen PV guests currently have some WX pages, so suppress
-## the useless Warning.
-
-# CONFIG_DEBUG_WX is not set
-
-
-################################################################################
 ## Set USB drivers to module to allow attaching PCI devices to pciback before
 ## those get loaded.
 
