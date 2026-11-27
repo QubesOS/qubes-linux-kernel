@@ -1,0 +1,224 @@
+## Qubes specific config settings for minimal kernels.
+##
+## This is a variant of config-qubes that disables rarely-used options,
+## with the goal of speeding up builds by Qubes developers.  It isn't part
+## of the build by default.
+##
+## Lines starting with ## are comments.
+
+
+################################################################################
+## Enable expert options
+
+CONFIG_EXPERT=y
+
+
+################################################################################
+## Use xz to save space on /boot
+
+# CONFIG_KERNEL_GZIP is not set
+# CONFIG_KERNEL_ZSTD is not set
+CONFIG_KERNEL_XZ=y
+
+
+################################################################################
+## Enable /proc/config.gz to help debugging etc.
+
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+
+
+################################################################################
+## Enable some more hardening options
+
+CONFIG_GCC_PLUGINS=y
+CONFIG_GCC_PLUGIN_LATENT_ENTROPY=y
+CONFIG_GCC_PLUGIN_STRUCTLEAK=y
+CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF_ALL=y
+## XXX: What's about RANDSTRUCT?
+
+## Those depend on CONFIG_EXPERT
+CONFIG_ARCH_MMAP_RND_BITS=32
+
+# CONFIG_KEXEC is not set
+
+# CONFIG_LEGACY_VSYSCALL_EMULATE is not set
+CONFIG_LEGACY_VSYSCALL_NONE=y
+
+# CONFIG_ACPI_CUSTOM_METHOD is not set
+
+CONFIG_SECURITY_DMESG_RESTRICT=y
+
+CONFIG_INTEL_IOMMU_DEFAULT_ON=y
+
+# CONFIG_PROC_KCORE is not set
+
+CONFIG_INIT_ON_ALLOC_DEFAULT_ON=y
+CONFIG_INIT_ON_FREE_DEFAULT_ON=y
+
+CONFIG_PANIC_ON_OOPS=y
+CONFIG_PANIC_ON_OOPS_VALUE=1
+CONFIG_PANIC_TIMEOUT=-1
+
+CONFIG_SCHED_STACK_END_CHECK=y
+CONFIG_DEBUG_TIMEKEEPING=y
+
+CONFIG_IO_STRICT_DEVMEM=y
+
+CONFIG_SECURITY_YAMA=y
+
+# CONFIG_HIBERNATION is not set
+
+CONFIG_STACKPROTECTOR=y
+CONFIG_STACKPROTECTOR_STRONG=y
+
+
+################################################################################
+## Disable PCI hotplug to prevent DMA attacks via ExpressCard or Thunderbolt
+## ports. QubesOS/qubes-issues#1673
+
+# CONFIG_HOTPLUG_PCI is not set
+
+# CONFIG_FIREWIRE is not set
+# CONFIG_NET_DSA is not set
+# CONFIG_L2TP is not set
+# CONFIG_TIPC is not set
+# CONFIG_IEEE802154 is not set
+# CONFIG_HAMRADIO is not set
+# CONFIG_NFC is not set
+# CONFIG_NET_TEAM is not set
+# CONFIG_MACINTOSH_DRIVERS is not set
+# CONFIG_INFINIBAND is not set
+# CONFIG_VFIO is not set
+
+
+################################################################################
+## Deactivate selinux by default
+
+# CONFIG_DEFAULT_SECURITY_SELINUX is not set
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_LSM="yama,loadpin,safesetid,integrity"
+
+
+################################################################################
+## Enable paravirt spinlocks. This should be more performant.
+
+CONFIG_PARAVIRT_SPINLOCKS=y
+
+
+################################################################################
+## Disable DEBUG_WX. Xen PV guests currently have some WX pages, so suppress
+## the useless Warning.
+
+# CONFIG_DEBUG_WX is not set
+
+
+################################################################################
+## Set USB drivers to module to allow attaching PCI devices to pciback before
+## those get loaded.
+
+CONFIG_USB_UHCI_HCD=m
+CONFIG_USB_OHCI_HCD=m
+CONFIG_USB_EHCI_HCD=m
+CONFIG_USB_XHCI_HCD=m
+
+
+################################################################################
+## USB gadget driver support for testing qvm-usb
+
+CONFIG_USB_GADGET=m
+CONFIG_USB_CONFIGFS=m
+CONFIG_USB_CONFIGFS_MASS_STORAGE=y
+CONFIG_USB_DUMMY_HCD=m
+
+
+################################################################################
+## Enable AppArmor
+## It's optionally used by Whonix (https://www.whonix.org/wiki/AppArmor).
+
+CONFIG_SECURITY_APPARMOR=y
+
+################################################################################
+## Enable memory hotplug of Xen balloon driver. This is useful to map a lot of
+## grant tables, without using otherwise usable physical address space
+
+CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
+CONFIG_XEN_UNPOPULATED_ALLOC=y
+
+################################################################################
+## Allow grant tables to be turned into dma-bufs and back. Needed by GUI daemon.
+CONFIG_XEN_GRANT_DMA_ALLOC=y
+CONFIG_XEN_GNTDEV_DMABUF=y
+
+################################################################################
+## Help crash debugging by saving crash messages to EFI variables
+
+CONFIG_EFI_VARS_PSTORE=y
+
+
+################################################################################
+## Support Linux installs where /sbin/ and /usr/sbin/ have not been merged
+
+CONFIG_MODPROBE_PATH="/sbin/modprobe"
+
+## Disable Hyper-V stuff
+# CONFIG_HYPERV is not set
+
+## Disable 6LOWPAN
+# CONFIG_6LOWPAN is not set
+
+## Disable junk
+# CONFIG_STAGING is not set
+# CONFIG_DAX is not set
+
+## Disable Packet Radio
+# CONFIG_CAN is not set
+# CONFIG_BT is not set
+# CONFIG_WIRELESS is not set
+# CONFIG_YENTA is not set
+# CONFIG_MTD is not set
+# CONFIG_GNSS is not set
+# CONFIG_VMWARE_VMCI_VSOCKETS is not set
+# CONFIG_VMWARE_PVSCSI is not set
+# CONFIG_VIRTIO_MENU is not set
+# CONFIG_VIRTIO_CONSOLE is not set
+# CONFIG_VIRTIO_FS is not set
+# CONFIG_AF_RXRPC is not set
+# CONFIG_WLAN is not set
+# CONFIG_REMOTEPROC is not set
+# CONFIG_VIRT_DRIVERS is not set
+# CONFIG_I2C_VIRTIO is not set
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_SOUND is not set
+# CONFIG_OPENVSWITCH is not set
+# CONFIG_MPLS is not set
+# CONFIG_ATA_SFF is not set
+# CONFIG_X86_PMEM_LEGACY is not set
+# CONFIG_BLK_DEV_PMEM is not set
+# CONFIG_FS_DAX is not set
+# CONFIG_NETWORK_FILESYSTEMS is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_INPUT_JOYSTICK is not set
+# CONFIG_PPP is not set
+# CONFIG_IP_SCTP is not set
+# CONFIG_IPWIRELESS is not set
+# CONFIG_DLM is not set
+# CONFIG_NETFILTER_XTABLES is not set
+# CONFIG_IP_NF_IPTABLES is not set
+# CONFIG_IP_NF_ARPTABLES is not set
+# CONFIG_IP6_NF_IPTABLES is not set
+# CONFIG_IA32_EMULATION is not set
+
+################################################################################
+## TODO: from diff to old config
+
+## CONFIG_X86_AMD_PLATFORM_DEVICE=y
+##
+## # CONFIG_X86_MCELOG_LEGACY is not set
+## # CONFIG_X86_MCE_INJECT is not set
+##
+## CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+##
+## sensors from 0f976d972a1671a303fad30a5e690304b0b82ee0
+##
+## Intel ME driver e0f8e9ca81b80d897b190f48a4af80eff3198cb1
